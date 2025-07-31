@@ -1,16 +1,23 @@
 # Calendar Aggregator
 
-A powerful calendar aggregation API that combines multiple iCal feeds into a unified calendar service. Built with Next.js 15, TypeScript, and modern web technologies.
+A powerful GUID-based calendar aggregation API that combines multiple iCal feeds into unified calendar collections. Built with Next.js 15, TypeScript, and modern serverless architecture.
 
 ## 📅 What It Does
 
 The Calendar Aggregator allows you to:
 
+- **Create calendar collections** with unique GUIDs for secure access
+- **Real-time calendar aggregation** without persistent storage
 - **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
 - **Validate and test** calendar URLs before adding them
-- **Fetch events** from multiple calendars concurrently
-- **Output unified feeds** in JSON or iCal format
-- **Monitor sync status** and handle errors gracefully
+- **Direct iCal feed output** compatible with all calendar applications
+- **Concurrent fetching** with error handling and timeout protection
+
+## 🌐 Live Demo
+
+**Production URL**: https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/
+
+Try the live API or visit the web interface for instructions and examples.
 
 ## 🤖 Built for Claude Code
 
@@ -43,120 +50,99 @@ The calendar aggregation API will be available at [http://localhost:3000/api](ht
 
 ## 📚 API Documentation
 
-### Calendar Management
+### Collection Management (GUID-Based)
 
-#### GET /api/calendars
+#### GET /api/collections
 
-List all configured calendars
+List all calendar collections
 
 ```json
 {
-  "calendars": [
+  "collections": [
     {
-      "id": 1,
-      "name": "Work Calendar",
-      "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
-      "color": "#3b82f6",
-      "enabled": true,
-      "syncStatus": "success",
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastSyncAt": "2024-01-01T12:00:00.000Z"
+      "guid": "4fac5413-98b8-45d1-a8b3-1c26feda1941",
+      "name": "Work & Personal",
+      "description": "Combined work and personal calendars",
+      "calendars": [
+        {
+          "id": 1,
+          "name": "Work Calendar",
+          "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
+          "color": "#3b82f6",
+          "enabled": true,
+          "syncStatus": "idle"
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z"
     }
   ],
   "count": 1
 }
 ```
 
-#### POST /api/calendars
+#### POST /api/collections
 
-Add a new calendar source
+Create a new calendar collection
 
 ```bash
-curl -X POST http://localhost:3000/api/calendars \
+curl -X POST https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/collections \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Personal Calendar",
-    "url": "webcal://calendar.google.com/calendar/ical/personal@example.com/public/basic.ics",
-    "color": "#ef4444"
+    "name": "My Combined Calendar",
+    "description": "Work and personal events together",
+    "calendars": [
+      {
+        "name": "Work Calendar",
+        "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
+        "color": "#3b82f6",
+        "enabled": true
+      },
+      {
+        "name": "Personal Calendar",
+        "url": "webcal://outlook.live.com/owa/calendar/xyz/reachcalendar.ics",
+        "color": "#ef4444",
+        "enabled": true
+      }
+    ]
   }'
 ```
 
-#### GET /api/calendars/{id}
+**Response**: Returns the created collection with a unique GUID
 
-Get a specific calendar
+#### GET /api/collections/{guid}
 
-#### PUT /api/calendars/{id}
+Get a specific collection by GUID
 
-Update a calendar
+#### PUT /api/collections/{guid}
 
-```bash
-curl -X PUT http://localhost:3000/api/calendars/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Updated Work Calendar",
-    "enabled": false
-  }'
-```
+Update a collection (name, description, or calendars)
 
-#### DELETE /api/calendars/{id}
+#### DELETE /api/collections/{guid}
 
-Remove a calendar
+Remove a collection
 
-### Calendar Synchronization
+### Calendar Feed Access
 
-#### POST /api/sync
+#### GET /api/calendar/{guid}
 
-Sync calendar events from all enabled sources
+**Main endpoint** - Get the aggregated iCal feed for subscription
 
 ```bash
-curl -X POST http://localhost:3000/api/sync \
-  -H "Content-Type: application/json" \
-  -d '{
-    "calendarIds": [1, 2]
-  }'
+# Direct access to combined calendar feed
+curl https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941
 ```
 
-Response:
+**Response**: Returns a complete iCal (.ics) file with all events from the collection's calendars
 
-```json
-{
-  "status": "completed",
-  "startedAt": "2024-01-01T12:00:00.000Z",
-  "completedAt": "2024-01-01T12:00:05.000Z",
-  "calendars": 2,
-  "eventsProcessed": 25,
-  "errors": [],
-  "calendarResults": [
-    {
-      "calendarId": 1,
-      "status": "completed",
-      "eventsProcessed": 15,
-      "errors": []
-    }
-  ]
-}
-```
+**Headers**:
 
-#### GET /api/sync
+- `Content-Type: text/calendar; charset=utf-8`
+- `Content-Disposition: attachment; filename="collection-name.ics"`
+- `Cache-Control: public, max-age=300`
 
-Check sync status
+#### HEAD /api/calendar/{guid}
 
-```json
-{
-  "status": "idle",
-  "lastSync": "2024-01-01T12:00:00.000Z",
-  "totalCalendars": 3,
-  "enabledCalendars": 2,
-  "calendars": [
-    {
-      "calendarId": 1,
-      "name": "Work Calendar",
-      "syncStatus": "success",
-      "lastSyncAt": "2024-01-01T12:00:00.000Z"
-    }
-  ]
-}
-```
+Check feed availability without downloading content
 
 ## 📝 Supported Calendar Formats
 
@@ -178,30 +164,71 @@ https://caldav.icloud.com/published/2/[token]
 
 **Note**: `webcal://` URLs are automatically converted to `https://`
 
+## 🚀 Quick Start FExample
+
+### 1. Create a Collection
+
+```bash
+curl -X POST https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Calendars",
+    "calendars": [
+      {
+        "name": "Google Calendar",
+        "url": "https://calendar.google.com/calendar/ical/your-email@gmail.com/public/basic.ics",
+        "color": "#4285f4"
+      }
+    ]
+  }'
+```
+
+### 2. Get Your GUID
+
+The response includes a unique GUID:
+
+```json
+{
+  "guid": "abc123-def456-ghi789",
+  "name": "My Calendars",
+  ...
+}
+```
+
+### 3. Subscribe in Your Calendar App
+
+Use this URL in Google Calendar, Apple Calendar, or Outlook:
+
+```
+https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/abc123-def456-ghi789
+```
+
 ## 🛠️ Technology Stack
 
 This calendar aggregator is built with:
 
-- **[Next.js 15](https://nextjs.org/)** - React framework with App Router for API endpoints
+- **[Next.js 15](https://nextjs.org/)** - React framework with App Router and serverless functions
 - **[TypeScript](https://www.typescriptlang.org/)** - Type safety and better developer experience
 - **[node-ical](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
-- **[Axios](https://axios-http.com/)** - HTTP client for fetching calendar feeds
-- **[date-fns](https://date-fns.org/)** - Date manipulation utilities
+- **Real-time aggregation** - No database required, fetches calendars on-demand
+- **GUID-based collections** - Secure access with cryptographically secure identifiers
 
 ## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   └── api/            # API endpoints
-│       ├── calendars/  # Calendar CRUD operations
-│       ├── sync/       # Calendar synchronization
-│       └── health/     # Health check endpoint
+│   └── api/                    # API endpoints
+│       ├── collections/        # Collection CRUD operations
+│       │   └── [guid]/         # Individual collection management
+│       ├── calendar/[guid]/    # Main calendar feed endpoint
+│       └── health/             # Health check endpoint
 ├── lib/
-│   ├── calendar-utils.ts    # URL validation and connection testing
-│   └── calendar-fetcher.ts  # iCal fetching and parsing
+│   ├── calendar-utils.ts       # URL validation and connection testing
+│   ├── calendar-fetcher.ts     # iCal fetching and parsing
+│   └── ical-combiner.ts        # Real-time iCal combination utility
 └── types/
-    └── calendar.ts     # TypeScript interfaces for calendar data
+    └── calendar.ts             # TypeScript interfaces for collections and calendars
 ```
 
 ## 🧪 Testing & Development
@@ -229,42 +256,45 @@ curl -X POST http://localhost:3000/api/calendars \
 
 The API will validate the URL format, test connectivity, and verify iCal data before creating the calendar entry.
 
-## ⚠️ Current Limitations
+## ✨ Key Features
 
-This is a development version with the following limitations:
+- **🔒 GUID-based Security**: Each collection has a unique, unguessable identifier
+- **⚡ Real-time Aggregation**: No database needed - fetches calendars on demand
+- **🌐 Universal Compatibility**: Works with Google Calendar, Outlook, Apple Calendar, and more
+- **🔄 Event Deduplication**: Automatically handles duplicate events by UID
+- **🕒 Timezone Preservation**: Maintains original timezone information
+- **⏱️ Timeout Protection**: Concurrent fetching with configurable timeouts
+- **📱 Mobile Ready**: Compatible with all calendar applications
 
-- **In-memory storage**: Calendars and sync data are stored in memory and will be lost on server restart
-- **No authentication**: API endpoints are publicly accessible
-- **No rate limiting**: No protection against API abuse
-- **No persistent events**: Events are fetched on-demand, not stored
-- **Basic error handling**: Limited retry logic and error recovery
+## ⚠️ Architecture Notes
 
-## 🔧 Future Enhancements
+This is a **serverless, stateless** implementation:
 
-Potential improvements for production use:
-
-- Database integration (PostgreSQL, MongoDB)
-- User authentication and authorization
-- Event caching and incremental sync
-- Webhook support for real-time updates
-- Rate limiting and API security
-- Event deduplication and conflict resolution
-- Custom recurring event rules
-- Export to multiple formats (iCal, JSON, CSV)
+- **In-memory collections**: Collection data persists during serverless function lifetime
+- **No authentication**: API endpoints are publicly accessible (secured by GUID)
+- **Real-time fetching**: Events are fetched on-demand, not cached
+- **Timeout protection**: 15-second timeout per calendar source
+- **Error resilience**: Failed calendars don't break the entire feed
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+**Already deployed!** The production version is live at:
+https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/
 
-1. Push your code to a Git repository
-2. Connect your repository to Vercel
+### Deploy Your Own
+
+1. Fork this repository
+2. Connect to Vercel
 3. Deploy with default settings
+4. Your API will be available at `your-domain.vercel.app/api`
 
-### Manual Deployment
+### Local Development
 
 ```bash
-npm run build
-npm start
+git clone https://github.com/seansoreilly/calendar-aggregator
+cd calendar-aggregator
+npm install
+npm run dev
 ```
 
 ## 📄 License
@@ -273,4 +303,6 @@ MIT License - feel free to use this for personal or commercial projects.
 
 ---
 
-**Calendar Aggregator** - Combine multiple iCal feeds into a unified API
+**Calendar Aggregator** - GUID-based calendar collection and aggregation service
+
+_Created by [balddata.xyz](https://balddata.xyz) ([sean@balddata.xyz](mailto:sean@balddata.xyz))_

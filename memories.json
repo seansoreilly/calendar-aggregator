@@ -14,8 +14,8 @@
       ],
       "timestamp": "2025-07-31T08:21:51.483Z",
       "context": "Initial project exploration",
-      "accessCount": 3,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T08:21:51.483Z",
       "status": "fresh"
     },
@@ -34,8 +34,8 @@
       ],
       "timestamp": "2025-07-31T08:25:12.321Z",
       "context": "Project initialization completion",
-      "accessCount": 2,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 5,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T08:25:12.321Z",
       "status": "fresh"
     },
@@ -53,8 +53,8 @@
       ],
       "timestamp": "2025-07-31T08:33:26.537Z",
       "context": "Starting calendar aggregator ideation task",
-      "accessCount": 3,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T08:33:26.537Z",
       "status": "fresh"
     },
@@ -74,8 +74,8 @@
       ],
       "timestamp": "2025-07-31T11:50:01.485Z",
       "context": "Codebase research complete for calendar aggregator",
-      "accessCount": 3,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T11:50:01.485Z",
       "status": "fresh"
     },
@@ -93,8 +93,8 @@
       ],
       "timestamp": "2025-07-31T11:51:56.863Z",
       "context": "Implementation plan documentation complete",
-      "accessCount": 3,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T11:51:56.863Z",
       "status": "fresh"
     },
@@ -111,8 +111,8 @@
       ],
       "timestamp": "2025-07-31T11:59:06.799Z",
       "context": "Claude Code command creation - need to fix approach",
-      "accessCount": 3,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T11:59:06.799Z",
       "status": "fresh"
     },
@@ -131,8 +131,8 @@
       ],
       "timestamp": "2025-07-31T12:03:31.378Z",
       "context": "Safe implementation workflow started",
-      "accessCount": 2,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 5,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T12:03:31.378Z",
       "status": "fresh"
     },
@@ -170,8 +170,8 @@
       ],
       "timestamp": "2025-07-31T12:08:19.519Z",
       "context": "Phase 1 completion milestone",
-      "accessCount": 2,
-      "lastAccessed": "2025-07-31T12:26:49.707Z",
+      "accessCount": 5,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T12:08:19.519Z",
       "status": "fresh"
     },
@@ -274,8 +274,8 @@
       ],
       "timestamp": "2025-07-31T12:32:59.551Z",
       "context": "Comprehensive API testing with real calendar URLs",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T12:32:59.551Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T12:32:59.551Z",
       "status": "fresh"
     },
@@ -295,8 +295,8 @@
       ],
       "timestamp": "2025-07-31T12:38:13.240Z",
       "context": "OpenAPI documentation completion and current API state assessment",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T12:38:13.240Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-07-31T13:56:52.882Z",
       "lastVerified": "2025-07-31T12:38:13.240Z",
       "status": "fresh"
     },
@@ -433,7 +433,149 @@
       "lastAccessed": "2025-07-31T13:08:16.814Z",
       "lastVerified": "2025-07-31T13:08:16.814Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1753968752517_47t2x3q69",
+      "content": "Updating OpenAPI specification to reflect GUID-based collection endpoints. The current openapi.yaml contains the old ID-based calendar management system, but the implementation now uses GUID-based collections with endpoints like /api/collections and /api/calendar/[guid]. Need to replace the old endpoints with the new collection-based API structure.",
+      "type": "general",
+      "tags": [
+        "general",
+        "api",
+        "openapi",
+        "documentation",
+        "guid",
+        "collections",
+        "api-spec"
+      ],
+      "timestamp": "2025-07-31T13:32:32.517Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T13:32:32.517Z",
+      "lastVerified": "2025-07-31T13:32:32.517Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753968863324_bsi2gvvux",
+      "content": "User requests: 1) Update README with new GUID-based workflow, 2) Create styled frontpage with instructions and examples, include attribution to \"Created by balddata.xyz (sean@balddata.xyz)\". Need to document the successful GUID-based implementation that's currently deployed and working.",
+      "type": "general",
+      "tags": [
+        "general",
+        "user-request",
+        "readme",
+        "frontpage",
+        "documentation",
+        "attribution"
+      ],
+      "timestamp": "2025-07-31T13:34:23.324Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T13:34:23.324Z",
+      "lastVerified": "2025-07-31T13:34:23.324Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753969044201_nnhbm3pxn",
+      "content": "Successfully completed both user requests: 1) Updated README.md with comprehensive GUID-based workflow documentation including live demo URL, quick start guide, and new API endpoints. 2) Created a beautiful styled frontpage (src/app/page.tsx) with full instructions, examples, feature highlights, and attribution to balddata.xyz (sean@balddata.xyz). The frontpage includes working example with the deployed GUID, interactive copy buttons, and step-by-step guide for creating and subscribing to calendar collections.",
+      "type": "general",
+      "tags": [
+        "general",
+        "api",
+        "completion",
+        "readme",
+        "frontpage",
+        "documentation",
+        "attribution",
+        "styled-ui"
+      ],
+      "timestamp": "2025-07-31T13:37:24.201Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T13:37:24.201Z",
+      "lastVerified": "2025-07-31T13:37:24.201Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753970222588_esd1a7d3e",
+      "content": "From the continued session summary: The user's calendar aggregator is fully implemented and deployed. They had two final issues: 1) \"View API\" button pointing to non-existent /api route (should point to /api/health) 2) Need detailed POST parameters documentation for /api/collections endpoint. Both issues appear to be already resolved in the current page.tsx file which shows the button pointing to /api/health and comprehensive \"How to Create a Collection\" section with detailed parameter documentation. The todos show all tasks completed. The user's last two requests have been successfully addressed.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "api",
+        "calendar-aggregator",
+        "session-continuation",
+        "frontpage",
+        "api-button-fix",
+        "post-parameters",
+        "completed"
+      ],
+      "timestamp": "2025-07-31T13:57:02.588Z",
+      "context": "Session continuation from calendar aggregator work - final fixes to frontpage",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T13:57:02.588Z",
+      "lastVerified": "2025-07-31T13:57:02.588Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753971484332_091h5zc8q",
+      "content": "Fixed Vercel build error: TypeScript couldn't find '@/types/calendar' module in calendar/[guid]/route.ts. Added missing global type declaration to match pattern used in collections/route.ts. Local build now passes successfully. Committed and pushed fix to trigger new Vercel deployment. The issue was that the GUID route file was missing the global storage type declaration for calendarCollections.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "typescript",
+        "deployment",
+        "vercel",
+        "build-error",
+        "global-types",
+        "calendar-aggregator",
+        "fix"
+      ],
+      "timestamp": "2025-07-31T14:18:04.332Z",
+      "context": "Vercel build failure fix",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T14:18:04.332Z",
+      "lastVerified": "2025-07-31T14:18:04.332Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753972065937_tpbbldzmr",
+      "content": "Fixed persistent Vercel build issue by switching from path aliases (@/types/calendar) to relative imports (../../../../types/calendar) in the calendar GUID route. The path aliases work locally but Vercel's build environment had module resolution issues. Also updated the frontpage example to show complete response structure with both calendars (Google Calendar and Outlook Calendar) including all fields like id, name, url, color, enabled, and syncStatus. This better demonstrates the calendar aggregation concept with 2 calendars as requested.",
+      "type": "config",
+      "tags": [
+        "config",
+        "vercel",
+        "build-fix",
+        "relative-imports",
+        "path-aliases",
+        "frontpage",
+        "example-improvement",
+        "calendar-aggregator"
+      ],
+      "timestamp": "2025-07-31T14:27:45.937Z",
+      "context": "Vercel build fix and frontpage example improvement",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T14:27:45.937Z",
+      "lastVerified": "2025-07-31T14:27:45.937Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753972385500_pmymlj9yr",
+      "content": "Successfully resolved Vercel build failure by systematically converting all critical API routes and lib files from path aliases (@/) to relative imports. Key fixes: 1) All API routes (calendars, collections, sync) 2) All lib files (calendar-fetcher, ical-combiner) 3) Updated frontpage example to show complete response with 2 calendars. Build now passes locally and deployed to Vercel. The issue was that Vercel's build environment couldn't resolve the tsconfig path aliases, while they worked fine locally. Relative imports work in both environments.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "vercel",
+        "build-fix",
+        "path-aliases",
+        "relative-imports",
+        "systematic-fix",
+        "deployment",
+        "calendar-aggregator"
+      ],
+      "timestamp": "2025-07-31T14:33:05.500Z",
+      "context": "Vercel build resolution - systematic path alias to relative import conversion",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T14:33:05.500Z",
+      "lastVerified": "2025-07-31T14:33:05.500Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-07-31T13:08:16.814Z"
+  "lastUpdated": "2025-07-31T14:33:05.500Z"
 }

@@ -2,16 +2,18 @@ openapi: 3.0.3
 info:
   title: Calendar Aggregator API
   description: |
-    A powerful calendar aggregation API that combines multiple iCal feeds into a unified calendar service.
+    A powerful GUID-based calendar aggregation API that combines multiple iCal feeds into unified calendar collections.
     
     Features:
+    - **Create calendar collections** with unique GUIDs for secure access
+    - **Real-time calendar aggregation** without persistent storage
     - **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
     - **Validate and test** calendar URLs before adding them
-    - **Fetch events** from multiple calendars concurrently
-    - **Monitor sync status** and handle errors gracefully
+    - **Direct iCal feed output** compatible with all calendar applications
+    - **Concurrent fetching** with error handling and timeout protection
     
-    Built with Next.js 15, TypeScript, and modern web technologies.
-  version: 1.0.0
+    Built with Next.js 15, TypeScript, and modern serverless architecture.
+  version: 2.0.0
   contact:
     name: Calendar Aggregator Support
   license:
@@ -21,17 +23,17 @@ info:
 servers:
   - url: http://localhost:3000/api
     description: Development server
-  - url: https://your-domain.com/api
-    description: Production server
+  - url: https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api
+    description: Production server (Vercel)
 
 paths:
-  /calendars:
+  /collections:
     get:
-      summary: List all calendars
-      description: Retrieve all configured calendar sources with their current sync status
-      operationId: getCalendars
+      summary: List all calendar collections
+      description: Retrieve all configured calendar collections with their metadata
+      operationId: getCollections
       tags:
-        - Calendars
+        - Collections
       responses:
         '200':
           description: Successful response
@@ -40,137 +42,162 @@ paths:
               schema:
                 type: object
                 properties:
-                  calendars:
+                  collections:
                     type: array
                     items:
-                      $ref: '#/components/schemas/CalendarSource'
+                      $ref: '#/components/schemas/CalendarCollection'
                   count:
                     type: integer
-                    description: Total number of calendars
+                    description: Total number of collections
               example:
-                calendars:
-                  - id: 1
-                    name: "Work Calendar"
-                    url: "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics"
-                    color: "#3b82f6"
-                    enabled: true
-                    syncStatus: "success"
+                collections:
+                  - guid: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
+                    name: "Work & Personal"
+                    description: "Combined work and personal calendars"
+                    calendars:
+                      - id: 1
+                        name: "Work Calendar"
+                        url: "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics"
+                        color: "#3b82f6"
+                        enabled: true
+                        syncStatus: "idle"
+                        createdAt: "2024-01-01T00:00:00.000Z"
+                      - id: 2
+                        name: "Personal Calendar"
+                        url: "https://outlook.live.com/owa/calendar/xyz/reachcalendar.ics"
+                        color: "#ef4444"
+                        enabled: true
+                        syncStatus: "idle"
+                        createdAt: "2024-01-01T00:00:00.000Z"
                     createdAt: "2024-01-01T00:00:00.000Z"
-                    lastSyncAt: "2024-01-01T12:00:00.000Z"
                 count: 1
         '500':
           $ref: '#/components/responses/ServerError'
 
     post:
-      summary: Add a new calendar
-      description: Create a new calendar source with URL validation and connection testing
-      operationId: createCalendar
+      summary: Create a new calendar collection
+      description: Create a new collection of calendar sources with URL validation and GUID generation
+      operationId: createCollection
       tags:
-        - Calendars
+        - Collections
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCalendarRequest'
+              $ref: '#/components/schemas/CreateCollectionRequest'
             example:
-              name: "Personal Calendar"
-              url: "webcal://calendar.google.com/calendar/ical/personal@example.com/public/basic.ics"
-              color: "#ef4444"
-              enabled: true
+              name: "Work & Personal"
+              description: "Combined work and personal calendars"
+              calendars:
+                - name: "Work Calendar"
+                  url: "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics"
+                  color: "#3b82f6"
+                  enabled: true
+                - name: "Personal Calendar"
+                  url: "webcal://outlook.live.com/owa/calendar/xyz/reachcalendar.ics"
+                  color: "#ef4444"
+                  enabled: true
       responses:
         '201':
-          description: Calendar created successfully
+          description: Collection created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalendarSource'
+                $ref: '#/components/schemas/CalendarCollection'
         '400':
-          description: Invalid request or calendar URL
+          description: Invalid request or calendar validation failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
               examples:
-                invalid_url:
-                  summary: Invalid URL format
+                invalid_calendars:
+                  summary: Calendar validation failed
                   value:
-                    error: "Invalid calendar URL"
-                    details: "Invalid URL format"
-                connection_failed:
-                  summary: Connection test failed
+                    error: "Calendar validation failed"
+                    details: ["Calendar 1 (Work): Invalid URL format", "Calendar 2 (Personal): Unable to connect to server"]
+                missing_fields:
+                  summary: Missing required fields
                   value:
-                    error: "Invalid calendar URL"
-                    details: "Unable to connect to server"
-                    warnings: ["Content-Type is not text/calendar"]
+                    error: "Collection name is required"
         '409':
-          description: Calendar URL already exists
+          description: Collection name already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: "Calendar URL already exists"
+                error: "Collection name already exists"
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /calendars/{id}:
+  /collections/{guid}:
     get:
-      summary: Get a specific calendar
-      description: Retrieve details of a calendar by its ID
-      operationId: getCalendar
+      summary: Get a specific calendar collection
+      description: Retrieve details of a collection by its GUID
+      operationId: getCollection
       tags:
-        - Calendars
+        - Collections
       parameters:
-        - name: id
+        - name: guid
           in: path
           required: true
           schema:
-            type: integer
-          description: Calendar ID
+            type: string
+            format: uuid
+          description: Collection GUID
+          example: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
       responses:
         '200':
-          description: Calendar found
+          description: Collection found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalendarSource'
+                $ref: '#/components/schemas/CalendarCollection'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
 
     put:
-      summary: Update a calendar
-      description: Update calendar properties with URL validation if URL is changed
-      operationId: updateCalendar
+      summary: Update a calendar collection
+      description: Update collection properties and calendars with URL validation
+      operationId: updateCollection
       tags:
-        - Calendars
+        - Collections
       parameters:
-        - name: id
+        - name: guid
           in: path
           required: true
           schema:
-            type: integer
-          description: Calendar ID
+            type: string
+            format: uuid
+          description: Collection GUID
+          example: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateCalendarRequest'
+              $ref: '#/components/schemas/UpdateCollectionRequest'
             example:
-              name: "Updated Work Calendar"
-              enabled: false
+              name: "Updated Work & Personal"
+              description: "Updated description"
+              calendars:
+                - name: "Work Calendar"
+                  url: "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics"
+                  color: "#3b82f6"
+                  enabled: true
       responses:
         '200':
-          description: Calendar updated successfully
+          description: Collection updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalendarSource'
+                $ref: '#/components/schemas/CalendarCollection'
         '400':
-          description: Invalid request or calendar URL
+          description: Invalid request or calendar validation failed
           content:
             application/json:
               schema:
@@ -178,7 +205,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Calendar URL already exists
+          description: Collection name already exists
           content:
             application/json:
               schema:
@@ -187,21 +214,23 @@ paths:
           $ref: '#/components/responses/ServerError'
 
     delete:
-      summary: Delete a calendar
-      description: Permanently remove a calendar source
-      operationId: deleteCalendar
+      summary: Delete a calendar collection
+      description: Permanently remove a calendar collection
+      operationId: deleteCollection
       tags:
-        - Calendars
+        - Collections
       parameters:
-        - name: id
+        - name: guid
           in: path
           required: true
           schema:
-            type: integer
-          description: Calendar ID
+            type: string
+            format: uuid
+          description: Collection GUID
+          example: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
       responses:
         '200':
-          description: Calendar deleted successfully
+          description: Collection deleted successfully
           content:
             application/json:
               schema:
@@ -210,218 +239,151 @@ paths:
                   message:
                     type: string
               example:
-                message: "Calendar deleted successfully"
+                message: "Collection deleted successfully"
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /sync:
-    post:
-      summary: Sync calendar events
-      description: |
-        Fetch and sync events from calendar sources. Can sync all enabled calendars 
-        or specific calendars by providing their IDs.
-      operationId: syncCalendars
-      tags:
-        - Synchronization
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                calendarIds:
-                  type: array
-                  items:
-                    type: integer
-                  description: Optional array of calendar IDs to sync. If not provided, all enabled calendars will be synced.
-            examples:
-              sync_all:
-                summary: Sync all enabled calendars
-                value: {}
-              sync_specific:
-                summary: Sync specific calendars
-                value:
-                  calendarIds: [1, 2]
-      responses:
-        '200':
-          description: Sync completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SyncResult'
-              example:
-                status: "completed"
-                startedAt: "2024-01-01T12:00:00.000Z"
-                completedAt: "2024-01-01T12:00:05.000Z"
-                calendars: 2
-                eventsProcessed: 25
-                errors: []
-                calendarResults:
-                  - calendarId: 1
-                    status: "completed"
-                    startedAt: "2024-01-01T12:00:00.000Z"
-                    completedAt: "2024-01-01T12:00:02.000Z"
-                    eventsProcessed: 15
-                    eventsAdded: 15
-                    eventsUpdated: 0
-                    eventsRemoved: 0
-                    errors: []
-        '500':
-          $ref: '#/components/responses/ServerError'
-
+  /calendar/{guid}:
     get:
-      summary: Get sync status
-      description: Check the current synchronization status of all calendars
-      operationId: getSyncStatus
-      tags:
-        - Synchronization
-      responses:
-        '200':
-          description: Sync status retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    enum: [idle, syncing]
-                    description: Overall sync status
-                  lastSync:
-                    type: string
-                    format: date-time
-                    nullable: true
-                    description: Timestamp of last successful sync
-                  totalCalendars:
-                    type: integer
-                    description: Total number of calendars
-                  enabledCalendars:
-                    type: integer
-                    description: Number of enabled calendars
-                  calendars:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        calendarId:
-                          type: integer
-                        name:
-                          type: string
-                        syncStatus:
-                          type: string
-                          enum: [idle, syncing, success, error]
-                        lastSyncAt:
-                          type: string
-                          format: date-time
-                          nullable: true
-                        errorMessage:
-                          type: string
-                          nullable: true
-              example:
-                status: "idle"
-                lastSync: "2024-01-01T12:00:00.000Z"
-                totalCalendars: 3
-                enabledCalendars: 2
-                calendars:
-                  - calendarId: 1
-                    name: "Work Calendar"
-                    syncStatus: "success"
-                    lastSyncAt: "2024-01-01T12:00:00.000Z"
-                    errorMessage: null
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /events:
-    get:
-      summary: Get aggregated events
+      summary: Get aggregated calendar feed
       description: |
-        Retrieve events from all or specified calendars with optional filtering and pagination.
-        Events are returned in a standardized format regardless of source.
-      operationId: getEvents
+        Real-time calendar aggregation endpoint that fetches and combines multiple iCal feeds
+        into a single unified calendar. This is the main endpoint for consuming the aggregated calendar.
+        
+        The response is a standard iCal (.ics) file that can be subscribed to by any calendar application
+        including Google Calendar, Apple Calendar, Outlook, and others.
+        
+        Features:
+        - Real-time fetching from source calendars
+        - Event deduplication by UID
+        - Timezone preservation and combination
+        - Concurrent processing with timeout protection
+        - Proper iCal formatting with headers
+      operationId: getAggregatedCalendar
       tags:
-        - Events
+        - Calendar Feed
       parameters:
-        - name: start
-          in: query
+        - name: guid
+          in: path
+          required: true
           schema:
             type: string
-            format: date-time
-          description: Start date filter (ISO 8601)
-          example: "2024-01-01T00:00:00.000Z"
-        - name: end
-          in: query
-          schema:
-            type: string
-            format: date-time
-          description: End date filter (ISO 8601)
-          example: "2024-12-31T23:59:59.999Z"
-        - name: calendars
-          in: query
-          schema:
-            type: string
-          description: Comma-separated calendar IDs to include
-          example: "1,2,3"
-        - name: search
-          in: query
-          schema:
-            type: string
-          description: Search term for event titles and descriptions
-          example: "meeting"
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 1000
-            default: 100
-          description: Maximum number of events to return
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-          description: Number of events to skip
-        - name: format
-          in: query
-          schema:
-            type: string
-            enum: [json, ical]
-            default: json
-          description: Response format
+            format: uuid
+          description: Collection GUID for the calendar to aggregate
+          example: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
       responses:
         '200':
-          description: Events retrieved successfully
-          content:
-            application/json:
+          description: Aggregated iCal feed
+          headers:
+            Content-Type:
+              description: Standard iCal MIME type
               schema:
-                $ref: '#/components/schemas/AggregatedResponse'
+                type: string
+                example: "text/calendar; charset=utf-8"
+            Content-Disposition:
+              description: Suggested filename for download
+              schema:
+                type: string
+                example: 'attachment; filename="Work-Personal.ics"'
+            Cache-Control:
+              description: Caching policy for calendar clients
+              schema:
+                type: string
+                example: "public, max-age=300"
+          content:
             text/calendar:
               schema:
                 type: string
+                description: Complete iCal feed with combined events
               example: |
                 BEGIN:VCALENDAR
                 VERSION:2.0
                 PRODID:-//Calendar Aggregator//EN
+                CALSCALE:GREGORIAN
+                METHOD:PUBLISH
+                X-WR-CALNAME:Work & Personal
+                X-WR-CALDESC:Combined work and personal calendars
+                BEGIN:VTIMEZONE
+                TZID:America/New_York
+                BEGIN:STANDARD
+                DTSTART:20231105T020000
+                TZOFFSETFROM:-0400
+                TZOFFSETTO:-0500
+                RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+                TZNAME:EST
+                END:STANDARD
+                END:VTIMEZONE
                 BEGIN:VEVENT
                 UID:event123@example.com
-                DTSTART:20240101T120000Z
-                DTEND:20240101T130000Z
+                DTSTART;TZID=America/New_York:20240101T120000
+                DTEND;TZID=America/New_York:20240101T130000
                 SUMMARY:Team Meeting
                 DESCRIPTION:Weekly team sync
+                LOCATION:Conference Room A
                 END:VEVENT
                 END:VCALENDAR
-        '400':
-          description: Invalid query parameters
+        '404':
+          description: Collection not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "Collection not found"
         '500':
-          $ref: '#/components/responses/ServerError'
+          description: Calendar aggregation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                fetch_timeout:
+                  summary: Calendar fetch timeout
+                  value:
+                    error: "Calendar aggregation failed"
+                    details: "Timeout fetching calendar feeds"
+                parse_error:
+                  summary: iCal parsing error
+                  value:
+                    error: "Calendar aggregation failed"
+                    details: "Failed to parse iCal content"
+
+    head:
+      summary: Check calendar feed availability
+      description: |
+        Check if a calendar collection exists and can be aggregated without downloading the full content.
+        Useful for calendar clients to verify feed availability before subscription.
+      operationId: checkCalendarFeed
+      tags:
+        - Calendar Feed
+      parameters:
+        - name: guid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Collection GUID
+          example: "4fac5413-98b8-45d1-a8b3-1c26feda1941"
+      responses:
+        '200':
+          description: Calendar feed is available
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: "text/calendar; charset=utf-8"
+            Content-Length:
+              description: Approximate size of the calendar feed
+              schema:
+                type: string
+                example: "874000"
+        '404':
+          description: Collection not found
+        '500':
+          description: Calendar aggregation error
 
   /health:
     get:
