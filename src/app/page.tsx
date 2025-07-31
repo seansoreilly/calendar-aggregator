@@ -277,21 +277,6 @@ export default function HomePage() {
         </div>
 
         <div className="text-center space-y-4">
-          <div className="p-6 bg-muted/50 rounded-lg">
-            <h3 className="font-semibold mb-2">Production Deployment</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              This calendar aggregator is live and ready to use:
-            </p>
-            <Button asChild>
-              <a
-                href="https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app"
-                target="_blank"
-              >
-                Visit Production Site
-              </a>
-            </Button>
-          </div>
-
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
               Created by{' '}
