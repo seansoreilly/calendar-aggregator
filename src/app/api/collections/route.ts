@@ -130,17 +130,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check for duplicate collection names
+    // Check for existing collection with same name - update if exists
     const existingCollection = globalThis.calendarCollections.find(
       col => col.name.toLowerCase() === body.name.toLowerCase()
     )
+
     if (existingCollection) {
-      return NextResponse.json(
-        { error: 'Collection name already exists' },
-        { status: 409 }
-      )
+      // Update existing collection
+      existingCollection.calendars = processedCalendars
+      existingCollection.updatedAt = new Date().toISOString()
+
+      // Update description if provided
+      if (body.description !== undefined) {
+        existingCollection.description = body.description
+      }
+
+      return NextResponse.json(existingCollection, { status: 200 })
     }
 
+    // Create new collection if name doesn't exist
     const newCollection: CalendarCollection = {
       guid: generateGuid(),
       name: body.name,
