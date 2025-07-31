@@ -60,3 +60,4 @@ temp/
 .yarn/build-state.yml
 .yarn/install-state.gz
 EOF < /dev/null
+.vercel

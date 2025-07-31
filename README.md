@@ -1,8 +1,16 @@
-# calendar-aggregator
+# Calendar Aggregator
 
-A modern web application created with kens-webapps
+A powerful calendar aggregation API that combines multiple iCal feeds into a unified calendar service. Built with Next.js 15, TypeScript, and modern web technologies.
 
-Hey! **Ken here** 👋 - This project was created with my [kens-webapps](https://www.npmjs.com/package/kens-webapps) tool, designed specifically for beginners who want to build with **Claude Code**!
+## 📅 What It Does
+
+The Calendar Aggregator allows you to:
+
+- **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
+- **Validate and test** calendar URLs before adding them
+- **Fetch events** from multiple calendars concurrently
+- **Output unified feeds** in JSON or iCal format
+- **Monitor sync status** and handle errors gracefully
 
 ## 🤖 Built for Claude Code
 
@@ -14,177 +22,255 @@ This project is **optimized for AI-powered development**. If you're not already 
 - [ ] **Claude Code extension** → [Install from VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=Anthropic.claude-dev)
 - [ ] **Project opened in VS Code** → Run `code .` in your terminal
 
-## 🚀 Getting Started (Ken's Way)
+## 🚀 Getting Started
 
-### 1. Open in VS Code
+### 1. Install Dependencies
 
 ```bash
 cd calendar-aggregator
-code .
+npm install
 ```
 
 ### 2. Start Development Server
 
 ```bash
 npm run dev
-# or your preferred package manager
 ```
 
-### 3. Start Building with Claude Code!
+### 3. Access the API
 
-Open Claude Code in VS Code and try these prompts:
+The calendar aggregation API will be available at [http://localhost:3000/api](http://localhost:3000/api)
 
-**For beginners:**
+## 📚 API Documentation
 
-- "Help me understand this project structure"
-- "Add a contact form to the home page"
-- "Create a new page for my about section"
+### Calendar Management
 
-**For features:**
+#### GET /api/calendars
 
-- "Add user authentication"
-- "Create a blog section with markdown support"
-- "Add a dark mode toggle"
+List all configured calendars
 
-Open [http://localhost:3000](http://localhost:3000) to see your app!
+```json
+{
+  "calendars": [
+    {
+      "id": 1,
+      "name": "Work Calendar",
+      "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
+      "color": "#3b82f6",
+      "enabled": true,
+      "syncStatus": "success",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "lastSyncAt": "2024-01-01T12:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
 
-## 🛠️ Why This Tech Stack? (Ken's Picks)
+#### POST /api/calendars
 
-I chose these tools specifically because **Claude Code works amazing with them**:
+Add a new calendar source
 
-- **[Next.js 15](https://nextjs.org/)** - Claude Code understands the App Router perfectly
-- **[TypeScript](https://www.typescriptlang.org/)** - Gives Claude Code context about your code structure
-- **[Tailwind CSS](https://tailwindcss.com/)** - Claude Code can generate beautiful styles instantly
-- **[shadcn/ui](https://ui.shadcn.com/)** - Ready-made components Claude Code can use/modify
-- **[Vitest](https://vitest.dev/)** - Claude Code can write and run tests for you
-- **[React Hook Form](https://react-hook-form.com/)** + **[Zod](https://zod.dev/)** - Perfect for AI-generated forms
+```bash
+curl -X POST http://localhost:3000/api/calendars \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Personal Calendar",
+    "url": "webcal://calendar.google.com/calendar/ical/personal@example.com/public/basic.ics",
+    "color": "#ef4444"
+  }'
+```
 
-## 📁 Project Structure (AI-Optimized)
+#### GET /api/calendars/{id}
+
+Get a specific calendar
+
+#### PUT /api/calendars/{id}
+
+Update a calendar
+
+```bash
+curl -X PUT http://localhost:3000/api/calendars/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Work Calendar",
+    "enabled": false
+  }'
+```
+
+#### DELETE /api/calendars/{id}
+
+Remove a calendar
+
+### Calendar Synchronization
+
+#### POST /api/sync
+
+Sync calendar events from all enabled sources
+
+```bash
+curl -X POST http://localhost:3000/api/sync \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calendarIds": [1, 2]
+  }'
+```
+
+Response:
+
+```json
+{
+  "status": "completed",
+  "startedAt": "2024-01-01T12:00:00.000Z",
+  "completedAt": "2024-01-01T12:00:05.000Z",
+  "calendars": 2,
+  "eventsProcessed": 25,
+  "errors": [],
+  "calendarResults": [
+    {
+      "calendarId": 1,
+      "status": "completed",
+      "eventsProcessed": 15,
+      "errors": []
+    }
+  ]
+}
+```
+
+#### GET /api/sync
+
+Check sync status
+
+```json
+{
+  "status": "idle",
+  "lastSync": "2024-01-01T12:00:00.000Z",
+  "totalCalendars": 3,
+  "enabledCalendars": 2,
+  "calendars": [
+    {
+      "calendarId": 1,
+      "name": "Work Calendar",
+      "syncStatus": "success",
+      "lastSyncAt": "2024-01-01T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+## 📝 Supported Calendar Formats
+
+The API accepts iCal (`.ics`) calendar URLs from:
+
+- **Google Calendar**: Public calendar links
+- **Outlook/Office 365**: Shared calendar URLs
+- **Apple iCloud**: Public calendar shares
+- **CalDAV servers**: Any standard iCal feed
+- **Custom iCal files**: Hosted `.ics` files
+
+### URL Format Examples
+
+```
+https://calendar.google.com/calendar/ical/[email]/public/basic.ics
+webcal://outlook.live.com/owa/calendar/[id]/calendar.ics
+https://caldav.icloud.com/published/2/[token]
+```
+
+**Note**: `webcal://` URLs are automatically converted to `https://`
+
+## 🛠️ Technology Stack
+
+This calendar aggregator is built with:
+
+- **[Next.js 15](https://nextjs.org/)** - React framework with App Router for API endpoints
+- **[TypeScript](https://www.typescriptlang.org/)** - Type safety and better developer experience
+- **[node-ical](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
+- **[Axios](https://axios-http.com/)** - HTTP client for fetching calendar feeds
+- **[date-fns](https://date-fns.org/)** - Date manipulation utilities
+
+## 📁 Project Structure
 
 ```
 src/
-├── app/                 # Next.js App Router - Claude Code loves this!
-├── components/
-│   ├── ui/             # shadcn/ui components - ready for AI modifications
-│   └── shared/         # Reusable components Claude Code can extend
-├── lib/                # Utility functions - perfect for AI-generated helpers
-├── hooks/              # Custom React hooks - Claude Code can create more
-├── types/              # TypeScript types - helps Claude Code understand your data
-├── styles/             # Tailwind CSS - AI-friendly styling
-└── __tests__/          # Vitest tests - Claude Code can write tests for you!
+├── app/
+│   └── api/            # API endpoints
+│       ├── calendars/  # Calendar CRUD operations
+│       ├── sync/       # Calendar synchronization
+│       └── health/     # Health check endpoint
+├── lib/
+│   ├── calendar-utils.ts    # URL validation and connection testing
+│   └── calendar-fetcher.ts  # iCal fetching and parsing
+└── types/
+    └── calendar.ts     # TypeScript interfaces for calendar data
 ```
 
-💡 **Ken's tip:** This structure helps Claude Code understand your project instantly!
-
-## 🧪 Testing (AI-Powered)
+## 🧪 Testing & Development
 
 ```bash
-npm run test        # Run tests once
-npm run test:watch  # Run tests in watch mode
-npm run test:ui     # Run tests with UI
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run lint        # Check code quality
+npm run type-check  # TypeScript validation
 ```
 
-**Claude Code can:**
+### Testing Calendar URLs
 
-- Write tests for your components automatically
-- Fix failing tests
-- Add new test cases when you add features
-
-## 📝 Available Scripts
-
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build the application for production
-- `npm run start` - Start the production server
-- `npm run lint` - Run ESLint to check code quality
-- `npm run type-check` - Run TypeScript compiler to check types
-
-**💡 Ken's workflow:** Run `npm run dev`, then ask Claude Code to add features while it's running!
-
-## 🎨 Building with Claude Code
-
-### What Claude Code Can Do For You
-
-**Instead of manual setup, just ask Claude Code:**
-
-- _"Add a contact form with email validation"_
-- _"Create a user dashboard with charts"_
-- _"Add authentication with login/signup"_
-- _"Build a blog section with markdown"_
-- _"Add a shopping cart with local storage"_
-
-### Adding Components (Claude Code Style)
-
-**Tell Claude Code:** _"Add a new shadcn/ui component for [feature]"_
-
-It will automatically:
+You can test calendar URL validation using the API:
 
 ```bash
-npx shadcn-ui@latest add [component]
-# And integrate it into your project!
+# Test if a calendar URL is valid and accessible
+curl -X POST http://localhost:3000/api/calendars \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Calendar",
+    "url": "https://calendar.google.com/calendar/ical/your-email@gmail.com/public/basic.ics"
+  }'
 ```
 
-### Styling with AI
+The API will validate the URL format, test connectivity, and verify iCal data before creating the calendar entry.
 
-**Say:** _"Make this component look modern with Tailwind"_
+## ⚠️ Current Limitations
 
-- Claude Code knows all Tailwind classes
-- Can create responsive designs instantly
-- Follows design system patterns
+This is a development version with the following limitations:
 
-### AI-Generated Forms
+- **In-memory storage**: Calendars and sync data are stored in memory and will be lost on server restart
+- **No authentication**: API endpoints are publicly accessible
+- **No rate limiting**: No protection against API abuse
+- **No persistent events**: Events are fetched on-demand, not stored
+- **Basic error handling**: Limited retry logic and error recovery
 
-**Ask:** _"Create a form for user registration"_
-Claude Code will generate:
+## 🔧 Future Enhancements
 
-- React Hook Form setup
-- Zod validation schema
-- Error handling
-- Accessible form fields
+Potential improvements for production use:
 
-## 🚀 Deployment (Claude Code Powered)
+- Database integration (PostgreSQL, MongoDB)
+- User authentication and authorization
+- Event caching and incremental sync
+- Webhook support for real-time updates
+- Rate limiting and API security
+- Event deduplication and conflict resolution
+- Custom recurring event rules
+- Export to multiple formats (iCal, JSON, CSV)
 
-**Ask Claude Code:** _"Help me deploy this to Vercel"_
+## 🚀 Deployment
 
-It will:
+### Vercel (Recommended)
 
-- Set up your Vercel account integration
-- Configure environment variables
-- Handle the deployment process
-- Fix any deployment issues
+1. Push your code to a Git repository
+2. Connect your repository to Vercel
+3. Deploy with default settings
 
-**Or ask:** _"Deploy this to Netlify"_ and Claude Code will guide you through that too!
+### Manual Deployment
 
-## 🎓 Learning with Claude Code
+```bash
+npm run build
+npm start
+```
 
-**New to these technologies? Ask Claude Code:**
+## 📄 License
 
-- _"Explain how Next.js App Router works"_
-- _"Show me how to use Tailwind CSS effectively"_
-- _"Teach me TypeScript best practices"_
-- _"How do I use React Hook Form?"_
-
-**Claude Code is your personal tutor** - it can explain concepts while building your project!
-
-## 🆘 Need Help?
-
-**Stuck? Ask Claude Code:**
-
-- _"I'm getting this error: [paste error]"_
-- _"How do I add [specific feature]?"_
-- _"Review my code and suggest improvements"_
-- _"Help me debug this component"_
-
-## 👋 From Ken
-
-Thanks for using my webapp starter! I built this specifically for Claude Code users because I believe AI-powered development is the future.
-
-**Follow me for more tools like this:**
-
-- [Twitter/X: @YourHandle]
-- [GitHub: YourGitHub]
-
-**Made something cool?** Tag me - I'd love to see what you build!
+MIT License - feel free to use this for personal or commercial projects.
 
 ---
 
-Happy coding with Claude Code! 🤖✨
+**Calendar Aggregator** - Combine multiple iCal feeds into a unified API

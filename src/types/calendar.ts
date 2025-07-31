@@ -106,6 +106,49 @@ export interface EventsQueryParams {
   format?: 'json' | 'ical'
 }
 
+// Calendar collection for GUID-based workflow
+export interface CalendarCollection {
+  guid: string
+  name: string
+  description?: string
+  calendars: CalendarSource[]
+  createdAt: string
+  updatedAt?: string
+}
+
+// iCal combiner result
+export interface CombineResult {
+  success: boolean
+  icalContent: string
+  eventsCount: number
+  calendarsProcessed: number
+  errors: string[]
+  warnings: string[]
+}
+
+// API request types for collections
+export interface CreateCollectionRequest {
+  name: string
+  description?: string
+  calendars: Array<{
+    url: string
+    name: string
+    color?: string
+    enabled?: boolean
+  }>
+}
+
+export interface UpdateCollectionRequest {
+  name?: string
+  description?: string
+  calendars?: Array<{
+    url: string
+    name: string
+    color?: string
+    enabled?: boolean
+  }>
+}
+
 // Node-ical library types (since @types/node-ical doesn't exist)
 export interface ICalComponent {
   type: string

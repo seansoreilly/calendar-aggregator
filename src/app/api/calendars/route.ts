@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CalendarSource } from '@/types/calendar'
 import { validateCalendarUrl, normalizeCalendarUrl } from '@/lib/calendar-utils'
 
-// In-memory storage for now (will be replaced with proper persistence later)
-const calendars: CalendarSource[] = []
-let nextId = 1
+// This will be replaced with proper persistence later
+declare global {
+  var calendars: CalendarSource[]
+  var nextId: number
+}
 
 export async function GET() {
   try {
+    if (!globalThis.calendars) {
+      globalThis.calendars = []
+    }
     return NextResponse.json({
-      calendars,
-      count: calendars.length,
+      calendars: globalThis.calendars,
+      count: globalThis.calendars.length,
     })
   } catch {
     return NextResponse.json(
@@ -23,6 +28,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+
+    // Initialize globals if needed
+    if (!globalThis.calendars) {
+      globalThis.calendars = []
+    }
+    if (!globalThis.nextId) {
+      globalThis.nextId = 1
+    }
 
     // Basic validation
     if (!body.url || !body.name) {
@@ -48,7 +61,9 @@ export async function POST(request: NextRequest) {
     const normalizedUrl = normalizeCalendarUrl(body.url)
 
     // Check for duplicate URLs
-    const existingCalendar = calendars.find(cal => cal.url === normalizedUrl)
+    const existingCalendar = globalThis.calendars.find(
+      cal => cal.url === normalizedUrl
+    )
     if (existingCalendar) {
       return NextResponse.json(
         { error: 'Calendar URL already exists' },
@@ -57,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newCalendar: CalendarSource = {
-      id: nextId++,
+      id: globalThis.nextId++,
       url: normalizedUrl,
       name: body.name,
       color: body.color || '#3b82f6',
@@ -66,7 +81,7 @@ export async function POST(request: NextRequest) {
       syncStatus: 'idle',
     }
 
-    calendars.push(newCalendar)
+    globalThis.calendars.push(newCalendar)
 
     return NextResponse.json(newCalendar, { status: 201 })
   } catch {

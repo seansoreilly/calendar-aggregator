@@ -1,0 +1,824 @@
+openapi: 3.0.3
+info:
+  title: Calendar Aggregator API
+  description: |
+    A powerful calendar aggregation API that combines multiple iCal feeds into a unified calendar service.
+    
+    Features:
+    - **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
+    - **Validate and test** calendar URLs before adding them
+    - **Fetch events** from multiple calendars concurrently
+    - **Monitor sync status** and handle errors gracefully
+    
+    Built with Next.js 15, TypeScript, and modern web technologies.
+  version: 1.0.0
+  contact:
+    name: Calendar Aggregator Support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://your-domain.com/api
+    description: Production server
+
+paths:
+  /calendars:
+    get:
+      summary: List all calendars
+      description: Retrieve all configured calendar sources with their current sync status
+      operationId: getCalendars
+      tags:
+        - Calendars
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  calendars:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CalendarSource'
+                  count:
+                    type: integer
+                    description: Total number of calendars
+              example:
+                calendars:
+                  - id: 1
+                    name: "Work Calendar"
+                    url: "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics"
+                    color: "#3b82f6"
+                    enabled: true
+                    syncStatus: "success"
+                    createdAt: "2024-01-01T00:00:00.000Z"
+                    lastSyncAt: "2024-01-01T12:00:00.000Z"
+                count: 1
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Add a new calendar
+      description: Create a new calendar source with URL validation and connection testing
+      operationId: createCalendar
+      tags:
+        - Calendars
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCalendarRequest'
+            example:
+              name: "Personal Calendar"
+              url: "webcal://calendar.google.com/calendar/ical/personal@example.com/public/basic.ics"
+              color: "#ef4444"
+              enabled: true
+      responses:
+        '201':
+          description: Calendar created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarSource'
+        '400':
+          description: Invalid request or calendar URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                invalid_url:
+                  summary: Invalid URL format
+                  value:
+                    error: "Invalid calendar URL"
+                    details: "Invalid URL format"
+                connection_failed:
+                  summary: Connection test failed
+                  value:
+                    error: "Invalid calendar URL"
+                    details: "Unable to connect to server"
+                    warnings: ["Content-Type is not text/calendar"]
+        '409':
+          description: Calendar URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Calendar URL already exists"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /calendars/{id}:
+    get:
+      summary: Get a specific calendar
+      description: Retrieve details of a calendar by its ID
+      operationId: getCalendar
+      tags:
+        - Calendars
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Calendar ID
+      responses:
+        '200':
+          description: Calendar found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarSource'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update a calendar
+      description: Update calendar properties with URL validation if URL is changed
+      operationId: updateCalendar
+      tags:
+        - Calendars
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Calendar ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCalendarRequest'
+            example:
+              name: "Updated Work Calendar"
+              enabled: false
+      responses:
+        '200':
+          description: Calendar updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarSource'
+        '400':
+          description: Invalid request or calendar URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Calendar URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete a calendar
+      description: Permanently remove a calendar source
+      operationId: deleteCalendar
+      tags:
+        - Calendars
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Calendar ID
+      responses:
+        '200':
+          description: Calendar deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Calendar deleted successfully"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /sync:
+    post:
+      summary: Sync calendar events
+      description: |
+        Fetch and sync events from calendar sources. Can sync all enabled calendars 
+        or specific calendars by providing their IDs.
+      operationId: syncCalendars
+      tags:
+        - Synchronization
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                calendarIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: Optional array of calendar IDs to sync. If not provided, all enabled calendars will be synced.
+            examples:
+              sync_all:
+                summary: Sync all enabled calendars
+                value: {}
+              sync_specific:
+                summary: Sync specific calendars
+                value:
+                  calendarIds: [1, 2]
+      responses:
+        '200':
+          description: Sync completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResult'
+              example:
+                status: "completed"
+                startedAt: "2024-01-01T12:00:00.000Z"
+                completedAt: "2024-01-01T12:00:05.000Z"
+                calendars: 2
+                eventsProcessed: 25
+                errors: []
+                calendarResults:
+                  - calendarId: 1
+                    status: "completed"
+                    startedAt: "2024-01-01T12:00:00.000Z"
+                    completedAt: "2024-01-01T12:00:02.000Z"
+                    eventsProcessed: 15
+                    eventsAdded: 15
+                    eventsUpdated: 0
+                    eventsRemoved: 0
+                    errors: []
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    get:
+      summary: Get sync status
+      description: Check the current synchronization status of all calendars
+      operationId: getSyncStatus
+      tags:
+        - Synchronization
+      responses:
+        '200':
+          description: Sync status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [idle, syncing]
+                    description: Overall sync status
+                  lastSync:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Timestamp of last successful sync
+                  totalCalendars:
+                    type: integer
+                    description: Total number of calendars
+                  enabledCalendars:
+                    type: integer
+                    description: Number of enabled calendars
+                  calendars:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        calendarId:
+                          type: integer
+                        name:
+                          type: string
+                        syncStatus:
+                          type: string
+                          enum: [idle, syncing, success, error]
+                        lastSyncAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        errorMessage:
+                          type: string
+                          nullable: true
+              example:
+                status: "idle"
+                lastSync: "2024-01-01T12:00:00.000Z"
+                totalCalendars: 3
+                enabledCalendars: 2
+                calendars:
+                  - calendarId: 1
+                    name: "Work Calendar"
+                    syncStatus: "success"
+                    lastSyncAt: "2024-01-01T12:00:00.000Z"
+                    errorMessage: null
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /events:
+    get:
+      summary: Get aggregated events
+      description: |
+        Retrieve events from all or specified calendars with optional filtering and pagination.
+        Events are returned in a standardized format regardless of source.
+      operationId: getEvents
+      tags:
+        - Events
+      parameters:
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date filter (ISO 8601)
+          example: "2024-01-01T00:00:00.000Z"
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date filter (ISO 8601)
+          example: "2024-12-31T23:59:59.999Z"
+        - name: calendars
+          in: query
+          schema:
+            type: string
+          description: Comma-separated calendar IDs to include
+          example: "1,2,3"
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term for event titles and descriptions
+          example: "meeting"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of events to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of events to skip
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, ical]
+            default: json
+          description: Response format
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregatedResponse'
+            text/calendar:
+              schema:
+                type: string
+              example: |
+                BEGIN:VCALENDAR
+                VERSION:2.0
+                PRODID:-//Calendar Aggregator//EN
+                BEGIN:VEVENT
+                UID:event123@example.com
+                DTSTART:20240101T120000Z
+                DTEND:20240101T130000Z
+                SUMMARY:Team Meeting
+                DESCRIPTION:Weekly team sync
+                END:VEVENT
+                END:VCALENDAR
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /health:
+    get:
+      summary: Health check
+      description: Check API health and status
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+components:
+  schemas:
+    CalendarSource:
+      type: object
+      required:
+        - id
+        - url
+        - name
+        - color
+        - enabled
+        - createdAt
+        - syncStatus
+      properties:
+        id:
+          type: integer
+          description: Unique calendar identifier
+        url:
+          type: string
+          format: uri
+          description: iCal feed URL (webcal:// URLs are converted to https://)
+        name:
+          type: string
+          description: Human-readable calendar name
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Hex color code for calendar display
+          example: "#3b82f6"
+        enabled:
+          type: boolean
+          description: Whether calendar is active for syncing
+        createdAt:
+          type: string
+          format: date-time
+          description: Calendar creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        lastSyncAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sync timestamp
+        syncStatus:
+          type: string
+          enum: [idle, syncing, error, success]
+          description: Current sync status
+        errorMessage:
+          type: string
+          nullable: true
+          description: Last error message if sync failed
+
+    CreateCalendarRequest:
+      type: object
+      required:
+        - url
+        - name
+      properties:
+        url:
+          type: string
+          format: uri
+          description: iCal feed URL (supports webcal:// protocol)
+          example: "https://calendar.google.com/calendar/ical/example@gmail.com/public/basic.ics"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Calendar display name
+          example: "Work Calendar"
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Hex color code for calendar display
+          default: "#3b82f6"
+        enabled:
+          type: boolean
+          description: Whether calendar should be enabled for syncing
+          default: true
+
+    UpdateCalendarRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: New iCal feed URL
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: New calendar display name
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: New hex color code
+        enabled:
+          type: boolean
+          description: Whether calendar should be enabled
+
+    CalendarEvent:
+      type: object
+      required:
+        - id
+        - title
+        - start
+        - end
+        - isAllDay
+        - isRecurring
+        - calendarId
+        - sourceId
+      properties:
+        id:
+          type: string
+          description: Unique event identifier
+        title:
+          type: string
+          description: Event title/summary
+        description:
+          type: string
+          nullable: true
+          description: Event description
+        start:
+          type: string
+          format: date-time
+          description: Event start time (ISO 8601)
+        end:
+          type: string
+          format: date-time
+          description: Event end time (ISO 8601)
+        location:
+          type: string
+          nullable: true
+          description: Event location
+        organizer:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+                format: email
+              status:
+                type: string
+                enum: [accepted, declined, tentative, needs-action]
+        isAllDay:
+          type: boolean
+          description: Whether event spans entire day(s)
+        isRecurring:
+          type: boolean
+          description: Whether event has recurrence rules
+        recurrenceRule:
+          type: string
+          nullable: true
+          description: RFC 5545 recurrence rule
+        timezone:
+          type: string
+          nullable: true
+          description: Event timezone
+        status:
+          type: string
+          enum: [confirmed, tentative, cancelled]
+          nullable: true
+        categories:
+          type: array
+          items:
+            type: string
+          description: Event categories/tags
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Event URL
+        calendarId:
+          type: integer
+          description: Source calendar ID
+        sourceId:
+          type: string
+          description: Original event ID from source calendar
+
+    AggregatedResponse:
+      type: object
+      required:
+        - events
+        - pagination
+        - filters
+        - timestamp
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+        filters:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+              nullable: true
+            end:
+              type: string
+              format: date-time
+              nullable: true
+            calendars:
+              type: array
+              items:
+                type: string
+            search:
+              type: string
+              nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Response generation timestamp
+
+    SyncResult:
+      type: object
+      required:
+        - status
+        - startedAt
+        - completedAt
+        - calendars
+        - eventsProcessed
+        - errors
+        - calendarResults
+      properties:
+        status:
+          type: string
+          enum: [completed, partial, failed]
+          description: Overall sync operation status
+        startedAt:
+          type: string
+          format: date-time
+          description: Sync start timestamp
+        completedAt:
+          type: string
+          format: date-time
+          description: Sync completion timestamp
+        calendars:
+          type: integer
+          description: Number of calendars processed
+        eventsProcessed:
+          type: integer
+          description: Total events processed across all calendars
+        errors:
+          type: array
+          items:
+            type: string
+          description: Global errors encountered during sync
+        calendarResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncStatus'
+
+    SyncStatus:
+      type: object
+      required:
+        - calendarId
+        - status
+        - startedAt
+        - eventsProcessed
+        - eventsAdded
+        - eventsUpdated
+        - eventsRemoved
+        - errors
+      properties:
+        calendarId:
+          type: integer
+          description: Calendar identifier
+        status:
+          type: string
+          enum: [pending, syncing, completed, error]
+          description: Individual calendar sync status
+        startedAt:
+          type: string
+          format: date-time
+          description: Calendar sync start time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Calendar sync completion time
+        eventsProcessed:
+          type: integer
+          description: Number of events processed from this calendar
+        eventsAdded:
+          type: integer
+          description: Number of new events added
+        eventsUpdated:
+          type: integer
+          description: Number of existing events updated
+        eventsRemoved:
+          type: integer
+          description: Number of events removed
+        errors:
+          type: array
+          items:
+            type: string
+          description: Errors specific to this calendar
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    ValidationError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Main error message
+        details:
+          type: string
+          description: Detailed error information
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Additional warnings
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Calendar not found"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
+
+tags:
+  - name: Calendars
+    description: Calendar source management operations
+  - name: Synchronization
+    description: Calendar data synchronization operations
+  - name: Events
+    description: Aggregated event retrieval operations
+  - name: System
+    description: System health and status operations
