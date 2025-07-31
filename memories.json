@@ -1,0 +1,24 @@
+{
+  "memories": [
+    {
+      "id": "mem_1753950111483_pafw5mbnw",
+      "content": "Calendar aggregator project initial state: This is a modern Next.js 15 webapp with TypeScript, Tailwind CSS, and shadcn/ui components. It's designed for a beginner developer to learn modern web development. Has proper dev environment setup with testing (Vitest), linting (ESLint), formatting (Prettier), and git hooks (Husky). Core UI components are already implemented (buttons, inputs, cards, dialogs, etc.). Project structure follows Next.js App Router pattern.",
+      "type": "config",
+      "tags": [
+        "config",
+        "typescript",
+        "testing",
+        "calendar-aggregator",
+        "nextjs",
+        "project-setup"
+      ],
+      "timestamp": "2025-07-31T08:21:51.483Z",
+      "context": "Initial project exploration",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T08:21:51.483Z",
+      "lastVerified": "2025-07-31T08:21:51.483Z",
+      "status": "fresh"
+    }
+  ],
+  "lastUpdated": "2025-07-31T08:21:51.483Z"
+}
