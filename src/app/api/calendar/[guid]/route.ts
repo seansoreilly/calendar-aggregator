@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CalendarCollection } from '@/types/calendar'
 import { combineICalFeeds } from '@/lib/ical-combiner'
 
+// Global storage for collections (in-memory for development)
+declare global {
+  var calendarCollections: CalendarCollection[]
+}
+
 /**
  * Initialize global storage if needed
  */
