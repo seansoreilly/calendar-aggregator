@@ -1,0 +1,31 @@
+{
+  "name": "Sean - All Calendars",
+  "description": "Combined view of Sean's calendars",
+  "calendars": [
+    {
+      "name": "Default",
+      "url": "https://calendar.google.com/calendar/ical/seansoreilly%40gmail.com/private-9f45d9dec8409a9efec0e3517edf36aa/basic.ics",
+      "color": "#4285f4"
+    },
+    {
+      "name": "Sean",
+      "url": "https://calendar.google.com/calendar/ical/iausfv1c5k06f0k0qb8h6hg1f8%40group.calendar.google.com/private-d60a651cbd6830153e82f6249478866c/basic.ics",
+      "color": "#0078d4"
+    },
+    {
+      "name": "CGD",
+      "url": "https://outlook.office365.com/owa/calendar/aee5bdd4b05a4205a9c265dda72aa3d6@cgd.vic.gov.au/9574d4019ea848a9988841017da89bd011071963726861839752/calendar.ics",
+      "color": "#0078d4"
+    },
+    {
+      "name": "SMEC",
+      "url": "https://outlook.office365.com/owa/calendar/e5b6650ec50c4f6d858f53faf4f35c18@smecai.au/147aaf07c3c54014928c413fb2baa9894488274580425035564/S-1-8-839690441-532125957-2631908002-2404957613/reachcalendar.ics",
+      "color": "#0078d4"
+    },
+    {
+      "name": "South East Leisure",
+      "url": "https://southeastleisure.perfectgym.com.au/Api/v2/Files/GetCalendarFile?MemberId=33123&Signature=1F1DD7869077E4149C1E9FC63F39B3A4655184BCADBD575F98D9F4C1DC74FC0E",
+      "color": "#0078d4"
+    }
+  ]
+}

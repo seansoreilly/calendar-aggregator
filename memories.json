@@ -575,7 +575,28 @@
       "lastAccessed": "2025-07-31T14:33:05.500Z",
       "lastVerified": "2025-07-31T14:33:05.500Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1753973138608_kirngwa5b",
+      "content": "User is testing the API with a real collection of 5 calendars: Default (Google), Sean (Google group), CGD (Outlook Office365), SMEC (Outlook Office365), and South East Leisure (PerfectGym). Getting \"URL and name are required\" error despite all entries having both fields. Need to debug the validation logic in collections API.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "testing",
+        "api",
+        "api-testing",
+        "calendar-collection",
+        "validation-error",
+        "real-calendars",
+        "debugging"
+      ],
+      "timestamp": "2025-07-31T14:45:38.608Z",
+      "context": "API testing with real calendar URLs",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T14:45:38.608Z",
+      "lastVerified": "2025-07-31T14:45:38.608Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-07-31T14:33:05.500Z"
+  "lastUpdated": "2025-07-31T14:45:38.608Z"
 }

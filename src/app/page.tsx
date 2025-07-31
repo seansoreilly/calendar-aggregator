@@ -18,7 +18,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid md-grid-cols-2 lg-grid-cols-3 gap-6 mb-12">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -263,7 +263,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="bg-blue-50 dark-bg-blue-900-20 p-4 rounded-lg">
                 <div className="font-semibold mb-2">
                   📅 Your Calendar Feed URL:
                 </div>
