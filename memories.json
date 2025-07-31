@@ -14,8 +14,8 @@
       ],
       "timestamp": "2025-07-31T08:21:51.483Z",
       "context": "Initial project exploration",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T08:21:51.483Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-07-31T12:03:22.588Z",
       "lastVerified": "2025-07-31T08:21:51.483Z",
       "status": "fresh"
     },
@@ -53,8 +53,8 @@
       ],
       "timestamp": "2025-07-31T08:33:26.537Z",
       "context": "Starting calendar aggregator ideation task",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T08:33:26.537Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-07-31T12:03:22.588Z",
       "lastVerified": "2025-07-31T08:33:26.537Z",
       "status": "fresh"
     },
@@ -74,8 +74,8 @@
       ],
       "timestamp": "2025-07-31T11:50:01.485Z",
       "context": "Codebase research complete for calendar aggregator",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T11:50:01.485Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-07-31T12:03:22.588Z",
       "lastVerified": "2025-07-31T11:50:01.485Z",
       "status": "fresh"
     },
@@ -93,11 +93,68 @@
       ],
       "timestamp": "2025-07-31T11:51:56.863Z",
       "context": "Implementation plan documentation complete",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-31T11:51:56.863Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-07-31T12:03:22.588Z",
       "lastVerified": "2025-07-31T11:51:56.863Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753963146799_si55j1ay4",
+      "content": "User clarified that Claude commands should be plain English instructions for LLM, not bash scripts. I incorrectly created a bash script instead of a Claude Code command file with natural language instructions.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "claude-code",
+        "commands",
+        "mistake",
+        "correction-needed"
+      ],
+      "timestamp": "2025-07-31T11:59:06.799Z",
+      "context": "Claude Code command creation - need to fix approach",
+      "accessCount": 1,
+      "lastAccessed": "2025-07-31T12:02:02.444Z",
+      "lastVerified": "2025-07-31T11:59:06.799Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753963411378_1wvz2zuo3",
+      "content": "Starting safe implementation of calendar aggregator project. Plan shows 6 phases: 1) Core Infrastructure (2 days), 2) Calendar Management (2 days), 3) Event Aggregation Engine (3 days), 4) API Endpoints (2 days), 5) Frontend Interface (3 days), 6) Testing & Polish (2 days). Beginning with Phase 1 - Core Infrastructure setup.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "testing",
+        "implementation",
+        "calendar-aggregator",
+        "phase-1",
+        "safe-workflow"
+      ],
+      "timestamp": "2025-07-31T12:03:31.378Z",
+      "context": "Safe implementation workflow started",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T12:03:31.378Z",
+      "lastVerified": "2025-07-31T12:03:31.378Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753963438180_c7812klvf",
+      "content": "Research complete: Calendar dependencies already installed (node-ical 0.20.1, axios 1.11.0, date-fns 4.1.0). No existing API routes. Next.js app directory structure is basic with only layout.tsx and page.tsx. TypeScript types for node-ical will need to be added.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "api",
+        "research",
+        "dependencies",
+        "existing-structure"
+      ],
+      "timestamp": "2025-07-31T12:03:58.180Z",
+      "context": "Phase 1 research findings",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T12:03:58.180Z",
+      "lastVerified": "2025-07-31T12:03:58.180Z",
       "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-07-31T11:51:56.863Z"
+  "lastUpdated": "2025-07-31T12:03:58.180Z"
 }
