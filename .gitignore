@@ -91,3 +91,41 @@ temp/
 
 # Memory dumps
 *.heapsnapshot
+
+# AI and development tools
+.cursor/
+.anthropic/
+.claude/
+*.ai
+
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+.dockerignore
+
+# Performance monitoring
+.lightouse/
+.audit/
+
+# Package manager alternatives
+bun.lockb
+.yarn/
+.pnp.*
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.backup
+*.bak
+
+# Security files
+.secrets
+.env.secrets
+secrets.json
+
+# Development utilities
+.tool-versions
+.nvmrc.local

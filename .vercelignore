@@ -27,12 +27,11 @@ tests/
 coverage/
 .nyc_output
 
-# Configuration files
+# Configuration files that shouldn't be deployed
 tsconfig.json
-next.config.*
-tailwind.config.*
-postcss.config.*
 jest.config.*
+vitest.config.*
+playwright.config.*
 
 # Source maps
 *.map
@@ -76,3 +75,51 @@ Thumbs.db
 memories.json
 openapi.yaml
 PROJECT_GUIDE.md
+
+# AI and development tools
+.cursor/
+.anthropic/
+.claude/
+*.ai
+
+# Large files that shouldn't be deployed
+*.mov
+*.mp4
+*.zip
+*.tar.gz
+*.dmg
+*.iso
+
+# Development containers
+.devcontainer/
+docker-compose*.yml
+Dockerfile.dev
+
+# Performance and monitoring
+.audit/
+lighthouse/
+bundle-analyzer/
+
+# Security and secrets
+.secrets
+secrets.json
+.env.secrets
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Design files
+*.sketch
+*.fig
+*.psd
+*.ai
+*.xd
+
+# Repository files
+.git/
+.github/
+CHANGELOG*
+CONTRIBUTING*
+CODE_OF_CONDUCT*

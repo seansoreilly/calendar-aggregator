@@ -1,6 +1,17 @@
 # Calendar Aggregator
 
-A powerful GUID-based calendar aggregation API that combines multiple iCal feeds into unified calendar collections. Built with Next.js 15, TypeScript, and modern serverless architecture.
+A powerful GUID-based calendar aggregation API that combines multiple iCal feeds into unified calendar collections. Built with Next.js 15, TypeScript, and modern serverless architecture featuring a beautiful glassmorphism UI.
+
+## ✨ Modern Web Interface
+
+Experience the **stunning glassmorphism design** with:
+
+- 🎨 **Glass-effect panels** with backdrop blur and transparency
+- 🌊 **Animated gradient blobs** creating a dynamic background
+- 💫 **Smooth hover animations** and visual effects
+- 🌓 **Dark/light mode support** with automatic theme detection
+- 📱 **Responsive design** optimized for all devices
+- ⚡ **Interactive elements** with gradient accents and shadows
 
 ## 📅 What It Does
 
@@ -12,12 +23,13 @@ The Calendar Aggregator allows you to:
 - **Validate and test** calendar URLs before adding them
 - **Direct iCal feed output** compatible with all calendar applications
 - **Concurrent fetching** with error handling and timeout protection
+- **Beautiful web interface** for easy collection management
 
 ## 🌐 Live Demo
 
 **Production URL**: https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/
 
-Try the live API or visit the web interface for instructions and examples.
+✨ **Visit the web interface** to experience the modern glassmorphism design and follow the interactive guides for creating your first calendar collection.
 
 ## 🤖 Built for Claude Code
 
@@ -164,7 +176,7 @@ https://caldav.icloud.com/published/2/[token]
 
 **Note**: `webcal://` URLs are automatically converted to `https://`
 
-## 🚀 Quick Start FExample
+## 🚀 Quick Start Example
 
 ### 1. Create a Collection
 
@@ -258,6 +270,7 @@ The API will validate the URL format, test connectivity, and verify iCal data be
 
 ## ✨ Key Features
 
+- **🎨 Modern Glassmorphism UI**: Beautiful web interface with glass effects and animations
 - **🔒 GUID-based Security**: Each collection has a unique, unguessable identifier
 - **⚡ Real-time Aggregation**: No database needed - fetches calendars on demand
 - **🌐 Universal Compatibility**: Works with Google Calendar, Outlook, Apple Calendar, and more
@@ -265,6 +278,8 @@ The API will validate the URL format, test connectivity, and verify iCal data be
 - **🕒 Timezone Preservation**: Maintains original timezone information
 - **⏱️ Timeout Protection**: Concurrent fetching with configurable timeouts
 - **📱 Mobile Ready**: Compatible with all calendar applications
+- **🌓 Dark Mode Support**: Automatic theme detection and switching
+- **💫 Interactive Elements**: Hover effects, gradient accents, and smooth transitions
 
 ## ⚠️ Architecture Notes
 
