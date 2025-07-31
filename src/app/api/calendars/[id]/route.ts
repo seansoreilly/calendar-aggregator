@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CalendarSource } from '@/types/calendar'
+import { validateCalendarUrl, normalizeCalendarUrl } from '@/lib/calendar-utils'
 
 // This will be replaced with proper persistence later
 declare global {
@@ -47,8 +48,44 @@ export async function PUT(
       return NextResponse.json({ error: 'Calendar not found' }, { status: 404 })
     }
 
-    const updatedCalendar = {
-      ...globalThis.calendars[calendarIndex],
+    const currentCalendar = globalThis.calendars[calendarIndex]
+
+    if (!currentCalendar) {
+      return NextResponse.json({ error: 'Calendar not found' }, { status: 404 })
+    }
+
+    // If URL is being updated, validate it
+    if (body.url && body.url !== currentCalendar.url) {
+      const validationResult = await validateCalendarUrl(body.url)
+      if (!validationResult.isValid) {
+        return NextResponse.json(
+          {
+            error: 'Invalid calendar URL',
+            details: validationResult.error,
+            warnings: validationResult.warnings,
+          },
+          { status: 400 }
+        )
+      }
+
+      const normalizedUrl = normalizeCalendarUrl(body.url)
+
+      // Check for duplicate URLs (excluding current calendar)
+      const existingCalendar = globalThis.calendars.find(
+        cal => cal.url === normalizedUrl && cal.id !== id
+      )
+      if (existingCalendar) {
+        return NextResponse.json(
+          { error: 'Calendar URL already exists' },
+          { status: 409 }
+        )
+      }
+
+      body.url = normalizedUrl
+    }
+
+    const updatedCalendar: CalendarSource = {
+      ...currentCalendar,
       ...body,
       id, // Ensure ID doesn't change
       updatedAt: new Date().toISOString(),

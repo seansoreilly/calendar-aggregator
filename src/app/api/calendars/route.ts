@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CalendarSource } from '@/types/calendar'
+import { validateCalendarUrl, normalizeCalendarUrl } from '@/lib/calendar-utils'
 
 // In-memory storage for now (will be replaced with proper persistence later)
 const calendars: CalendarSource[] = []
@@ -31,13 +32,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const newCalendar = {
+    // Validate calendar URL
+    const validationResult = await validateCalendarUrl(body.url)
+    if (!validationResult.isValid) {
+      return NextResponse.json(
+        {
+          error: 'Invalid calendar URL',
+          details: validationResult.error,
+          warnings: validationResult.warnings,
+        },
+        { status: 400 }
+      )
+    }
+
+    const normalizedUrl = normalizeCalendarUrl(body.url)
+
+    // Check for duplicate URLs
+    const existingCalendar = calendars.find(cal => cal.url === normalizedUrl)
+    if (existingCalendar) {
+      return NextResponse.json(
+        { error: 'Calendar URL already exists' },
+        { status: 409 }
+      )
+    }
+
+    const newCalendar: CalendarSource = {
       id: nextId++,
-      url: body.url,
+      url: normalizedUrl,
       name: body.name,
       color: body.color || '#3b82f6',
       enabled: body.enabled !== false,
       createdAt: new Date().toISOString(),
+      syncStatus: 'idle',
     }
 
     calendars.push(newCalendar)
