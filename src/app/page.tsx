@@ -133,7 +133,7 @@ export default function HomePage() {
                   asChild
                 >
                   <a
-                    href="https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941"
+                    href="https://www.calendar-aggregator.online/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941"
                     target="_blank"
                   >
                     View Feed
@@ -348,7 +348,7 @@ export default function HomePage() {
                         <div className="text-gray-300">
                           <span className="text-blue-400">curl</span> -X POST{' '}
                           <span className="text-yellow-400">
-                            https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/collections
+                            https://www.calendar-aggregator.online/api/collections
                           </span>{' '}
                           \
                         </div>
@@ -632,7 +632,7 @@ export default function HomePage() {
                   <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-lg">
                     <code className="text-sm break-all">
                       <span className="text-gray-600 dark:text-gray-400">
-                        https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/
+                        https://www.calendar-aggregator.online/api/calendar/
                       </span>
                       <strong className="text-indigo-600 dark:text-indigo-400">
                         [YOUR-GUID]
