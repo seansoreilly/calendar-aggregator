@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CalendarSource } from '@/types/calendar'
-import { validateCalendarUrl, normalizeCalendarUrl } from '@/lib/calendar-utils'
+import { CalendarSource } from '../../../../types/calendar'
+import {
+  validateCalendarUrl,
+  normalizeCalendarUrl,
+} from '../../../../lib/calendar-utils'
 
 // This will be replaced with proper persistence later
 declare global {

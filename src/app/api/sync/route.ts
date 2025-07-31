@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CalendarSource } from '@/types/calendar'
-import { fetchMultipleCalendars } from '@/lib/calendar-fetcher'
+import { CalendarSource } from '../../../types/calendar'
+import { fetchMultipleCalendars } from '../../../lib/calendar-fetcher'
 
 // This will be replaced with proper persistence later
 declare global {

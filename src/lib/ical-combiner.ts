@@ -1,4 +1,4 @@
-import { CalendarSource, CombineResult } from '@/types/calendar'
+import { CalendarSource, CombineResult } from '../types/calendar'
 import { fetchMultipleCalendars, FetchResult } from './calendar-fetcher'
 
 /**

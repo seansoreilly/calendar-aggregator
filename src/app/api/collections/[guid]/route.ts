@@ -3,8 +3,11 @@ import {
   CalendarCollection,
   CalendarSource,
   UpdateCollectionRequest,
-} from '@/types/calendar'
-import { validateCalendarUrl, normalizeCalendarUrl } from '@/lib/calendar-utils'
+} from '../../../../types/calendar'
+import {
+  validateCalendarUrl,
+  normalizeCalendarUrl,
+} from '../../../../lib/calendar-utils'
 
 /**
  * Initialize global storage if needed

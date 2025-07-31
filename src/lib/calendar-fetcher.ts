@@ -1,6 +1,6 @@
 import axios from 'axios'
 import * as ical from 'node-ical'
-import { CalendarEvent, CalendarSource, ICalEvent } from '@/types/calendar'
+import { CalendarEvent, CalendarSource, ICalEvent } from '../types/calendar'
 import { normalizeCalendarUrl } from './calendar-utils'
 
 /**
