@@ -31,25 +31,6 @@ function generateGuid(): string {
 }
 
 /**
- * GET /api/collections - List all calendar collections
- */
-export async function GET() {
-  try {
-    initializeStorage()
-
-    return NextResponse.json({
-      collections: globalThis.calendarCollections,
-      count: globalThis.calendarCollections.length,
-    })
-  } catch {
-    return NextResponse.json(
-      { error: 'Failed to fetch collections' },
-      { status: 500 }
-    )
-  }
-}
-
-/**
  * POST /api/collections - Create new calendar collection
  */
 export async function POST(request: NextRequest) {

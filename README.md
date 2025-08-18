@@ -27,7 +27,7 @@ The Calendar Aggregator allows you to:
 
 ## 🌐 Live Demo
 
-**Production URL**: https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/
+**Production URL**: https://www.calendar-aggregator.online/
 
 ✨ **Visit the web interface** to experience the modern glassmorphism design and follow the interactive guides for creating your first calendar collection.
 
@@ -64,40 +64,12 @@ The calendar aggregation API will be available at [http://localhost:3000/api](ht
 
 ### Collection Management (GUID-Based)
 
-#### GET /api/collections
-
-List all calendar collections
-
-```json
-{
-  "collections": [
-    {
-      "guid": "4fac5413-98b8-45d1-a8b3-1c26feda1941",
-      "name": "Work & Personal",
-      "description": "Combined work and personal calendars",
-      "calendars": [
-        {
-          "id": 1,
-          "name": "Work Calendar",
-          "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
-          "color": "#3b82f6",
-          "enabled": true,
-          "syncStatus": "idle"
-        }
-      ],
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  ],
-  "count": 1
-}
-```
-
 #### POST /api/collections
 
 Create a new calendar collection
 
 ```bash
-curl -X POST https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/collections \
+curl -X POST https://www.calendar-aggregator.online/api/collections \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Combined Calendar",
@@ -141,7 +113,7 @@ Remove a collection
 
 ```bash
 # Direct access to combined calendar feed
-curl https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941
+curl https://www.calendar-aggregator.online/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941
 ```
 
 **Response**: Returns a complete iCal (.ics) file with all events from the collection's calendars
@@ -181,7 +153,7 @@ https://caldav.icloud.com/published/2/[token]
 ### 1. Create a Collection
 
 ```bash
-curl -X POST https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/collections \
+curl -X POST https://www.calendar-aggregator.online/api/collections \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Calendars",
@@ -212,16 +184,20 @@ The response includes a unique GUID:
 Use this URL in Google Calendar, Apple Calendar, or Outlook:
 
 ```
-https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/api/calendar/abc123-def456-ghi789
+https://www.calendar-aggregator.online/api/calendar/abc123-def456-ghi789
 ```
 
 ## 🛠️ Technology Stack
 
 This calendar aggregator is built with:
 
-- **[Next.js 15](https://nextjs.org/)** - React framework with App Router and serverless functions
-- **[TypeScript](https://www.typescriptlang.org/)** - Type safety and better developer experience
-- **[node-ical](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
+- **[Next.js 15.3.5](https://nextjs.org/)** - React framework with App Router and serverless functions
+- **[React 19.1.0](https://react.dev/)** - Latest React with improved performance
+- **[TypeScript 5.8.3](https://www.typescriptlang.org/)** - Type safety and better developer experience
+- **[Tailwind CSS 3.4.16](https://tailwindcss.com/)** - Utility-first CSS framework for styling
+- **[node-ical 0.20.1](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
+- **[Vitest 3.2.4](https://vitest.dev/)** - Fast unit testing framework
+- **[Zod 4.0.5](https://zod.dev/)** - TypeScript-first schema validation
 - **Real-time aggregation** - No database required, fetches calendars on-demand
 - **GUID-based collections** - Secure access with cryptographically secure identifiers
 
@@ -246,10 +222,15 @@ src/
 ## 🧪 Testing & Development
 
 ```bash
-npm run dev         # Start development server
+npm run dev         # Start development server (with Turbo)
 npm run build       # Build for production
+npm run test        # Run unit tests with Vitest
+npm run test:watch  # Run tests in watch mode
+npm run test:ui     # Run tests with UI interface
 npm run lint        # Check code quality
+npm run lint:fix    # Auto-fix linting issues
 npm run type-check  # TypeScript validation
+npm run format      # Format code with Prettier
 ```
 
 ### Testing Calendar URLs
@@ -294,7 +275,7 @@ This is a **serverless, stateless** implementation:
 ## 🚀 Deployment
 
 **Already deployed!** The production version is live at:
-https://calendar-aggregator-jnmxvdzgo-melbourne-computing.vercel.app/
+https://www.calendar-aggregator.online/
 
 ### Deploy Your Own
 
