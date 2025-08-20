@@ -14,8 +14,8 @@
       ],
       "timestamp": "2025-07-31T08:21:51.483Z",
       "context": "Initial project exploration",
-      "accessCount": 6,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T08:21:51.483Z",
       "status": "fresh"
     },
@@ -34,8 +34,8 @@
       ],
       "timestamp": "2025-07-31T08:25:12.321Z",
       "context": "Project initialization completion",
-      "accessCount": 5,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T08:25:12.321Z",
       "status": "fresh"
     },
@@ -53,8 +53,8 @@
       ],
       "timestamp": "2025-07-31T08:33:26.537Z",
       "context": "Starting calendar aggregator ideation task",
-      "accessCount": 6,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T08:33:26.537Z",
       "status": "fresh"
     },
@@ -74,8 +74,8 @@
       ],
       "timestamp": "2025-07-31T11:50:01.485Z",
       "context": "Codebase research complete for calendar aggregator",
-      "accessCount": 6,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T11:50:01.485Z",
       "status": "fresh"
     },
@@ -93,8 +93,8 @@
       ],
       "timestamp": "2025-07-31T11:51:56.863Z",
       "context": "Implementation plan documentation complete",
-      "accessCount": 6,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T11:51:56.863Z",
       "status": "fresh"
     },
@@ -111,8 +111,8 @@
       ],
       "timestamp": "2025-07-31T11:59:06.799Z",
       "context": "Claude Code command creation - need to fix approach",
-      "accessCount": 6,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T11:59:06.799Z",
       "status": "fresh"
     },
@@ -131,8 +131,8 @@
       ],
       "timestamp": "2025-07-31T12:03:31.378Z",
       "context": "Safe implementation workflow started",
-      "accessCount": 5,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T12:03:31.378Z",
       "status": "fresh"
     },
@@ -170,8 +170,8 @@
       ],
       "timestamp": "2025-07-31T12:08:19.519Z",
       "context": "Phase 1 completion milestone",
-      "accessCount": 5,
-      "lastAccessed": "2025-07-31T13:56:52.882Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
       "lastVerified": "2025-07-31T12:08:19.519Z",
       "status": "fresh"
     },
@@ -596,7 +596,307 @@
       "lastAccessed": "2025-07-31T14:45:38.608Z",
       "lastVerified": "2025-07-31T14:45:38.608Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755672697696_p1amfte2t",
+      "content": "Starting safe implementation of Supabase backend for calendar aggregator. Goal: Make calendar GUIDs persistent across server restarts with simplest possible implementation.",
+      "type": "general",
+      "tags": ["general", "supabase", "implementation", "safe-development"],
+      "timestamp": "2025-08-20T06:51:37.696Z",
+      "context": "Beginning comprehensive implementation following safe development practices",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "lastVerified": "2025-08-20T06:51:37.696Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755672733484_1bi7wna0y",
+      "content": "Discovered current architecture: Uses globalThis.calendarCollections for in-memory storage. CalendarCollection interface at src/types/calendar.ts:110-117 has guid, name, description, calendars (CalendarSource[]), createdAt, updatedAt. Two main API routes handle collections: /api/collections (POST) and /api/collections/[guid] (GET/PUT/DELETE).",
+      "type": "concept",
+      "tags": ["concept", "api", "architecture", "current-system", "supabase"],
+      "timestamp": "2025-08-20T06:52:13.484Z",
+      "context": "Codebase analysis for Supabase integration",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "lastVerified": "2025-08-20T06:52:13.484Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755672822790_m0vh74w6v",
+      "content": "Task 1 completed: Created schema.sql with calendar_collections table (guid UUID PK, name TEXT, description TEXT, sources JSONB, timestamps). Added StoredCalendarCollection interface extending CalendarCollection with database-specific fields. Schema includes indexes for performance and RLS enabled for future auth.",
+      "type": "general",
+      "tags": ["general", "database", "task-1", "schema", "completed"],
+      "timestamp": "2025-08-20T06:53:42.790Z",
+      "context": "Task 1 implementation - database schema",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T06:53:42.790Z",
+      "lastVerified": "2025-08-20T06:53:42.790Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755673091629_1g2nuc7fa",
+      "content": "Task 2 completed: Installed @supabase/supabase-js, created src/lib/supabase.ts with lazy-loaded client, updated .env.example with Supabase vars, enhanced health endpoint with Supabase status checking. Build passes successfully. Supabase client uses lazy initialization to avoid build-time errors when env vars missing.",
+      "type": "warning",
+      "tags": ["warning", "task-2", "supabase-client", "completed"],
+      "timestamp": "2025-08-20T06:58:11.629Z",
+      "context": "Task 2 implementation - Supabase client configuration",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T06:58:11.629Z",
+      "lastVerified": "2025-08-20T06:58:11.629Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755673617696_3fjdw30i0",
+      "content": "Task 3 completed: Successfully integrated Supabase into API routes. Updated /api/collections (GET/POST) and /api/collections/[guid] (GET/PUT/DELETE) to use Supabase with graceful fallback to in-memory storage. Added database helper functions for CRUD operations. Build passes successfully with all linting issues resolved.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "api",
+        "database",
+        "task-3",
+        "api-routes",
+        "supabase",
+        "completed"
+      ],
+      "timestamp": "2025-08-20T07:06:57.695Z",
+      "context": "Task 3 implementation - API routes with Supabase integration",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T07:06:57.695Z",
+      "lastVerified": "2025-08-20T07:06:57.695Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679061699_hh98jsycy",
+      "content": "Found existing CLAUDE.md file that is comprehensive and well-structured. It contains detailed architecture documentation, development commands, and project-specific patterns. The file is already properly formatted and covers all the key areas: development workflow, technology stack, architecture patterns, data flow, implementation details, testing strategy, and common development tasks.",
+      "type": "concept",
+      "tags": [
+        "concept",
+        "testing",
+        "config",
+        "claude-md",
+        "existing-file",
+        "comprehensive"
+      ],
+      "timestamp": "2025-08-20T08:37:41.699Z",
+      "context": "CLAUDE.md analysis during /init command",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:37:41.699Z",
+      "lastVerified": "2025-08-20T08:37:41.699Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679359051_gmegqnjqk",
+      "content": "Cleanup scope: calendar-aggregator project - comprehensive analysis needed for junk files, unused dependencies, dead code, and structural optimization",
+      "type": "general",
+      "tags": ["general", "optimization", "cleanup", "project-scope"],
+      "timestamp": "2025-08-20T08:42:39.051Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:42:39.051Z",
+      "lastVerified": "2025-08-20T08:42:39.051Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679386934_ay11ti8uk",
+      "content": "Starting dead code analysis for calendar-aggregator project. Need to analyze TypeScript/JavaScript files in src/ directory for unused imports, functions, components, variables, and commented code blocks.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "javascript",
+        "dead-code-analysis",
+        "cleanup"
+      ],
+      "timestamp": "2025-08-20T08:43:06.934Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:43:06.934Z",
+      "lastVerified": "2025-08-20T08:43:06.934Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679671989_as6jic8hv",
+      "content": "Dead code analysis findings:\n1. UI Components (all unused): Button, Card, Dialog, Input, Select, Toast, Loading, Error Boundary - none imported/used in app\n2. Hooks (unused): useDebounce, useLocalStorage - both exported but never used\n3. Utility functions: formatDate, sleep, capitalize from utils.ts - only used in tests, not in production code\n4. Empty directories: repositories/ and services/ in lib/ folder\n5. Types: All calendar types are used extensively in API routes\n6. Components: Only basic HTML elements used in page.tsx, no UI components imported",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "api",
+        "dead-code-analysis",
+        "findings",
+        "unused-code"
+      ],
+      "timestamp": "2025-08-20T08:47:51.989Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:47:51.989Z",
+      "lastVerified": "2025-08-20T08:47:51.989Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679782862_l2lf6c4t8",
+      "content": "Cleanup findings completed - 6 agents analyzed calendar-aggregator project in parallel. Key findings: 214KB junk files (tsconfig.tsbuildinfo, memories.json), 4 unused npm packages (react-hook-form, zod, date-fns, @hookform/resolvers), entire UI components directory unused, duplicate API patterns across routes",
+      "type": "general",
+      "tags": [
+        "general",
+        "react",
+        "api",
+        "cleanup",
+        "findings",
+        "parallel-analysis"
+      ],
+      "timestamp": "2025-08-20T08:49:42.862Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:49:42.862Z",
+      "lastVerified": "2025-08-20T08:49:42.862Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679813669_iomx32haj",
+      "content": "Starting comprehensive dead code analysis for calendar-aggregator project. Need to verify unused hooks, utility functions, empty directories, and UI components through codebase-wide searches.",
+      "type": "general",
+      "tags": ["general", "dead-code", "cleanup", "analysis"],
+      "timestamp": "2025-08-20T08:50:13.669Z",
+      "context": "Dead code cleanup task",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:50:13.669Z",
+      "lastVerified": "2025-08-20T08:50:13.669Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679814829_khjnlbtq0",
+      "content": "Starting file cleanup analysis for calendar-aggregator project. Need to check git history and usage patterns for: debug-request.json, memories.json, tsconfig.tsbuildinfo to determine if safe to remove.",
+      "type": "troubleshooting",
+      "tags": ["troubleshooting", "cleanup", "git-history", "file-analysis"],
+      "timestamp": "2025-08-20T08:50:14.829Z",
+      "context": "User wants to clean up potentially temporary files but ensure no important data is lost",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:50:14.829Z",
+      "lastVerified": "2025-08-20T08:50:14.829Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679815546_1yuy734t8",
+      "content": "Starting comprehensive unused imports and UI components verification analysis for calendar-aggregator project. Need to verify react-hook-form, zod, date-fns, @hookform/resolvers usage and UI components from src/components/ui/ directory.",
+      "type": "general",
+      "tags": [
+        "general",
+        "react",
+        "analysis",
+        "dependencies",
+        "cleanup",
+        "verification"
+      ],
+      "timestamp": "2025-08-20T08:50:15.546Z",
+      "context": "Verifying unused dependencies and components for safe removal",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:50:15.546Z",
+      "lastVerified": "2025-08-20T08:50:15.546Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679815777_p3ocrkzgo",
+      "content": "Starting dependency validation analysis for calendar-aggregator project. Need to check: react-hook-form, zod, date-fns, @hookform/resolvers for safe removal without breaking build system.",
+      "type": "general",
+      "tags": ["general", "react", "dependencies", "build-analysis", "cleanup"],
+      "timestamp": "2025-08-20T08:50:15.777Z",
+      "context": "Dependency cleanup validation requested by user",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:50:15.777Z",
+      "lastVerified": "2025-08-20T08:50:15.777Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679857442_wohbd3doh",
+      "content": "Analyzed duplicate code patterns in calendar-aggregator API routes:\n\n1. **Global Storage Initialization**: Pattern repeated across multiple files:\n   - `/api/collections/route.ts` (lines 21-25)\n   - `/api/collections/[guid]/route.ts` (lines 13-17)  \n   - `/api/calendar/[guid]/route.ts` (lines 14-18)\n   - `/api/calendars/route.ts` (lines 16-18, 36-41)\n\n2. **GUID Validation**: UUID regex pattern duplicated:\n   - `/api/calendar/[guid]/route.ts` (lines 81-83, 217-219)\n   - Same validation logic used in both GET and HEAD methods\n\n3. **findCollectionByGuid Function**: Identical implementations:\n   - `/api/collections/[guid]/route.ts` (lines 107-139)\n   - `/api/calendar/[guid]/route.ts` (lines 23-56)\n\n4. **Error Handling Patterns**: Similar try-catch structures across all API routes:\n   - Standard 400/404/500 responses with similar message formats\n   - Generic error responses without specific context\n\n5. **Supabase Fallback Logic**: Repeated database-to-memory fallback pattern in multiple operations",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "database",
+        "refactoring",
+        "code-analysis",
+        "duplicate-patterns",
+        "api-routes"
+      ],
+      "timestamp": "2025-08-20T08:50:57.442Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:50:57.442Z",
+      "lastVerified": "2025-08-20T08:50:57.442Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755679993248_5ljmi2n8h",
+      "content": "File analysis results:\n1. debug-request.json: Contains user's personal calendar data (Google, Outlook, PerfectGym), not referenced in code, accidentally committed in ff42c9e (Aug 1), should be removed and added to .gitignore\n2. memories.json: Claude MCP memory storage file with project context/decisions, not referenced in code, accidentally committed in e4b7a82 (Jul 31), should be removed and added to .gitignore\n3. tsconfig.tsbuildinfo: TypeScript incremental build cache file, automatically generated by TypeScript compiler (\"incremental\": true in tsconfig.json), already listed in .gitignore but still committed, safe to remove as it will regenerate",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "typescript",
+        "cleanup",
+        "analysis-complete",
+        "safe-to-remove"
+      ],
+      "timestamp": "2025-08-20T08:53:13.248Z",
+      "context": "Git history and usage pattern analysis complete",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:53:13.248Z",
+      "lastVerified": "2025-08-20T08:53:13.248Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755680019113_dq7v5dgwo",
+      "content": "COMPREHENSIVE DEAD CODE ANALYSIS - CONFIRMED FINDINGS:\n\n## UI Components - ALL COMPLETELY UNUSED:\n- Button, Card, Dialog, Input, Select, Toast, Loading, ErrorBoundary: Zero imports in actual application code\n- Only cross-reference: ErrorBoundary imports Button and Card internally\n- Main app (page.tsx, layout.tsx) uses only basic HTML elements, no UI component imports\n- All 8 UI components in src/components/ui/ are completely dead code\n\n## Hooks - COMPLETELY UNUSED:\n- useDebounce: Zero imports/usage across entire codebase\n- useLocalStorage: Zero imports/usage across entire codebase\n- Both hooks exported but never consumed\n\n## Utility Functions - MIXED USAGE:\n- cn(): Used extensively by UI components (but since UI components unused, effectively dead)\n- formatDate(), sleep(), capitalize(): ONLY used in test files, zero production usage\n- Only cn() has any potential value if UI components were used\n\n## Empty Directories - CONFIRMED EMPTY:\n- src/lib/repositories/: Completely empty directory\n- src/lib/services/: Completely empty directory\n\n## Safe to Remove:\n1. All 8 UI components in src/components/ui/\n2. Both hooks in src/hooks/\n3. formatDate, sleep, capitalize functions from utils.ts (keep cn for potential future use)\n4. Empty repositories/ and services/ directories",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "dead-code",
+        "verification",
+        "comprehensive",
+        "confirmed"
+      ],
+      "timestamp": "2025-08-20T08:53:39.113Z",
+      "context": "Dead code verification complete with evidence",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:53:39.113Z",
+      "lastVerified": "2025-08-20T08:53:39.113Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755680156283_h2nkphe9u",
+      "content": "VERIFICATION COMPLETE: Comprehensive unused imports and UI components analysis confirmed all findings are accurate:\n\n## NPM Dependencies - COMPLETELY UNUSED:\n1. **react-hook-form (7.60.0)**: Zero imports, no useForm/register/handleSubmit usage\n2. **zod (4.0.5)**: Zero imports, no z. validation patterns found \n3. **date-fns (^4.1.0)**: Zero imports, no date manipulation functions used\n4. **@hookform/resolvers (5.1.1)**: Zero imports, no resolver patterns found\n\n## UI Components - ALL DEAD CODE:\n- All 8 components in src/components/ui/ completely unused\n- No imports in actual application code (page.tsx uses only HTML elements)\n- Only internal cross-reference: ErrorBoundary imports Button and Card\n- Main app uses CSS classes, no shadcn/ui components\n\n## Hooks - COMPLETELY UNUSED:\n- useDebounce and useLocalStorage: Zero imports across entire codebase\n- Both exported but never consumed\n\n## Safe Removal Confirmed:\n- 4 NPM packages safe to uninstall \n- 8 UI component files safe to delete\n- 2 hook files safe to delete\n- formatDate, sleep, capitalize functions only used in tests\n\nTotal cleanup potential: ~214KB files + dependency weight reduction",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "react",
+        "verification",
+        "dependencies",
+        "cleanup",
+        "confirmed",
+        "safe-removal"
+      ],
+      "timestamp": "2025-08-20T08:55:56.283Z",
+      "context": "Comprehensive verification of unused dependencies and components analysis",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:55:56.283Z",
+      "lastVerified": "2025-08-20T08:55:56.283Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755680335033_oprej5y44",
+      "content": "DEPENDENCY VALIDATION COMPLETE: Build system analysis confirms all 4 dependencies safe for removal:\n\n## Validated Dependencies - SAFE TO REMOVE:\n1. **react-hook-form (7.60.0)**: No imports, no useForm/register patterns, no indirect dependencies\n2. **zod (4.0.5)**: No imports, no z. validation patterns, no indirect dependencies  \n3. **date-fns (^4.1.0)**: No imports, no date manipulation functions, no indirect dependencies\n4. **@hookform/resolvers (5.1.1)**: No imports, no resolver patterns, no indirect dependencies\n\n## Build System Tests Passed:\n- ✅ TypeScript compilation: No new errors after removal\n- ✅ ESLint validation: No new warnings after removal  \n- ✅ Test suite: Failures unrelated to removed dependencies\n- ✅ Package-lock.json: No indirect dependencies affected\n- ✅ Config files: No references in next.config.ts, tsconfig.json, tailwind.config.ts, vitest.config.ts\n\n## Installation Impact:\n- Removed 5 packages total from node_modules\n- No peer dependency conflicts\n- No breaking changes to build process\n\n**VERDICT: All 4 dependencies confirmed safe for permanent removal**",
+      "type": "config",
+      "tags": [
+        "config",
+        "typescript",
+        "react",
+        "dependencies",
+        "build-validation",
+        "safe-removal",
+        "confirmed"
+      ],
+      "timestamp": "2025-08-20T08:58:55.033Z",
+      "context": "Build system validation completed for unused dependency removal",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T08:58:55.033Z",
+      "lastVerified": "2025-08-20T08:58:55.033Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-07-31T14:45:38.608Z"
+  "lastUpdated": "2025-08-20T08:58:55.033Z"
 }

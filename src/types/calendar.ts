@@ -116,6 +116,14 @@ export interface CalendarCollection {
   updatedAt?: string
 }
 
+// Extended interface for database storage with Supabase
+// Maps CalendarCollection to database schema with additional fields
+export interface StoredCalendarCollection extends CalendarCollection {
+  created_at: string // Database timestamp field
+  updated_at: string // Database timestamp field
+  sources: CalendarSource[] // Database JSONB field (maps to calendars)
+}
+
 // iCal combiner result
 export interface CombineResult {
   success: boolean

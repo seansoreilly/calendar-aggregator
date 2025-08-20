@@ -1,0 +1,46 @@
+# Supabase Backend Integration for Calendar Aggregator
+
+## Project Overview
+Implement Supabase backend to make calendar collection GUIDs persistent across server/app restarts. Currently, the application uses an in-memory storage system that loses all collections when the server restarts.
+
+## Current Architecture Problem
+- Calendar collections stored in `globalThis.calendarCollections` (in-memory only)
+- All collections are lost on server restart/deployment
+- Users lose their calendar aggregations and need to recreate them
+
+## Solution Requirements
+
+### 1. Database Schema
+- Create a simple table to store calendar collections
+- Fields: guid (UUID primary key), name, description, sources (JSON), created_at, updated_at
+- Minimal schema to maintain simplicity
+
+### 2. Supabase Integration
+- Set up Supabase client configuration
+- Implement database connection and environment variables
+- Use Supabase JavaScript client for database operations
+
+### 3. API Route Updates
+- Update /api/collections routes to use Supabase instead of memory
+- Update /api/collections/[guid] routes for CRUD operations
+- Maintain backward compatibility with existing API responses
+
+### 4. Migration Strategy
+- Simple deployment with new persistent storage
+- No data migration needed (fresh start is acceptable)
+
+### 5. Environment Configuration
+- Add Supabase URL and API key to environment variables
+- Update documentation for deployment requirements
+
+## Technical Constraints
+- Use simplest possible implementation
+- Minimal changes to existing API structure
+- Leverage existing TypeScript types (CalendarCollection)
+- No complex migrations or data transformations
+
+## Success Criteria
+- Calendar collections persist after server restart
+- All existing functionality continues to work
+- API responses remain identical to current format
+- Simple deployment process with environment variables

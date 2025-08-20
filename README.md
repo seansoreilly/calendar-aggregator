@@ -50,13 +50,28 @@ cd calendar-aggregator
 npm install
 ```
 
-### 2. Start Development Server
+### 2. Environment Setup (Optional - Supabase)
+
+For persistent calendar collection storage, set up Supabase:
+
+```bash
+# Copy the example environment file
+cp .env.example .env.local
+
+# Add your Supabase credentials to .env.local
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+**Note**: Without Supabase, the application uses in-memory storage (collections are lost on server restart).
+
+### 3. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-### 3. Access the API
+### 4. Access the API
 
 The calendar aggregation API will be available at [http://localhost:3000/api](http://localhost:3000/api)
 
@@ -198,7 +213,8 @@ This calendar aggregator is built with:
 - **[node-ical 0.20.1](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
 - **[Vitest 3.2.4](https://vitest.dev/)** - Fast unit testing framework
 - **[Zod 4.0.5](https://zod.dev/)** - TypeScript-first schema validation
-- **Real-time aggregation** - No database required, fetches calendars on-demand
+- **[Supabase](https://supabase.com/)** - Optional PostgreSQL database for persistent storage
+- **Real-time aggregation** - Fetches calendars on-demand with optional persistence
 - **GUID-based collections** - Secure access with cryptographically secure identifiers
 
 ## 📁 Project Structure
@@ -210,13 +226,15 @@ src/
 │       ├── collections/        # Collection CRUD operations
 │       │   └── [guid]/         # Individual collection management
 │       ├── calendar/[guid]/    # Main calendar feed endpoint
-│       └── health/             # Health check endpoint
+│       └── health/             # Health check endpoint (includes Supabase status)
 ├── lib/
 │   ├── calendar-utils.ts       # URL validation and connection testing
 │   ├── calendar-fetcher.ts     # iCal fetching and parsing
-│   └── ical-combiner.ts        # Real-time iCal combination utility
+│   ├── ical-combiner.ts        # Real-time iCal combination utility
+│   └── supabase.ts             # Supabase client and database operations
 └── types/
     └── calendar.ts             # TypeScript interfaces for collections and calendars
+schema.sql                      # Database schema for Supabase setup
 ```
 
 ## 🧪 Testing & Development
@@ -264,13 +282,62 @@ The API will validate the URL format, test connectivity, and verify iCal data be
 
 ## ⚠️ Architecture Notes
 
-This is a **serverless, stateless** implementation:
+This is a **serverless implementation** with optional persistence:
 
-- **In-memory collections**: Collection data persists during serverless function lifetime
+- **Dual storage modes**: Supabase database (persistent) with in-memory fallback
+- **Graceful degradation**: Automatically falls back to in-memory storage if database unavailable
 - **No authentication**: API endpoints are publicly accessible (secured by GUID)
 - **Real-time fetching**: Events are fetched on-demand, not cached
 - **Timeout protection**: 15-second timeout per calendar source
 - **Error resilience**: Failed calendars don't break the entire feed
+
+## 🗄️ Supabase Setup (Optional)
+
+For persistent calendar collection storage:
+
+### 1. Create a Supabase Project
+
+1. Visit [supabase.com](https://supabase.com) and create a new project
+2. Wait for the project to be fully provisioned
+3. Go to Project Settings → API to find your credentials
+
+### 2. Set Up the Database Schema
+
+Run the SQL from `schema.sql` in your Supabase SQL Editor:
+
+```sql
+CREATE TABLE calendar_collections (
+  guid UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  sources JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_calendar_collections_created_at ON calendar_collections(created_at);
+```
+
+### 3. Configure Environment Variables
+
+Add your Supabase credentials to `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 4. Verify Connection
+
+Check the health endpoint to confirm Supabase is connected:
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+### 5. Deploy with Supabase
+
+When deploying to production, add the same environment variables to your deployment platform (Vercel, Netlify, etc.).
 
 ## 🚀 Deployment
 

@@ -91,26 +91,38 @@ export async function testCalendarConnection(
         'User-Agent': 'Calendar-Aggregator/1.0',
       },
       maxRedirects: 5,
-      validateStatus: status => status < 500, // Allow 4xx errors for now
+      validateStatus: () => true, // Accept all status codes, handle them manually
     })
 
     const responseTime = Date.now() - startTime
     const contentType = response.headers['content-type'] || ''
 
-    // Check if response looks like calendar data
-    const hasCalendarData =
-      contentType.includes('text/calendar') ||
-      response.data.includes('BEGIN:VCALENDAR')
-
-    if (response.status >= 400) {
+    // Handle server errors (5xx) more gracefully
+    if (response.status >= 500) {
       return {
         isValid: false,
-        error: `HTTP ${response.status}: ${response.statusText}`,
+        error: `Server error (${response.status}): Calendar server is temporarily unavailable`,
         statusCode: response.status,
         contentType,
         responseTime,
       }
     }
+
+    // Handle client errors (4xx)
+    if (response.status >= 400) {
+      return {
+        isValid: false,
+        error: `Access denied (${response.status}): ${response.statusText}`,
+        statusCode: response.status,
+        contentType,
+        responseTime,
+      }
+    }
+
+    // Check if response looks like calendar data
+    const hasCalendarData =
+      contentType.includes('text/calendar') ||
+      response.data.includes('BEGIN:VCALENDAR')
 
     if (!hasCalendarData) {
       return {
