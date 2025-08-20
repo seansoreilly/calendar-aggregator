@@ -8,6 +8,7 @@ import {
   validateCalendarUrl,
   normalizeCalendarUrl,
 } from '../../../lib/calendar-utils'
+import { getSupabase } from '../../../lib/supabase'
 
 // Global storage for collections (in-memory for development)
 declare global {
@@ -28,6 +29,89 @@ function initializeStorage() {
  */
 function generateGuid(): string {
   return crypto.randomUUID()
+}
+
+/**
+ * Save collection to Supabase with fallback to memory
+ */
+async function saveCollectionToDatabase(
+  collection: CalendarCollection
+): Promise<CalendarCollection> {
+  try {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('collections')
+      .insert([
+        {
+          guid: collection.guid,
+          name: collection.name,
+          description: collection.description,
+          sources: collection.calendars,
+          created_at: collection.createdAt,
+          updated_at: collection.updatedAt || collection.createdAt,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Supabase insert error:', error)
+      throw error
+    }
+
+    console.log('Successfully saved to Supabase:', data)
+    return collection
+  } catch (error) {
+    console.error('Database save failed, falling back to memory:', error)
+    // Fallback to in-memory storage
+    initializeStorage()
+    globalThis.calendarCollections.push(collection)
+    return collection
+  }
+}
+
+/**
+ * Get all collections from Supabase with fallback to memory
+ */
+async function getAllCollectionsFromDatabase(): Promise<CalendarCollection[]> {
+  try {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('collections')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    // Transform database records to expected format
+    return data.map(record => ({
+      guid: record.guid,
+      name: record.name,
+      description: record.description,
+      calendars: record.sources || [],
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
+    }))
+  } catch {
+    // Fallback to in-memory storage
+    initializeStorage()
+    return globalThis.calendarCollections || []
+  }
+}
+
+/**
+ * GET /api/collections - Get all calendar collections
+ */
+export async function GET() {
+  try {
+    const collections = await getAllCollectionsFromDatabase()
+    return NextResponse.json(collections)
+  } catch {
+    return NextResponse.json(
+      { error: 'Failed to fetch collections' },
+      { status: 500 }
+    )
+  }
 }
 
 /**
@@ -70,13 +154,22 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      // Validate calendar URL
+      // Validate calendar URL (lenient mode for development)
       const validationResult = await validateCalendarUrl(calendarData.url)
       if (!validationResult.isValid) {
-        validationErrors.push(
-          `Calendar ${i + 1} (${calendarData.name}): ${validationResult.error}`
-        )
-        continue
+        // For server errors (5xx), add as warning but allow creation
+        if (validationResult.statusCode && validationResult.statusCode >= 500) {
+          // Log warning but continue - server might be temporarily down
+          console.warn(
+            `Warning for ${calendarData.name}: ${validationResult.error}`
+          )
+        } else {
+          // For other errors (invalid URL, 4xx), still block creation
+          validationErrors.push(
+            `Calendar ${i + 1} (${calendarData.name}): ${validationResult.error}`
+          )
+          continue
+        }
       }
 
       const normalizedUrl = normalizeCalendarUrl(calendarData.url)
@@ -111,25 +204,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check for existing collection with same name - update if exists
-    const existingCollection = globalThis.calendarCollections.find(
-      col => col.name.toLowerCase() === body.name.toLowerCase()
-    )
-
-    if (existingCollection) {
-      // Update existing collection
-      existingCollection.calendars = processedCalendars
-      existingCollection.updatedAt = new Date().toISOString()
-
-      // Update description if provided
-      if (body.description !== undefined) {
-        existingCollection.description = body.description
-      }
-
-      return NextResponse.json(existingCollection, { status: 200 })
-    }
-
-    // Create new collection if name doesn't exist
+    // Create new collection
     const newCollection: CalendarCollection = {
       guid: generateGuid(),
       name: body.name,
@@ -142,9 +217,10 @@ export async function POST(request: NextRequest) {
       newCollection.description = body.description
     }
 
-    globalThis.calendarCollections.push(newCollection)
+    // Save to database with fallback to memory
+    const savedCollection = await saveCollectionToDatabase(newCollection)
 
-    return NextResponse.json(newCollection, { status: 201 })
+    return NextResponse.json(savedCollection, { status: 201 })
   } catch (error) {
     console.error('Error creating collection:', error)
     return NextResponse.json(

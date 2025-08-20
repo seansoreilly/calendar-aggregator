@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CalendarCollection } from '../../../../types/calendar'
 import { combineICalFeeds } from '../../../../lib/ical-combiner'
+import { getSupabase } from '../../../../lib/supabase'
 
-// Global storage for collections (in-memory for development)
+// Global storage for collections (in-memory fallback)
 declare global {
   var calendarCollections: CalendarCollection[]
 }
@@ -17,10 +18,41 @@ function initializeStorage() {
 }
 
 /**
- * Find collection by GUID
+ * Find collection by GUID with Supabase integration
  */
-function findCollectionByGuid(guid: string): CalendarCollection | undefined {
-  return globalThis.calendarCollections.find(col => col.guid === guid)
+async function findCollectionByGuid(
+  guid: string
+): Promise<CalendarCollection | null> {
+  try {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('guid', guid)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null // Not found
+      }
+      throw error
+    }
+
+    // Transform database record to expected format
+    return {
+      guid: data.guid,
+      name: data.name,
+      description: data.description,
+      calendars: data.sources || [],
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  } catch (error) {
+    console.error('Database lookup failed, falling back to memory:', error)
+    // Fallback to in-memory storage
+    initializeStorage()
+    return globalThis.calendarCollections.find(col => col.guid === guid) || null
+  }
 }
 
 /**
@@ -56,7 +88,7 @@ export async function GET(
     }
 
     // Find the collection
-    const collection = findCollectionByGuid(guid)
+    const collection = await findCollectionByGuid(guid)
 
     if (!collection) {
       return NextResponse.json(
@@ -189,7 +221,7 @@ export async function HEAD(
     }
 
     // Find the collection
-    const collection = findCollectionByGuid(guid)
+    const collection = await findCollectionByGuid(guid)
 
     if (!collection) {
       return new NextResponse(null, { status: 404 })
