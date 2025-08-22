@@ -15,11 +15,7 @@ export function getSupabase() {
       )
     }
 
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      db: {
-        schema: 'calendar_aggregator',
-      },
-    })
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
   }
 
   return supabaseClient

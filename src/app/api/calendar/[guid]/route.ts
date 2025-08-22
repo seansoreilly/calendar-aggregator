@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CalendarCollection } from '../../../../types/calendar'
+import { CalendarCollection, CalendarSource } from '../../../../types/calendar'
 import { combineICalFeeds } from '../../../../lib/ical-combiner'
 import { getSupabase } from '../../../../lib/supabase'
 
@@ -40,12 +40,12 @@ async function findCollectionByGuid(
 
     // Transform database record to expected format
     return {
-      guid: data.guid,
-      name: data.name,
-      description: data.description,
-      calendars: data.sources || [],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      guid: data.guid as string,
+      name: data.name as string,
+      description: data.description as string,
+      calendars: (data.sources as CalendarSource[]) || [],
+      createdAt: data.created_at as string,
+      updatedAt: data.updated_at as string,
     }
   } catch (error) {
     console.error('Database lookup failed, falling back to memory:', error)

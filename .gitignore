@@ -7,15 +7,15 @@ node_modules/
 .yarn/build-state.yml
 .yarn/install-state.gz
 
-# Testing
-coverage/
-.nyc_output
-test-results/
-playwright-report/
+# Package managers
+bun.lockb
+.yarn/
+.pnp.*
 
 # Next.js
 .next/
 out/
+next-env.d.ts
 
 # Production builds
 build/
@@ -24,7 +24,12 @@ dist/
 # TypeScript
 *.tsbuildinfo
 tsconfig.tsbuildinfo
-next-env.d.ts
+
+# Testing
+coverage/
+.nyc_output
+test-results/
+playwright-report/
 
 # Environment variables
 .env
@@ -33,6 +38,9 @@ next-env.d.ts
 .env.test.local
 .env.production.local
 .env*.local
+.secrets
+.env.secrets
+secrets.json
 
 # Logs
 npm-debug.log*
@@ -41,6 +49,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 *.log
+logs/
+dev-debug.log
 
 # Runtime data
 pids
@@ -55,6 +65,14 @@ pids
 .cache/
 .turbo/
 
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.orig
+.#*
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -65,7 +83,7 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# IDE
+# IDE and editors
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -75,22 +93,11 @@ desktop.ini
 *.swp
 *.swo
 *~
-
-# Temporary folders
-tmp/
-temp/
-
-# Vercel
-.vercel
-
-# Local development
-.local
-
-# Error files
-*.error
-
-# Memory dumps
-*.heapsnapshot
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # AI and development tools
 .cursor/
@@ -98,21 +105,22 @@ temp/
 .claude/
 *.ai
 
+# Vercel
+.vercel
+
+# Local development
+.local
+
 # Docker
 Dockerfile.local
 docker-compose.override.yml
 .dockerignore
 
 # Performance monitoring
-.lightouse/
+.lighthouse/
 .audit/
 
-# Package manager alternatives
-bun.lockb
-.yarn/
-.pnp.*
-
-# Database files (if any)
+# Database files
 *.db
 *.sqlite
 *.sqlite3
@@ -121,28 +129,20 @@ bun.lockb
 *.backup
 *.bak
 
-# Security files
-.secrets
-.env.secrets
-secrets.json
-
 # Development utilities
 .tool-versions
 .nvmrc.local
 
-logs
-dev-debug.log
-# Dependency directories
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# OS specific
+# Debug and memory files
+*.error
+*.heapsnapshot
+debug-request.json
+memories.json
+debug-*.json
 
-# Task files
+# Task management (commented out - uncomment if needed)
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Project specific
+.builder.config.json

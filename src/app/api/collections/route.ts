@@ -85,12 +85,12 @@ async function getAllCollectionsFromDatabase(): Promise<CalendarCollection[]> {
 
     // Transform database records to expected format
     return data.map(record => ({
-      guid: record.guid,
-      name: record.name,
-      description: record.description,
-      calendars: record.sources || [],
-      createdAt: record.created_at,
-      updatedAt: record.updated_at,
+      guid: record.guid as string,
+      name: record.name as string,
+      description: record.description as string,
+      calendars: (record.sources as CalendarSource[]) || [],
+      createdAt: record.created_at as string,
+      updatedAt: record.updated_at as string,
     }))
   } catch {
     // Fallback to in-memory storage
