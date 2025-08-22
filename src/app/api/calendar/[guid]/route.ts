@@ -1,59 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CalendarCollection, CalendarSource } from '../../../../types/calendar'
 import { combineICalFeeds } from '../../../../lib/ical-combiner'
-import { getSupabase } from '../../../../lib/supabase'
-
-// Global storage for collections (in-memory fallback)
-declare global {
-  var calendarCollections: CalendarCollection[]
-}
-
-/**
- * Initialize global storage if needed
- */
-function initializeStorage() {
-  if (!globalThis.calendarCollections) {
-    globalThis.calendarCollections = []
-  }
-}
-
-/**
- * Find collection by GUID with Supabase integration
- */
-async function findCollectionByGuid(
-  guid: string
-): Promise<CalendarCollection | null> {
-  try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('collections')
-      .select('*')
-      .eq('guid', guid)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null // Not found
-      }
-      throw error
-    }
-
-    // Transform database record to expected format
-    return {
-      guid: data.guid as string,
-      name: data.name as string,
-      description: data.description as string,
-      calendars: (data.sources as CalendarSource[]) || [],
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
-    }
-  } catch (error) {
-    console.error('Database lookup failed, falling back to memory:', error)
-    // Fallback to in-memory storage
-    initializeStorage()
-    return globalThis.calendarCollections.find(col => col.guid === guid) || null
-  }
-}
+import { findCollectionByGuidInDatabase } from '../../../../lib/supabase'
 
 /**
  * GET /api/calendar/[guid] - Get combined iCal feed for a collection
@@ -69,8 +16,6 @@ export async function GET(
   { params }: { params: Promise<{ guid: string }> }
 ) {
   try {
-    initializeStorage()
-
     const { guid } = await params
 
     if (!guid) {
@@ -88,7 +33,7 @@ export async function GET(
     }
 
     // Find the collection
-    const collection = await findCollectionByGuid(guid)
+    const collection = await findCollectionByGuidInDatabase(guid)
 
     if (!collection) {
       return NextResponse.json(
@@ -205,8 +150,6 @@ export async function HEAD(
   { params }: { params: Promise<{ guid: string }> }
 ) {
   try {
-    initializeStorage()
-
     const { guid } = await params
 
     if (!guid) {
@@ -221,7 +164,7 @@ export async function HEAD(
     }
 
     // Find the collection
-    const collection = await findCollectionByGuid(guid)
+    const collection = await findCollectionByGuidInDatabase(guid)
 
     if (!collection) {
       return new NextResponse(null, { status: 404 })

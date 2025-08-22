@@ -5,138 +5,11 @@ import {
   UpdateCollectionRequest,
 } from '../../../../types/calendar'
 import { normalizeCalendarUrl } from '../../../../lib/calendar-utils'
-import { getSupabase } from '../../../../lib/supabase'
-
-/**
- * Initialize global storage if needed
- */
-function initializeStorage() {
-  if (!globalThis.calendarCollections) {
-    globalThis.calendarCollections = []
-  }
-}
-
-/**
- * Delete collection from Supabase with fallback
- */
-async function deleteCollectionFromDatabase(guid: string): Promise<boolean> {
-  try {
-    const supabase = getSupabase()
-    const { error } = await supabase
-      .from('collections')
-      .delete()
-      .eq('guid', guid)
-
-    if (error) throw error
-    return true
-  } catch {
-    // Fallback to in-memory storage
-    initializeStorage()
-    const index = globalThis.calendarCollections.findIndex(
-      col => col.guid === guid
-    )
-    if (index >= 0) {
-      globalThis.calendarCollections.splice(index, 1)
-      return true
-    }
-    return false
-  }
-}
-
-/**
- * Update collection in Supabase with fallback
- */
-async function updateCollectionInDatabase(
-  guid: string,
-  updates: Partial<CalendarCollection>
-): Promise<CalendarCollection | null> {
-  try {
-    const supabase = getSupabase()
-    const now = new Date().toISOString()
-
-    // Prepare update data for database
-    const updateData: Record<string, unknown> = { updated_at: now }
-    if (updates.name !== undefined) updateData.name = updates.name
-    if (updates.description !== undefined)
-      updateData.description = updates.description
-    if (updates.calendars !== undefined) {
-      updateData.sources = updates.calendars // Map calendars to sources
-    }
-
-    const { data, error } = await supabase
-      .from('collections')
-      .update(updateData)
-      .eq('guid', guid)
-      .select()
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null // Not found
-      }
-      throw error
-    }
-
-    // Transform to expected format
-    return {
-      guid: data.guid as string,
-      name: data.name as string,
-      description: data.description as string,
-      calendars: (data.sources as CalendarSource[]) || [],
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
-    }
-  } catch {
-    // Fallback to in-memory storage
-    initializeStorage()
-    const collection = globalThis.calendarCollections.find(
-      col => col.guid === guid
-    )
-    if (!collection) return null
-
-    // Apply updates
-    Object.assign(collection, updates)
-    collection.updatedAt = new Date().toISOString()
-    return collection
-  }
-}
-
-/**
- * Find collection by GUID with Supabase integration
- */
-async function findCollectionByGuid(
-  guid: string
-): Promise<CalendarCollection | null> {
-  try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('collections')
-      .select('*')
-      .eq('guid', guid)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null // Not found
-      }
-      throw error
-    }
-
-    // Transform database record to expected format
-    return {
-      guid: data.guid as string,
-      name: data.name as string,
-      description: data.description as string,
-      calendars: (data.sources as CalendarSource[]) || [],
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
-    }
-  } catch {
-    // Fallback to in-memory storage
-    initializeStorage()
-    return globalThis.calendarCollections.find(col => col.guid === guid) || null
-  }
-}
+import {
+  deleteCollectionFromDatabase,
+  updateCollectionInDatabase,
+  findCollectionByGuidInDatabase,
+} from '../../../../lib/supabase'
 
 /**
  * GET /api/collections/[guid] - Get specific collection
@@ -152,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
     }
 
-    const collection = await findCollectionByGuid(guid)
+    const collection = await findCollectionByGuidInDatabase(guid)
 
     if (!collection) {
       return NextResponse.json(
@@ -178,8 +51,6 @@ export async function PUT(
   { params }: { params: Promise<{ guid: string }> }
 ) {
   try {
-    initializeStorage()
-
     const { guid } = await params
     const body: UpdateCollectionRequest = await request.json()
 
@@ -188,7 +59,7 @@ export async function PUT(
     }
 
     // Check if collection exists
-    const existingCollection = await findCollectionByGuid(guid)
+    const existingCollection = await findCollectionByGuidInDatabase(guid)
     if (!existingCollection) {
       return NextResponse.json(
         { error: 'Collection not found' },
@@ -268,7 +139,7 @@ export async function DELETE(
     }
 
     // Check if collection exists first
-    const existingCollection = await findCollectionByGuid(guid)
+    const existingCollection = await findCollectionByGuidInDatabase(guid)
     if (!existingCollection) {
       return NextResponse.json(
         { error: 'Collection not found' },

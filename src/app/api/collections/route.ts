@@ -8,95 +8,16 @@ import {
   validateCalendarUrl,
   normalizeCalendarUrl,
 } from '../../../lib/calendar-utils'
-import { getSupabase } from '../../../lib/supabase'
-
-// Global storage for collections (in-memory for development)
-declare global {
-  var calendarCollections: CalendarCollection[]
-}
-
-/**
- * Initialize global storage if needed
- */
-function initializeStorage() {
-  if (!globalThis.calendarCollections) {
-    globalThis.calendarCollections = []
-  }
-}
+import {
+  saveCollectionToDatabase,
+  getAllCollectionsFromDatabase,
+} from '../../../lib/supabase'
 
 /**
  * Generate a cryptographically secure GUID
  */
 function generateGuid(): string {
   return crypto.randomUUID()
-}
-
-/**
- * Save collection to Supabase with fallback to memory
- */
-async function saveCollectionToDatabase(
-  collection: CalendarCollection
-): Promise<CalendarCollection> {
-  try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('collections')
-      .insert([
-        {
-          guid: collection.guid,
-          name: collection.name,
-          description: collection.description,
-          sources: collection.calendars,
-          created_at: collection.createdAt,
-          updated_at: collection.updatedAt || collection.createdAt,
-        },
-      ])
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Supabase insert error:', error)
-      throw error
-    }
-
-    console.log('Successfully saved to Supabase:', data)
-    return collection
-  } catch (error) {
-    console.error('Database save failed, falling back to memory:', error)
-    // Fallback to in-memory storage
-    initializeStorage()
-    globalThis.calendarCollections.push(collection)
-    return collection
-  }
-}
-
-/**
- * Get all collections from Supabase with fallback to memory
- */
-async function getAllCollectionsFromDatabase(): Promise<CalendarCollection[]> {
-  try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('collections')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-
-    // Transform database records to expected format
-    return data.map(record => ({
-      guid: record.guid as string,
-      name: record.name as string,
-      description: record.description as string,
-      calendars: (record.sources as CalendarSource[]) || [],
-      createdAt: record.created_at as string,
-      updatedAt: record.updated_at as string,
-    }))
-  } catch {
-    // Fallback to in-memory storage
-    initializeStorage()
-    return globalThis.calendarCollections || []
-  }
 }
 
 /**
@@ -119,8 +40,6 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    initializeStorage()
-
     const body: CreateCollectionRequest = await request.json()
 
     // Basic validation
