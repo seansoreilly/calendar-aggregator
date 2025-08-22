@@ -1,5 +1,4 @@
 import { CalendarSource, CombineResult } from '../types/calendar'
-import { fetchMultipleCalendars, FetchResult } from './calendar-fetcher'
 
 /**
  * Generate standard iCal header
@@ -330,85 +329,6 @@ export async function combineICalFeeds(
 
   result.icalContent = icalParts.join('\r\n')
   result.eventsCount = uniqueEvents.length
-  result.success = true
-
-  return result
-}
-
-/**
- * Alternative implementation using the existing fetchMultipleCalendars function
- * This provides a fallback if raw iCal combining doesn't work as expected
- */
-export async function combineICalFeedsFromParsedEvents(
-  calendars: CalendarSource[],
-  timeoutMs: number = 15000
-): Promise<CombineResult> {
-  const result: CombineResult = {
-    success: false,
-    icalContent: '',
-    eventsCount: 0,
-    calendarsProcessed: 0,
-    errors: [],
-    warnings: [],
-  }
-
-  if (!calendars || calendars.length === 0) {
-    result.errors.push('No calendars provided')
-    return result
-  }
-
-  // Use existing proven calendar fetcher
-  const fetchResults = await fetchMultipleCalendars(calendars, timeoutMs)
-
-  // Process results
-  const allEvents: string[] = []
-
-  fetchResults.forEach((fetchResult: FetchResult) => {
-    if (fetchResult.success) {
-      result.calendarsProcessed++
-
-      // Convert parsed events back to iCal format
-      fetchResult.events.forEach(event => {
-        const icalEvent = [
-          'BEGIN:VEVENT',
-          `UID:${event.id}`,
-          `SUMMARY:${event.title}`,
-          `DTSTART:${new Date(event.start)
-            .toISOString()
-            .replace(/[-:]/g, '')
-            .replace(/\.\d{3}/, '')}`,
-          `DTEND:${new Date(event.end)
-            .toISOString()
-            .replace(/[-:]/g, '')
-            .replace(/\.\d{3}/, '')}`,
-          event.description ? `DESCRIPTION:${event.description}` : '',
-          event.location ? `LOCATION:${event.location}` : '',
-          event.url ? `URL:${event.url}` : '',
-          `STATUS:${event.status?.toUpperCase() || 'CONFIRMED'}`,
-          'END:VEVENT',
-        ]
-          .filter(line => line !== '')
-          .join('\r\n')
-
-        allEvents.push(icalEvent)
-      })
-    } else {
-      result.errors.push(...fetchResult.errors)
-    }
-
-    result.warnings.push(...fetchResult.warnings)
-  })
-
-  if (result.calendarsProcessed === 0) {
-    result.errors.push('No calendars could be fetched successfully')
-    return result
-  }
-
-  // Build combined iCal
-  const icalParts = [generateICalHeader(), ...allEvents, generateICalFooter()]
-
-  result.icalContent = icalParts.join('\r\n')
-  result.eventsCount = allEvents.length
   result.success = true
 
   return result

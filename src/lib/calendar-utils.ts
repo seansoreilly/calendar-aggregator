@@ -14,30 +14,6 @@ export function isValidUrl(urlString: string): boolean {
 }
 
 /**
- * Validates if a URL looks like it could be an iCal feed
- * Common patterns: .ics extension, webcal:// protocol, calendar in path
- */
-export function isValidICalUrl(urlString: string): boolean {
-  if (!urlString) return false
-
-  // Convert webcal:// to https://
-  const normalizedUrl = urlString.replace(/^webcal:\/\//, 'https://')
-
-  if (!isValidUrl(normalizedUrl)) return false
-
-  const url = new URL(normalizedUrl)
-  const pathname = url.pathname.toLowerCase()
-
-  // Check for common iCal patterns
-  const hasIcsExtension = pathname.endsWith('.ics')
-  const hasCalendarPath =
-    pathname.includes('calendar') || pathname.includes('cal')
-  const hasICalPath = pathname.includes('ical')
-
-  return hasIcsExtension || hasCalendarPath || hasICalPath
-}
-
-/**
  * Normalizes a calendar URL (converts webcal:// to https://)
  */
 export function normalizeCalendarUrl(urlString: string): string {

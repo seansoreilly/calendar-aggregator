@@ -74,8 +74,8 @@
       ],
       "timestamp": "2025-07-31T11:50:01.485Z",
       "context": "Codebase research complete for calendar aggregator",
-      "accessCount": 8,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 9,
+      "lastAccessed": "2025-08-22T09:43:39.821Z",
       "lastVerified": "2025-07-31T11:50:01.485Z",
       "status": "fresh"
     },
@@ -727,8 +727,8 @@
         "project-scope"
       ],
       "timestamp": "2025-08-20T08:42:39.051Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T09:43:35.278Z",
       "lastVerified": "2025-08-20T08:42:39.051Z",
       "status": "fresh"
     },
@@ -813,8 +813,8 @@
       ],
       "timestamp": "2025-08-20T08:50:14.829Z",
       "context": "User wants to clean up potentially temporary files but ensure no important data is lost",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T09:43:35.278Z",
       "lastVerified": "2025-08-20T08:50:14.829Z",
       "status": "fresh"
     },
@@ -832,8 +832,8 @@
       ],
       "timestamp": "2025-08-20T08:50:15.546Z",
       "context": "Verifying unused dependencies and components for safe removal",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T09:43:35.278Z",
       "lastVerified": "2025-08-20T08:50:15.546Z",
       "status": "fresh"
     },
@@ -850,8 +850,8 @@
       ],
       "timestamp": "2025-08-20T08:50:15.777Z",
       "context": "Dependency cleanup validation requested by user",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T10:04:49.654Z",
       "lastVerified": "2025-08-20T08:50:15.777Z",
       "status": "fresh"
     },
@@ -905,8 +905,8 @@
       ],
       "timestamp": "2025-08-20T08:53:39.113Z",
       "context": "Dead code verification complete with evidence",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T10:04:49.654Z",
       "lastVerified": "2025-08-20T08:53:39.113Z",
       "status": "fresh"
     },
@@ -925,8 +925,8 @@
       ],
       "timestamp": "2025-08-20T08:55:56.283Z",
       "context": "Comprehensive verification of unused dependencies and components analysis",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T10:04:49.654Z",
       "lastVerified": "2025-08-20T08:55:56.283Z",
       "status": "fresh"
     },
@@ -1075,7 +1075,95 @@
       "lastAccessed": "2025-08-22T09:39:31.609Z",
       "lastVerified": "2025-08-22T09:39:31.609Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755855618631_yw6izc4b6",
+      "content": "🎉 DEPENDENCY CLEANUP IMPLEMENTATION COMPLETE! All 3 tasks for tag 'dependency-cleanup' successfully implemented using safe development practices.\n\n## Final Results Summary:\n\n### Task 1: ✅ Radix UI Cleanup \n- Removed: @radix-ui/react-dialog (1.1.14), @radix-ui/react-select (2.2.5), @radix-ui/react-toast (1.2.14), class-variance-authority (0.7.1)\n- Build verified: ✅ Success\n\n### Task 2: ✅ Tailwind Plugin Cleanup\n- Removed: @tailwindcss/forms (0.5.10), @tailwindcss/typography (0.5.16) \n- Cleaned: tailwind.config.ts imports and plugins array\n- Build verified: ✅ Success\n\n### Task 3: ✅ Testing Library & Axios Audit\n- Removed: @testing-library/user-event (14.6.1) \n- Axios: Already latest version (1.11.0), 0 vulnerabilities\n- Build verified: ✅ Success\n\n### Total Impact:\n- **Bundle optimization**: Removed 49 packages total from dependency tree\n- **Security**: 0 vulnerabilities after audit\n- **Build stability**: All builds pass consistently (1000ms compile time)\n- **Safe implementation**: All changes verified before proceeding\n\n### Git commit: 953dc08\n\"chore(deps): remove unused dependencies to optimize bundle size\"\n\nSafe implementation approach maintained throughout: Research → Plan → Implement → Build → Verify → Commit",
+      "type": "config",
+      "tags": [
+        "config",
+        "react",
+        "testing",
+        "optimization",
+        "dependency-cleanup",
+        "safe-implementation",
+        "complete",
+        "success",
+        "bundle-optimization"
+      ],
+      "timestamp": "2025-08-22T09:40:18.631Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T09:40:18.631Z",
+      "lastVerified": "2025-08-22T09:40:18.631Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755857120229_xtogekkyr",
+      "content": "Starting dead-code-removal implementation with 4 tasks: 1) Remove legacy calendar API routes, 2) Fix outdated homepage test, 3) Remove obsolete docs, 4) Remove unused utility functions. Following safe implementation practices with TodoWrite tracking.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "dead-code-removal",
+        "implementation",
+        "safe-practices"
+      ],
+      "timestamp": "2025-08-22T10:05:20.229Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T10:05:20.229Z",
+      "lastVerified": "2025-08-22T10:05:20.229Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755857188725_k5kozl57g",
+      "content": "TASK 1 RESEARCH COMPLETE: Legacy calendar API routes identified:\n- /api/calendars/route.ts - uses globalThis.calendars (legacy POST/GET)\n- /api/calendars/[id]/route.ts - uses globalThis.calendars (legacy GET/PUT/DELETE)  \n- /api/sync/route.ts - uses globalThis.calendars for syncing\n- /api/calendars/[id]/test/route.ts - uses globalThis.calendars for testing\n- /api/events/route.ts - placeholder only, returns empty events\n\nAll use old globalThis.calendars system. New system uses globalThis.calendarCollections with GUID-based collections. No frontend code references these old endpoints - safe to remove.",
+      "type": "general",
+      "tags": [
+        "general",
+        "api",
+        "testing",
+        "dead-code-removal",
+        "research",
+        "legacy-routes"
+      ],
+      "timestamp": "2025-08-22T10:06:28.725Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T10:06:28.725Z",
+      "lastVerified": "2025-08-22T10:06:28.725Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755857480971_4g3qpc5yg",
+      "content": "TASK 3 ANALYSIS COMPLETE: Found 3 obsolete documentation files to remove:\n1. docs/IMPLEMENTATION_PLAN.md - Original complex implementation plan (never implemented, replaced by GUID system)\n2. docs/GUID_WORKFLOW_PLAN.md - Planning document for GUID system (now fully implemented)  \n3. PROJECT_GUIDE.md - Generic beginner's guide (not project-specific, already ignored in .vercelignore)\n\nAll features in these docs have been implemented. Safe to remove as they're outdated planning documents.",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "dead-code-removal",
+        "documentation",
+        "obsolete-files"
+      ],
+      "timestamp": "2025-08-22T10:11:20.971Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T10:11:20.971Z",
+      "lastVerified": "2025-08-22T10:11:20.971Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755857620967_opu2josoh",
+      "content": "TASK 4 ANALYSIS COMPLETE: Found unused calendar utility functions:\n1. isValidICalUrl() in calendar-utils.ts - UNUSED (no imports anywhere)\n2. combineICalFeedsFromParsedEvents() in ical-combiner.ts - UNUSED (no imports anywhere)\n3. fetchCalendarEvents() in calendar-fetcher.ts - USED INTERNALLY by fetchMultipleCalendars (keep as private)\n\nFunctions that ARE actively used: normalizeCalendarUrl, validateCalendarUrl, testCalendarConnection, fetchMultipleCalendars, combineICalFeeds. Safe to remove the 2 unused functions.",
+      "type": "general",
+      "tags": [
+        "general",
+        "dead-code-removal",
+        "utility-functions",
+        "analysis"
+      ],
+      "timestamp": "2025-08-22T10:13:40.967Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T10:13:40.967Z",
+      "lastVerified": "2025-08-22T10:13:40.967Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-22T09:39:31.609Z"
+  "lastUpdated": "2025-08-22T10:13:40.967Z"
 }
