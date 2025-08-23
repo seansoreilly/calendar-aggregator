@@ -5,6 +5,7 @@ import {
   removeCollectionFromStorage,
   updateCollectionInStorage,
   findCollectionInStorage,
+  initializeStorage,
 } from './utils'
 
 // Lazy-initialized Supabase client with custom schema
@@ -164,7 +165,9 @@ export async function getAllCollectionsFromDatabase(): Promise<
       updatedAt: record.updated_at as string,
     }))
   } catch {
-    return []
+    // Fall back to memory storage when database is unavailable
+    initializeStorage()
+    return globalThis.calendarCollections || []
   }
 }
 

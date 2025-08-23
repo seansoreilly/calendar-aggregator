@@ -34,8 +34,8 @@
       ],
       "timestamp": "2025-07-31T08:25:12.321Z",
       "context": "Project initialization completion",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T08:25:12.321Z",
       "status": "fresh"
     },
@@ -53,8 +53,8 @@
       ],
       "timestamp": "2025-07-31T08:33:26.537Z",
       "context": "Starting calendar aggregator ideation task",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T08:33:26.537Z",
       "status": "fresh"
     },
@@ -74,8 +74,8 @@
       ],
       "timestamp": "2025-07-31T11:50:01.485Z",
       "context": "Codebase research complete for calendar aggregator",
-      "accessCount": 9,
-      "lastAccessed": "2025-08-22T09:43:39.821Z",
+      "accessCount": 10,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T11:50:01.485Z",
       "status": "fresh"
     },
@@ -93,8 +93,8 @@
       ],
       "timestamp": "2025-07-31T11:51:56.863Z",
       "context": "Implementation plan documentation complete",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T11:51:56.863Z",
       "status": "fresh"
     },
@@ -111,8 +111,8 @@
       ],
       "timestamp": "2025-07-31T11:59:06.799Z",
       "context": "Claude Code command creation - need to fix approach",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T11:59:06.799Z",
       "status": "fresh"
     },
@@ -131,8 +131,8 @@
       ],
       "timestamp": "2025-07-31T12:03:31.378Z",
       "context": "Safe implementation workflow started",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T12:03:31.378Z",
       "status": "fresh"
     },
@@ -170,8 +170,8 @@
       ],
       "timestamp": "2025-07-31T12:08:19.519Z",
       "context": "Phase 1 completion milestone",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-20T08:37:30.691Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-07-31T12:08:19.519Z",
       "status": "fresh"
     },
@@ -672,8 +672,8 @@
       ],
       "timestamp": "2025-08-20T06:58:11.629Z",
       "context": "Task 2 implementation - Supabase client configuration",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-08-20T06:58:11.629Z",
       "status": "fresh"
     },
@@ -692,8 +692,8 @@
       ],
       "timestamp": "2025-08-20T07:06:57.695Z",
       "context": "Task 3 implementation - API routes with Supabase integration",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-08-20T07:06:57.695Z",
       "status": "fresh"
     },
@@ -905,8 +905,8 @@
       ],
       "timestamp": "2025-08-20T08:53:39.113Z",
       "context": "Dead code verification complete with evidence",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-22T09:34:13.309Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-22T23:50:08.805Z",
       "lastVerified": "2025-08-20T08:53:39.113Z",
       "status": "fresh"
     },
@@ -1151,7 +1151,26 @@
       "lastAccessed": "2025-08-22T10:28:46.573Z",
       "lastVerified": "2025-08-22T10:28:46.573Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755906778856_q0iy2ejqd",
+      "content": "Integration test creation completed successfully! Created comprehensive test file at src/__tests__/integration/collections.test.ts with 12 test cases covering:\n\n- Calendar collection creation and retrieval\n- GUID-based collection access  \n- URL validation with smart mocking (valid for http/https/webcal URLs, invalid for malformed URLs)\n- Input validation and error handling\n- Webcal URL normalization\n- Sequential ID assignment\n- Default field values\n- Empty collection handling\n- Malformed JSON error handling\n- Missing content-type header handling\n\nKey fixes implemented:\n1. Mocked validateCalendarUrl to avoid network calls in test environment\n2. Fixed getAllCollectionsFromDatabase to fall back to global storage when Supabase unavailable\n3. Added missing initializeStorage import to supabase.ts\n4. Proper global storage initialization in test setup\n\nAll 12 tests now pass successfully. The fallback to in-memory storage works correctly when Supabase environment variables are not set (expected in test environment).",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "integration-test",
+        "calendar-collections",
+        "testing",
+        "completed",
+        "vitest",
+        "mocking"
+      ],
+      "timestamp": "2025-08-22T23:52:58.856Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-22T23:52:58.856Z",
+      "lastVerified": "2025-08-22T23:52:58.856Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-22T10:28:46.573Z"
+  "lastUpdated": "2025-08-22T23:52:58.856Z"
 }
