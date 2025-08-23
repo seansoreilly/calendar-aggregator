@@ -18,19 +18,12 @@ eslint.config.*
 .idea/
 
 # Testing
-vitest.config.*
-*.test.*
-*.spec.*
-__tests__/
-test/
-tests/
 coverage/
 .nyc_output
 
 # Configuration files that shouldn't be deployed
 tsconfig.json
 jest.config.*
-vitest.config.*
 playwright.config.*
 
 # Source maps
@@ -75,6 +68,23 @@ Thumbs.db
 memories.json
 openapi.yaml
 PROJECT_GUIDE.md
+CLAUDE.md
+builder.config.json
+schema.sql
+schema-public.sql
+
+# Calendar aggregator specific
+*.ics
+*.ical
+calendar-data/
+feed-cache/
+.taskmaster/
+
+# Development tools and configs
+vitest.config.*
+*.test.*
+*.spec.*
+__tests__/
 
 # AI and development tools
 .cursor/

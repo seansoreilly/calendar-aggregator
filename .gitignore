@@ -146,3 +146,20 @@ debug-*.json
 
 # Project specific
 .builder.config.json
+memories.json
+openapi.yaml
+
+# Calendar aggregator specific
+*.ics
+*.ical
+calendar-data/
+feed-cache/
+
+# Supabase (if not using env vars)
+supabase/
+.supabase/
+
+# Debug and monitoring
+debug-request.json
+.audit/
+.lighthouse/
