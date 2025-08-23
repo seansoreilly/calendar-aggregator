@@ -3,8 +3,12 @@ import { getSupabaseHealth } from '../../../lib/supabase'
 
 export async function GET() {
   try {
+    console.log('[Health API] Starting health check')
+
     // Get Supabase health status
     const supabaseHealth = await getSupabaseHealth()
+
+    console.log('[Health API] Supabase health result:', supabaseHealth)
 
     // Determine overall health status
     const isHealthy = supabaseHealth.status === 'healthy'
@@ -23,6 +27,8 @@ export async function GET() {
       }
     )
   } catch (error) {
+    console.error('[Health API] Health check failed:', error)
+
     return NextResponse.json(
       {
         status: 'error',
