@@ -146,6 +146,10 @@ export async function fetchCalendarEvents(
   try {
     const normalizedUrl = normalizeCalendarUrl(calendar.url)
 
+    console.log(
+      `[Calendar Fetcher] Attempting to fetch calendar ID ${calendar.id} from: ${normalizedUrl}`
+    )
+
     // Fetch calendar data
     const response = await axios.get(normalizedUrl, {
       timeout: timeoutMs,
@@ -155,6 +159,10 @@ export async function fetchCalendarEvents(
       },
       maxRedirects: 5,
     })
+
+    console.log(
+      `[Calendar Fetcher] Successfully fetched calendar ID ${calendar.id}, status: ${response.status}, content length: ${response.data?.length || 0}`
+    )
 
     result.responseTime = Date.now() - startTime
 
@@ -212,22 +220,49 @@ export async function fetchCalendarEvents(
   } catch (error) {
     result.responseTime = Date.now() - startTime
 
+    console.error(
+      `[Calendar Fetcher] Failed to fetch calendar ID ${calendar.id}:`,
+      error
+    )
+
     if (axios.isAxiosError(error)) {
       if (error.code === 'ECONNABORTED') {
         result.errors.push(`Request timeout after ${timeoutMs}ms`)
+        console.error(
+          `[Calendar Fetcher] Timeout error for calendar ${calendar.id} after ${timeoutMs}ms`
+        )
       } else if (error.code === 'ENOTFOUND') {
         result.errors.push('Calendar server not found')
+        console.error(
+          `[Calendar Fetcher] DNS resolution failed for calendar ${calendar.id}`
+        )
       } else if (error.code === 'ECONNREFUSED') {
         result.errors.push('Connection refused by calendar server')
+        console.error(
+          `[Calendar Fetcher] Connection refused for calendar ${calendar.id}`
+        )
       } else if (error.response) {
         result.errors.push(
           `HTTP ${error.response.status}: ${error.response.statusText}`
         )
+        console.error(
+          `[Calendar Fetcher] HTTP error for calendar ${calendar.id}:`,
+          error.response.status,
+          error.response.statusText
+        )
       } else {
         result.errors.push(error.message || 'Network error')
+        console.error(
+          `[Calendar Fetcher] Network error for calendar ${calendar.id}:`,
+          error.message
+        )
       }
     } else {
       result.errors.push('Unknown error occurred while fetching calendar')
+      console.error(
+        `[Calendar Fetcher] Unknown error for calendar ${calendar.id}:`,
+        error
+      )
     }
 
     return result

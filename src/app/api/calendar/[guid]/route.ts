@@ -64,13 +64,31 @@ export async function GET(
       )
     }
 
+    // Log request details for debugging
+    console.log(`[Calendar API] Processing request for GUID: ${guid}`)
+    console.log(`[Calendar API] Collection: ${collection.name}`)
+    console.log(`[Calendar API] Enabled calendars: ${enabledCalendars.length}`)
+    console.log(`[Calendar API] Timeout: ${timeoutMs}ms`)
+
     // Combine the iCal feeds
     const combineResult = await combineICalFeeds(
       collection.calendars,
       timeoutMs
     )
 
+    console.log(`[Calendar API] Combine result:`, {
+      success: combineResult.success,
+      calendarsProcessed: combineResult.calendarsProcessed,
+      eventsCount: combineResult.eventsCount,
+      errorsCount: combineResult.errors.length,
+      warningsCount: combineResult.warnings.length,
+    })
+
     if (!combineResult.success) {
+      console.error(
+        `[Calendar API] Failed to combine feeds for ${guid}:`,
+        combineResult.errors
+      )
       // Return partial results if some calendars succeeded
       if (combineResult.calendarsProcessed > 0 && combineResult.icalContent) {
         return new NextResponse(combineResult.icalContent, {

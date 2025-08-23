@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
-import { CalendarCollection, CalendarSource } from '../types/calendar'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { CalendarCollection } from '../types/calendar'
+import { Database } from '../types/database'
 import {
   addCollectionToStorage,
   removeCollectionFromStorage,
@@ -9,7 +10,7 @@ import {
 } from './utils'
 
 // Lazy-initialized Supabase client with custom schema
-let supabaseClient: ReturnType<typeof createClient> | null = null
+let supabaseClient: SupabaseClient<Database> | null = null
 
 // Get Supabase client with lazy initialization
 export function getSupabase() {
@@ -23,7 +24,7 @@ export function getSupabase() {
       )
     }
 
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
   }
 
   return supabaseClient
@@ -37,6 +38,7 @@ export async function testSupabaseConnection() {
   try {
     const client = getSupabase()
     const { error } = await client
+      .schema('calendar_aggregator')
       .from('collections')
       .select('*', { count: 'exact', head: true })
 
@@ -115,18 +117,22 @@ export async function saveCollectionToDatabase(
 ): Promise<CalendarCollection> {
   try {
     const supabase = getSupabase()
+
+    // Prepare data for database insertion
+    const insertData: Database['calendar_aggregator']['Tables']['collections']['Insert'] =
+      {
+        guid: collection.guid,
+        name: collection.name,
+        description: collection.description || null,
+        sources: collection.calendars,
+        created_at: collection.createdAt,
+        updated_at: collection.updatedAt || collection.createdAt,
+      }
+
     const { data, error } = await supabase
+      .schema('calendar_aggregator')
       .from('collections')
-      .insert([
-        {
-          guid: collection.guid,
-          name: collection.name,
-          description: collection.description,
-          sources: collection.calendars,
-          created_at: collection.createdAt,
-          updated_at: collection.updatedAt || collection.createdAt,
-        },
-      ])
+      .insert([insertData])
       .select()
       .single()
 
@@ -149,7 +155,9 @@ export async function getAllCollectionsFromDatabase(): Promise<
 > {
   try {
     const supabase = getSupabase()
+
     const { data, error } = await supabase
+      .schema('calendar_aggregator')
       .from('collections')
       .select('*')
       .order('created_at', { ascending: false })
@@ -157,12 +165,12 @@ export async function getAllCollectionsFromDatabase(): Promise<
     if (error) throw error
 
     return data.map(record => ({
-      guid: record.guid as string,
-      name: record.name as string,
-      description: record.description as string,
-      calendars: (record.sources as CalendarSource[]) || [],
-      createdAt: record.created_at as string,
-      updatedAt: record.updated_at as string,
+      guid: record.guid,
+      name: record.name,
+      description: record.description || '',
+      calendars: record.sources || [],
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
     }))
   } catch {
     // Fall back to memory storage when database is unavailable
@@ -176,7 +184,9 @@ export async function findCollectionByGuidInDatabase(
 ): Promise<CalendarCollection | null> {
   try {
     const supabase = getSupabase()
+
     const { data, error } = await supabase
+      .schema('calendar_aggregator')
       .from('collections')
       .select('*')
       .eq('guid', guid)
@@ -190,12 +200,12 @@ export async function findCollectionByGuidInDatabase(
     }
 
     return {
-      guid: data.guid as string,
-      name: data.name as string,
-      description: data.description as string,
-      calendars: (data.sources as CalendarSource[]) || [],
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
+      guid: data.guid,
+      name: data.name,
+      description: data.description || '',
+      calendars: data.sources || [],
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
     }
   } catch {
     return findCollectionInStorage(guid)
@@ -219,6 +229,7 @@ export async function updateCollectionInDatabase(
     }
 
     const { data, error } = await supabase
+      .schema('calendar_aggregator')
       .from('collections')
       .update(updateData)
       .eq('guid', guid)
@@ -233,12 +244,12 @@ export async function updateCollectionInDatabase(
     }
 
     return {
-      guid: data.guid as string,
-      name: data.name as string,
-      description: data.description as string,
-      calendars: (data.sources as CalendarSource[]) || [],
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
+      guid: data.guid,
+      name: data.name,
+      description: data.description || '',
+      calendars: data.sources || [],
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
     }
   } catch {
     return updateCollectionInStorage(guid, updates)
@@ -251,6 +262,7 @@ export async function deleteCollectionFromDatabase(
   try {
     const supabase = getSupabase()
     const { error } = await supabase
+      .schema('calendar_aggregator')
       .from('collections')
       .delete()
       .eq('guid', guid)

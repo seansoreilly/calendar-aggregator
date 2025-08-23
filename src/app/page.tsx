@@ -1,5 +1,5 @@
 import { Package, Terminal, Code2, Calendar, Sparkles } from 'lucide-react'
-import LiveStatus from '@/components/live-status'
+import LiveStatus from '../components/live-status'
 
 export default function HomePage() {
   return (
