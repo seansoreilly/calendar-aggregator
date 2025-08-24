@@ -1,11 +1,19 @@
-# Documentation
+# ===============================================
+# DOCUMENTATION & README FILES
+# ===============================================
 README.md
 docs/
 *.md
 CHANGELOG*
 LICENSE*
+CONTRIBUTING*
+CODE_OF_CONDUCT*
+PROJECT_GUIDE.md
+CLAUDE.md
 
-# Development files
+# ===============================================
+# DEVELOPMENT CONFIGURATION
+# ===============================================
 .gitignore
 .prettierrc*
 .prettierignore
@@ -16,120 +24,246 @@ eslint.config.*
 .github/
 .vscode/
 .idea/
+.devcontainer/
 
-# Testing
+# ===============================================
+# TESTING & COVERAGE
+# ===============================================
 coverage/
 .nyc_output
-
-# Configuration files that shouldn't be deployed
-tsconfig.json
+test-results/
+playwright-report/
+.playwright/
+__tests__/
+*.test.*
+*.spec.*
 jest.config.*
 playwright.config.*
+vitest.config.*
+jest-html-reports/
+.vitest/
 
-# Source maps
+# ===============================================
+# BUILD & COMPILATION
+# ===============================================
+tsconfig.json
+tsconfig.*.json
+*.tsbuildinfo
+next.config.ts
+next.config.js
+postcss.config.*
+tailwind.config.*
+
+# ===============================================
+# SOURCE MAPS & DEBUG
+# ===============================================
 *.map
+*.map.js
+*.map.css
 
-# Environment files (keep .env for production)
+# ===============================================
+# ENVIRONMENT FILES
+# ===============================================
+# Keep .env for production if needed
 .env.local
 .env.development.local
 .env.test.local
+.env.secrets
+.secrets
+secrets.json
+.envrc
 
-# Logs
+# ===============================================
+# LOGS & DEBUG FILES
+# ===============================================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+debug-request.json
+debug-*.json
+*.error
+*.heapsnapshot
 
-# Cache
+# ===============================================
+# CACHE & TEMPORARY
+# ===============================================
 .cache/
 .eslintcache
 .stylelintcache
-*.tsbuildinfo
-
-# Temporary files
+.parcel-cache
+.turbo/
+.swc/
 tmp/
 temp/
+*.tmp
+*.temp
 
-# Package manager files
+# ===============================================
+# PACKAGE MANAGERS
+# ===============================================
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+bun.lockb
+.yarn/
+.pnp.*
+.yarnrc.yml
+.pnpmfile.cjs
 
-# IDE files
+# ===============================================
+# IDE & EDITOR FILES
+# ===============================================
 *.swp
 *.swo
 *~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.eclipse/
+.metadata/
 
-# OS files
+# ===============================================
+# OS GENERATED FILES
+# ===============================================
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.Spotlight-V100
+.Trashes
 
-# Project specific
-memories.json
-openapi.yaml
-PROJECT_GUIDE.md
-CLAUDE.md
-builder.config.json
-schema.sql
-schema-public.sql
-
-# Calendar aggregator specific
-*.ics
-*.ical
-calendar-data/
-feed-cache/
-.taskmaster/
-
-# Development tools and configs
-vitest.config.*
-*.test.*
-*.spec.*
-__tests__/
-
-# AI and development tools
+# ===============================================
+# AI & DEVELOPMENT TOOLS
+# ===============================================
 .cursor/
 .anthropic/
 .claude/
 *.ai
+.aider*
+.continue/
 
-# Large files that shouldn't be deployed
+# ===============================================
+# TASK MANAGEMENT
+# ===============================================
+.taskmaster/
+tasks.json
+tasks/
+
+# ===============================================
+# PROJECT SPECIFIC FILES
+# ===============================================
+memories.json
+openapi.yaml
+builder.config.json
+.builder.config.json
+schema*.sql
+migrations/
+
+# ===============================================
+# CALENDAR AGGREGATOR SPECIFIC
+# ===============================================
+*.ics
+*.ical
+calendar-data/
+feed-cache/
+calendar-cache/
+sync-logs/
+
+# ===============================================
+# LARGE MEDIA FILES
+# ===============================================
 *.mov
 *.mp4
+*.avi
+*.mkv
 *.zip
 *.tar.gz
+*.rar
+*.7z
 *.dmg
 *.iso
+*.exe
 
-# Development containers
-.devcontainer/
+# ===============================================
+# CONTAINERIZATION
+# ===============================================
 docker-compose*.yml
 Dockerfile.dev
+Dockerfile.local
+.dockerignore
+.docker/
 
-# Performance and monitoring
+# ===============================================
+# PERFORMANCE & MONITORING
+# ===============================================
 .audit/
+.lighthouse/
 lighthouse/
 bundle-analyzer/
+.size-limit.json
 
-# Security and secrets
-.secrets
-secrets.json
-.env.secrets
-
-# Database files
+# ===============================================
+# DATABASE FILES
+# ===============================================
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+.supabase/
 
-# Design files
+# ===============================================
+# DESIGN & ASSETS
+# ===============================================
 *.sketch
 *.fig
 *.psd
 *.ai
 *.xd
+*.afdesign
+*.afphoto
+design/
+assets/design/
 
-# Repository files
+# ===============================================
+# REPOSITORY & GIT
+# ===============================================
 .git/
-.github/
-CHANGELOG*
-CONTRIBUTING*
-CODE_OF_CONDUCT*
+.gitattributes
+.gitmodules
+
+# ===============================================
+# BACKUP & ARCHIVE
+# ===============================================
+*.backup
+*.bak
+backups/
+
+# ===============================================
+# VERSION MANAGERS
+# ===============================================
+.tool-versions
+.nvmrc
+.nvmrc.local
+.node-version
+
+# ===============================================
+# SECURITY & SECRETS
+# ===============================================
+.env.secrets
+.secrets
+secrets/
+private/
+
+# ===============================================
+# DEPLOYMENT SPECIFIC
+# ===============================================
+.netlify/
+.firebase/
+.aws/
+.gcp/

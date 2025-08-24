@@ -1,4 +1,6 @@
-# Dependencies
+# ===============================================
+# DEPENDENCIES & PACKAGE MANAGERS
+# ===============================================
 node_modules/
 .pnp
 .pnp.js
@@ -6,32 +8,42 @@ node_modules/
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-
-# Package managers
 bun.lockb
 .yarn/
 .pnp.*
 
-# Next.js
+# ===============================================
+# NEXT.JS & BUILD OUTPUTS
+# ===============================================
 .next/
 out/
 next-env.d.ts
-
-# Production builds
 build/
 dist/
+.swc/
 
-# TypeScript
+# ===============================================
+# TYPESCRIPT
+# ===============================================
 *.tsbuildinfo
 tsconfig.tsbuildinfo
+*.d.ts.map
 
-# Testing
+# ===============================================
+# TESTING & COVERAGE
+# ===============================================
 coverage/
 .nyc_output
 test-results/
 playwright-report/
+.playwright/
+__tests__/snapshots/
+jest-html-reports/
+.vitest/
 
-# Environment variables
+# ===============================================
+# ENVIRONMENT & SECRETS
+# ===============================================
 .env
 .env.local
 .env.development.local
@@ -41,39 +53,53 @@ playwright-report/
 .secrets
 .env.secrets
 secrets.json
+.envrc
 
-# Logs
+# ===============================================
+# LOGS & DEBUG
+# ===============================================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+bun-debug.log*
 *.log
 logs/
 dev-debug.log
+debug-request.json
+debug-*.json
+*.error
+*.heapsnapshot
 
-# Runtime data
+# ===============================================
+# RUNTIME & PROCESS DATA
+# ===============================================
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# Cache directories
+# ===============================================
+# CACHE & TEMPORARY FILES
+# ===============================================
 .eslintcache
 .stylelintcache
 .parcel-cache
 .cache/
 .turbo/
-
-# Temporary files
+.swc/
 tmp/
 temp/
 *.tmp
 *.temp
 *.orig
 .#*
+.tsbuildinfo
 
-# OS generated files
+# ===============================================
+# OS GENERATED FILES
+# ===============================================
 .DS_Store
 .DS_Store?
 ._*
@@ -82,8 +108,11 @@ temp/
 ehthumbs.db
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/
 
-# IDE and editors
+# ===============================================
+# IDE & EDITORS
+# ===============================================
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -98,68 +127,104 @@ desktop.ini
 *.njsproj
 *.sln
 *.sw?
+.eclipse/
+.metadata/
 
-# AI and development tools
+# ===============================================
+# AI & DEVELOPMENT TOOLS
+# ===============================================
 .cursor/
 .anthropic/
 .claude/
 *.ai
+.aider*
+.continue/
 
-# Vercel
+# ===============================================
+# DEPLOYMENT & HOSTING
+# ===============================================
 .vercel
+.netlify/
+.firebase/
+.gcp/
+.aws/
 
-# Local development
-.local
-
-# Docker
+# ===============================================
+# CONTAINERIZATION
+# ===============================================
 Dockerfile.local
 docker-compose.override.yml
 .dockerignore
+.docker/
 
-# Performance monitoring
+# ===============================================
+# PERFORMANCE & MONITORING
+# ===============================================
 .lighthouse/
 .audit/
+bundle-analyzer/
+.size-limit.json
 
-# Database files
+# ===============================================
+# DATABASE FILES
+# ===============================================
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+.supabase/
+supabase/config.toml
+supabase/.temp/
 
-# Backup files
+# ===============================================
+# BACKUP & ARCHIVE FILES
+# ===============================================
 *.backup
 *.bak
+*.zip
+*.tar.gz
+*.rar
+*.7z
 
-# Development utilities
+# ===============================================
+# VERSION MANAGERS
+# ===============================================
 .tool-versions
 .nvmrc.local
+.node-version
 
-# Debug and memory files
-*.error
-*.heapsnapshot
-debug-request.json
-memories.json
-debug-*.json
-
-# Task management (commented out - uncomment if needed)
-# tasks.json
-# tasks/
-
-# Project specific
-.builder.config.json
-memories.json
-openapi.yaml
-
-# Calendar aggregator specific
+# ===============================================
+# CALENDAR AGGREGATOR SPECIFIC
+# ===============================================
 *.ics
 *.ical
 calendar-data/
 feed-cache/
+calendar-cache/
+sync-logs/
 
-# Supabase (if not using env vars)
-supabase/
-.supabase/
+# ===============================================
+# TASK MANAGEMENT (Taskmaster)
+# ===============================================
+.taskmaster/
+# Uncomment if you want to ignore task files
+# tasks.json
+# tasks/
 
-# Debug and monitoring
-debug-request.json
-.audit/
-.lighthouse/
+# ===============================================
+# PROJECT SPECIFIC GENERATED FILES
+# ===============================================
+memories.json
+openapi.yaml
+schema*.sql
+builder.config.json
+.builder.config.json
+
+# ===============================================
+# DEVELOPMENT & MISC
+# ===============================================
+.local
+.husky/_/
+*.patch
+.yarnrc.yml
+.pnpmfile.cjs
