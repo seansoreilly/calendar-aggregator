@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install --production",
+  "installCommand": "npm install --production --ignore-scripts",
   "framework": "nextjs",
   "functions": {
     "src/app/api/*/route.ts": {
