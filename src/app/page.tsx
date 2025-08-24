@@ -23,7 +23,7 @@ export default function HomePage() {
                 Calendar Aggregator
               </h1>
               <p className="text-xl text-purple-200 font-medium">
-                GUID-based Calendar Collections
+                Custom ID & GUID-based Calendar Collections
               </p>
             </div>
           </div>
@@ -57,7 +57,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-white/10">
               <Sparkles className="w-5 h-5 text-blue-300" />
               <code className="font-mono text-sm bg-black/30 px-3 py-1 rounded-lg text-cyan-300 font-medium">
-                /api/calendar/[guid]
+                /api/calendar/[id]
               </code>
               <span className="text-gray-300 ml-auto">
                 Get aggregated iCal feed
@@ -113,9 +113,9 @@ export default function HomePage() {
             </h2>
           </div>
           <p className="text-lg text-gray-300 leading-relaxed mb-6">
-            Get started with the Calendar Aggregator API in 4 simple steps:
+            Get started with the Calendar Aggregator API in 3 simple steps:
           </p>
-          <div className="space-y-4 mb-8">
+          <div className="space-y-4 mb-6">
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-white/10">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 text-white font-bold text-sm">
                 1
@@ -124,25 +124,38 @@ export default function HomePage() {
               <code className="font-mono text-sm bg-black/30 px-3 py-1 rounded-lg text-cyan-300 font-medium">
                 /api/collections
               </code>
+              <span className="text-gray-300">with optional</span>
+              <code className="font-mono text-sm bg-black/30 px-2 py-1 rounded text-yellow-300">
+                customId
+              </code>
             </div>
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-white/10">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 text-white font-bold text-sm">
                 2
               </span>
-              <span className="text-white">Get your GUID from response</span>
+              <span className="text-white">Get memorable URL like:</span>
+              <code className="font-mono text-sm bg-black/30 px-2 py-1 rounded-lg text-green-300 font-medium">
+                my-work-schedule
+              </code>
             </div>
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-pink-500/20 to-orange-500/20 border border-white/10">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-orange-400 text-white font-bold text-sm">
                 3
               </span>
               <span className="text-white">
-                In your calendar app (Google Calendar, Outlook, etc.), subscribe
-                to
+                Subscribe in your calendar app:
               </span>
-              <code className="font-mono text-sm bg-black/30 px-3 py-1 rounded-lg text-cyan-300 font-medium">
-                /api/calendar/[guid]
+              <code className="font-mono text-sm bg-black/30 px-2 py-1 rounded-lg text-cyan-300 font-medium">
+                /api/calendar/my-work-schedule
               </code>
             </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 mb-8">
+            <p className="text-sm text-green-200 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              <strong>New!</strong> Choose your own collection ID instead of
+              random UUIDs
+            </p>
           </div>
           <a
             href="https://github.com/seansoreilly/calendar-aggregator"

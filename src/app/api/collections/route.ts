@@ -11,6 +11,7 @@ import {
 import {
   saveCollectionToDatabase,
   getAllCollectionsFromDatabase,
+  findCollectionByGuidInDatabase,
 } from '../../../lib/supabase'
 import {
   validateCreateCollectionRequest,
@@ -149,10 +150,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Handle custom ID or generate UUID
+    let collectionId: string
+
+    if (body.customId) {
+      // Check for collision with existing collections (case-insensitive)
+      const existingCollection = await findCollectionByGuidInDatabase(
+        body.customId.toLowerCase()
+      )
+      if (existingCollection) {
+        return NextResponse.json(
+          {
+            error: 'A collection with this custom ID already exists',
+            code: 'COLLECTION_EXISTS',
+          },
+          { status: 409 }
+        )
+      }
+      collectionId = body.customId
+    } else {
+      // Generate UUID as fallback
+      collectionId = generateGuid()
+    }
+
     // Create new collection with sanitized data
     const now = new Date().toISOString()
     const newCollection: CalendarCollection = {
-      guid: generateGuid(),
+      guid: collectionId,
       name: sanitizeCollectionName(body.name),
       calendars: processedCalendars,
       createdAt: now,

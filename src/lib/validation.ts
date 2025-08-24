@@ -28,6 +28,112 @@ export function validateGuid(guid: string): void {
 }
 
 /**
+ * Validate ID format - accepts both UUIDs and custom IDs
+ */
+export function validateId(id: string): void {
+  if (!id || typeof id !== 'string') {
+    throw new ValidationError('ID must be a non-empty string', 'id', id)
+  }
+
+  if (id.trim().length === 0) {
+    throw new ValidationError('ID cannot be empty', 'id', id)
+  }
+
+  // Check if it's a UUID
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(id)) {
+    // Valid UUID, no further validation needed
+    return
+  }
+
+  // Not a UUID, validate as custom ID
+  validateCustomId(id)
+}
+
+/**
+ * Validate custom ID format - URL-safe alphanumeric with hyphens and underscores
+ */
+export function validateCustomId(customId: string): void {
+  if (!customId || typeof customId !== 'string') {
+    throw new ValidationError(
+      'Custom ID must be a non-empty string',
+      'customId',
+      customId
+    )
+  }
+
+  if (customId.trim().length === 0) {
+    throw new ValidationError('Custom ID cannot be empty', 'customId', customId)
+  }
+
+  // Length constraints
+  if (customId.length < 3) {
+    throw new ValidationError(
+      'Custom ID must be at least 3 characters long',
+      'customId',
+      customId
+    )
+  }
+
+  if (customId.length > 50) {
+    throw new ValidationError(
+      'Custom ID cannot exceed 50 characters',
+      'customId',
+      customId
+    )
+  }
+
+  // URL-safe format: alphanumeric, hyphens, underscores only
+  const customIdRegex = /^[a-zA-Z0-9_-]+$/
+  if (!customIdRegex.test(customId)) {
+    throw new ValidationError(
+      'Custom ID can only contain letters, numbers, hyphens, and underscores',
+      'customId',
+      customId
+    )
+  }
+
+  // Cannot start or end with hyphen or underscore
+  if (
+    customId.startsWith('-') ||
+    customId.startsWith('_') ||
+    customId.endsWith('-') ||
+    customId.endsWith('_')
+  ) {
+    throw new ValidationError(
+      'Custom ID cannot start or end with hyphen or underscore',
+      'customId',
+      customId
+    )
+  }
+
+  // Reserved words check
+  const reservedWords = [
+    'api',
+    'admin',
+    'root',
+    'system',
+    'config',
+    'health',
+    'status',
+    'calendar',
+    'calendars',
+    'events',
+    'collections',
+    'sync',
+  ]
+
+  if (reservedWords.includes(customId.toLowerCase())) {
+    throw new ValidationError(
+      'Custom ID cannot use reserved words',
+      'customId',
+      customId
+    )
+  }
+}
+
+/**
  * Validate collection name
  */
 export function validateCollectionName(name: string): void {
@@ -303,6 +409,11 @@ export function validateCreateCollectionRequest(
 
   validateCollectionName(request.name)
   validateCollectionDescription(request.description)
+
+  // Validate optional customId
+  if (request.customId !== undefined) {
+    validateCustomId(request.customId)
+  }
 
   if (!request.calendars || !Array.isArray(request.calendars)) {
     throw new ValidationError(

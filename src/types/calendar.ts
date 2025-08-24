@@ -138,6 +138,7 @@ export interface CombineResult {
 export interface CreateCollectionRequest {
   name: string
   description?: string
+  customId?: string
   calendars: Array<{
     url: string
     name: string

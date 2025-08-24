@@ -29,9 +29,19 @@ export function addCollectionToStorage(collection: CalendarCollection): void {
 
 export function removeCollectionFromStorage(guid: string): boolean {
   initializeStorage()
-  const index = globalThis.calendarCollections.findIndex(
-    col => col.guid === guid
-  )
+
+  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      guid
+    )
+
+  const index = isUuid
+    ? globalThis.calendarCollections.findIndex(col => col.guid === guid)
+    : globalThis.calendarCollections.findIndex(
+        col => col.guid.toLowerCase() === guid.toLowerCase()
+      )
+
   if (index >= 0) {
     globalThis.calendarCollections.splice(index, 1)
     return true
@@ -43,7 +53,24 @@ export function findCollectionInStorage(
   guid: string
 ): CalendarCollection | null {
   initializeStorage()
-  return globalThis.calendarCollections.find(col => col.guid === guid) || null
+
+  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      guid
+    )
+
+  if (isUuid) {
+    // Exact match for UUIDs
+    return globalThis.calendarCollections.find(col => col.guid === guid) || null
+  } else {
+    // Case-insensitive match for custom IDs
+    return (
+      globalThis.calendarCollections.find(
+        col => col.guid.toLowerCase() === guid.toLowerCase()
+      ) || null
+    )
+  }
 }
 
 export function updateCollectionInStorage(
@@ -51,9 +78,19 @@ export function updateCollectionInStorage(
   updates: Partial<CalendarCollection>
 ): CalendarCollection | null {
   initializeStorage()
-  const collection = globalThis.calendarCollections.find(
-    col => col.guid === guid
-  )
+
+  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      guid
+    )
+
+  const collection = isUuid
+    ? globalThis.calendarCollections.find(col => col.guid === guid)
+    : globalThis.calendarCollections.find(
+        col => col.guid.toLowerCase() === guid.toLowerCase()
+      )
+
   if (!collection) return null
 
   Object.assign(collection, updates)

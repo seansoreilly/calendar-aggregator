@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { combineICalFeeds } from '../../../../lib/ical-combiner'
 import { findCollectionByGuidInDatabase } from '../../../../lib/supabase'
+import { validateId } from '../../../../lib/validation'
+import { isCalendarCollectionError } from '../../../../lib/errors'
 
 /**
  * GET /api/calendar/[guid] - Get combined iCal feed for a collection
@@ -22,14 +24,20 @@ export async function GET(
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
     }
 
-    // Validate GUID format (basic UUID validation)
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(guid)) {
-      return NextResponse.json(
-        { error: 'Invalid GUID format' },
-        { status: 400 }
-      )
+    // Validate ID format (UUID or custom ID)
+    try {
+      validateId(guid)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            code: error.code,
+          },
+          { status: error.statusCode }
+        )
+      }
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
     }
 
     // Find the collection
@@ -174,10 +182,10 @@ export async function HEAD(
       return new NextResponse(null, { status: 400 })
     }
 
-    // Validate GUID format
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(guid)) {
+    // Validate ID format (UUID or custom ID)
+    try {
+      validateId(guid)
+    } catch {
       return new NextResponse(null, { status: 400 })
     }
 

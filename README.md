@@ -17,7 +17,8 @@ Experience the **stunning glassmorphism design** with:
 
 The Calendar Aggregator allows you to:
 
-- **Create calendar collections** with unique GUIDs for secure access
+- **Create calendar collections** with unique GUIDs or custom IDs for secure access
+- **Custom memorable URLs** - Use your own IDs like `my-work-schedule` instead of random UUIDs
 - **Real-time calendar aggregation** without persistent storage
 - **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
 - **Validate and test** calendar URLs before adding them
@@ -81,9 +82,10 @@ The calendar aggregation API will be available at [http://localhost:3000/api](ht
 
 #### POST /api/collections
 
-Create a new calendar collection
+Create a new calendar collection with optional custom ID
 
 ```bash
+# Create with auto-generated UUID
 curl -X POST https://www.calendar-aggregator.online/api/collections \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,40 +97,62 @@ curl -X POST https://www.calendar-aggregator.online/api/collections \
         "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
         "color": "#3b82f6",
         "enabled": true
-      },
+      }
+    ]
+  }'
+
+# Create with custom ID for memorable URLs
+curl -X POST https://www.calendar-aggregator.online/api/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Work Schedule",
+    "customId": "my-work-schedule",
+    "description": "All my work-related events",
+    "calendars": [
       {
-        "name": "Personal Calendar",
-        "url": "webcal://outlook.live.com/owa/calendar/xyz/reachcalendar.ics",
-        "color": "#ef4444",
+        "name": "Work Calendar",
+        "url": "https://calendar.google.com/calendar/ical/work@example.com/public/basic.ics",
+        "color": "#3b82f6",
         "enabled": true
       }
     ]
   }'
 ```
 
-**Response**: Returns the created collection with a unique GUID
+**Response**: Returns the created collection with either a unique GUID or your custom ID
 
-#### GET /api/collections/{guid}
+**Custom ID Requirements**:
 
-Get a specific collection by GUID
+- 3-50 characters long
+- Letters, numbers, hyphens, and underscores only
+- Cannot start or end with special characters
+- Cannot use reserved words (api, admin, calendar, etc.)
+- Case-insensitive uniqueness (prevents duplicates)
 
-#### PUT /api/collections/{guid}
+#### GET /api/collections/{id}
+
+Get a specific collection by GUID or custom ID
+
+#### PUT /api/collections/{id}
 
 Update a collection (name, description, or calendars)
 
-#### DELETE /api/collections/{guid}
+#### DELETE /api/collections/{id}
 
 Remove a collection
 
 ### Calendar Feed Access
 
-#### GET /api/calendar/{guid}
+#### GET /api/calendar/{id}
 
 **Main endpoint** - Get the aggregated iCal feed for subscription
 
 ```bash
-# Direct access to combined calendar feed
+# Access with UUID
 curl https://www.calendar-aggregator.online/api/calendar/4fac5413-98b8-45d1-a8b3-1c26feda1941
+
+# Access with custom ID (much more memorable!)
+curl https://www.calendar-aggregator.online/api/calendar/my-work-schedule
 ```
 
 **Response**: Returns a complete iCal (.ics) file with all events from the collection's calendars
@@ -139,7 +163,7 @@ curl https://www.calendar-aggregator.online/api/calendar/4fac5413-98b8-45d1-a8b3
 - `Content-Disposition: attachment; filename="collection-name.ics"`
 - `Cache-Control: public, max-age=300`
 
-#### HEAD /api/calendar/{guid}
+#### HEAD /api/calendar/{id}
 
 Check feed availability without downloading content
 
@@ -165,13 +189,14 @@ https://caldav.icloud.com/published/2/[token]
 
 ## 🚀 Quick Start Example
 
-### 1. Create a Collection
+### 1. Create a Collection with Custom ID
 
 ```bash
 curl -X POST https://www.calendar-aggregator.online/api/collections \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Calendars",
+    "customId": "my-calendars",
     "calendars": [
       {
         "name": "Google Calendar",
@@ -182,13 +207,13 @@ curl -X POST https://www.calendar-aggregator.online/api/collections \
   }'
 ```
 
-### 2. Get Your GUID
+### 2. Get Your ID
 
-The response includes a unique GUID:
+The response includes your custom ID:
 
 ```json
 {
-  "guid": "abc123-def456-ghi789",
+  "guid": "my-calendars",
   "name": "My Calendars",
   ...
 }
@@ -196,11 +221,13 @@ The response includes a unique GUID:
 
 ### 3. Subscribe in Your Calendar App
 
-Use this URL in Google Calendar, Apple Calendar, or Outlook:
+Use this memorable URL in Google Calendar, Apple Calendar, or Outlook:
 
 ```
-https://www.calendar-aggregator.online/api/calendar/abc123-def456-ghi789
+https://www.calendar-aggregator.online/api/calendar/my-calendars
 ```
+
+**Much better than**: `https://www.calendar-aggregator.online/api/calendar/abc123-def456-ghi789`
 
 ## 🛠️ Technology Stack
 
@@ -270,7 +297,8 @@ The API will validate the URL format, test connectivity, and verify iCal data be
 ## ✨ Key Features
 
 - **🎨 Modern Glassmorphism UI**: Beautiful web interface with glass effects and animations
-- **🔒 GUID-based Security**: Each collection has a unique, unguessable identifier
+- **🔗 Custom Memorable URLs**: Choose your own IDs like `my-work-schedule` instead of random UUIDs
+- **🔒 GUID-based Security**: Each collection has a unique, unguessable identifier (UUID or custom)
 - **⚡ Real-time Aggregation**: No database needed - fetches calendars on demand
 - **🌐 Universal Compatibility**: Works with Google Calendar, Outlook, Apple Calendar, and more
 - **🔄 Event Deduplication**: Automatically handles duplicate events by UID

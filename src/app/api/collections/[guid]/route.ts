@@ -10,7 +10,7 @@ import {
   updateCollectionInDatabase,
   findCollectionByGuidInDatabase,
 } from '../../../../lib/supabase'
-import { validateGuid } from '../../../../lib/validation'
+import { validateId } from '../../../../lib/validation'
 import {
   CollectionNotFoundError,
   isCalendarCollectionError,
@@ -27,9 +27,9 @@ export async function GET(
   try {
     const { guid } = await params
 
-    // Validate GUID format
+    // Validate ID format (UUID or custom ID)
     try {
-      validateGuid(guid)
+      validateId(guid)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
         return NextResponse.json(

@@ -185,12 +185,26 @@ export async function findCollectionByGuidInDatabase(
   try {
     const supabase = getSupabase()
 
-    const { data, error } = await supabase
+    // Use case-insensitive search for custom IDs, exact match for UUIDs
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        guid
+      )
+
+    let query = supabase
       .schema('calendar_aggregator')
       .from('collections')
       .select('*')
-      .eq('guid', guid)
-      .single()
+
+    if (isUuid) {
+      // Exact match for UUIDs
+      query = query.eq('guid', guid)
+    } else {
+      // Case-insensitive match for custom IDs using PostgreSQL ilike
+      query = query.ilike('guid', guid)
+    }
+
+    const { data, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') {
