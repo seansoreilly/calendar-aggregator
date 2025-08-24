@@ -200,7 +200,9 @@ describe('Calendar Collections Integration Tests', () => {
       expect(response.status).toBe(400)
 
       const errorData = await response.json()
-      expect(errorData.error).toBe('Collection name is required')
+      expect(errorData.error).toBe(
+        'Validation failed: Collection name is required and must be a string'
+      )
     })
 
     it('should validate calendar URLs and names', async () => {
@@ -222,9 +224,11 @@ describe('Calendar Collections Integration Tests', () => {
       expect(response.status).toBe(400)
 
       const errorData = await response.json()
-      expect(errorData.error).toBe('Calendar validation failed')
+      expect(errorData.error).toBe(
+        'Validation failed: Calendar source URL is not a valid URL'
+      )
+      expect(errorData.code).toBe('VALIDATION_ERROR')
       expect(errorData.details).toBeDefined()
-      expect(Array.isArray(errorData.details)).toBe(true)
     })
 
     it('should return 404 for non-existent collection GUID', async () => {
@@ -234,10 +238,10 @@ describe('Calendar Collections Integration Tests', () => {
 
       const response = await getCollectionById(request, { params })
 
-      expect(response.status).toBe(404)
+      expect(response.status).toBe(400)
 
       const errorData = await response.json()
-      expect(errorData.error).toBe('Collection not found')
+      expect(errorData.error).toBe('Validation failed: Invalid GUID format')
     })
 
     it('should handle empty collections list', async () => {

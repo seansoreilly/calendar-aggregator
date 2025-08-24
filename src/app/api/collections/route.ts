@@ -12,12 +12,35 @@ import {
   saveCollectionToDatabase,
   getAllCollectionsFromDatabase,
 } from '../../../lib/supabase'
+import {
+  validateCreateCollectionRequest,
+  sanitizeCollectionName,
+  sanitizeCollectionDescription,
+} from '../../../lib/validation'
+import {
+  isCalendarCollectionError,
+  toCalendarCollectionError,
+} from '../../../lib/errors'
 
 /**
- * Generate a cryptographically secure GUID
+ * Generate a cryptographically secure GUID using Web Crypto API
  */
 function generateGuid(): string {
-  return crypto.randomUUID()
+  // Use built-in crypto for UUID generation
+  if (
+    typeof globalThis !== 'undefined' &&
+    'crypto' in globalThis &&
+    globalThis.crypto.randomUUID
+  ) {
+    return globalThis.crypto.randomUUID()
+  }
+
+  // Fallback implementation for environments without crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
 }
 
 /**
@@ -27,10 +50,15 @@ export async function GET() {
   try {
     const collections = await getAllCollectionsFromDatabase()
     return NextResponse.json(collections)
-  } catch {
+  } catch (error) {
+    console.error('Error fetching collections:', error)
+    const appError = toCalendarCollectionError(error, 'fetch_collections')
     return NextResponse.json(
-      { error: 'Failed to fetch collections' },
-      { status: 500 }
+      {
+        error: appError.message,
+        code: appError.code,
+      },
+      { status: appError.statusCode }
     )
   }
 }
@@ -42,26 +70,24 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateCollectionRequest = await request.json()
 
-    // Basic validation
-    if (!body.name) {
-      return NextResponse.json(
-        { error: 'Collection name is required' },
-        { status: 400 }
-      )
+    // Validate request using structured validation
+    try {
+      validateCreateCollectionRequest(body)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        )
+      }
+      throw error
     }
 
-    if (
-      !body.calendars ||
-      !Array.isArray(body.calendars) ||
-      body.calendars.length === 0
-    ) {
-      return NextResponse.json(
-        { error: 'At least one calendar is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate and process calendars
+    // Process and validate calendars with URL validation
     const processedCalendars: CalendarSource[] = []
     const validationErrors: string[] = []
 
@@ -123,17 +149,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new collection
+    // Create new collection with sanitized data
+    const now = new Date().toISOString()
     const newCollection: CalendarCollection = {
       guid: generateGuid(),
-      name: body.name,
+      name: sanitizeCollectionName(body.name),
       calendars: processedCalendars,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     }
 
-    // Add description only if provided
-    if (body.description) {
-      newCollection.description = body.description
+    // Add description only if provided after sanitization
+    const sanitizedDescription = sanitizeCollectionDescription(body.description)
+    if (sanitizedDescription) {
+      newCollection.description = sanitizedDescription
     }
 
     // Save to database with fallback to memory
@@ -142,9 +171,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(savedCollection, { status: 201 })
   } catch (error) {
     console.error('Error creating collection:', error)
+
+    // Use structured error handling
+    if (isCalendarCollectionError(error)) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+        },
+        { status: error.statusCode }
+      )
+    }
+
+    // Handle unexpected errors
+    const appError = toCalendarCollectionError(error, 'create_collection')
     return NextResponse.json(
-      { error: 'Failed to create collection' },
-      { status: 500 }
+      {
+        error: appError.message,
+        code: appError.code,
+      },
+      { status: appError.statusCode }
     )
   }
 }

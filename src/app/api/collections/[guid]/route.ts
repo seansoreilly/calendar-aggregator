@@ -10,6 +10,12 @@ import {
   updateCollectionInDatabase,
   findCollectionByGuidInDatabase,
 } from '../../../../lib/supabase'
+import { validateGuid } from '../../../../lib/validation'
+import {
+  CollectionNotFoundError,
+  isCalendarCollectionError,
+  toCalendarCollectionError,
+} from '../../../../lib/errors'
 
 /**
  * GET /api/collections/[guid] - Get specific collection
@@ -21,24 +27,46 @@ export async function GET(
   try {
     const { guid } = await params
 
-    if (!guid) {
-      return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
+    // Validate GUID format
+    try {
+      validateGuid(guid)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        )
+      }
+      throw error
     }
 
     const collection = await findCollectionByGuidInDatabase(guid)
 
     if (!collection) {
+      const notFoundError = new CollectionNotFoundError(guid)
       return NextResponse.json(
-        { error: 'Collection not found' },
-        { status: 404 }
+        {
+          error: notFoundError.message,
+          code: notFoundError.code,
+        },
+        { status: notFoundError.statusCode }
       )
     }
 
     return NextResponse.json(collection)
-  } catch {
+  } catch (error) {
+    console.error('Error fetching collection:', error)
+    const appError = toCalendarCollectionError(error, 'fetch_collection')
     return NextResponse.json(
-      { error: 'Failed to fetch collection' },
-      { status: 500 }
+      {
+        error: appError.message,
+        code: appError.code,
+      },
+      { status: appError.statusCode }
     )
   }
 }
