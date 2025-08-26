@@ -1,6 +1,5 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { NextResponse } from 'next/server'
 import { CalendarCollection } from '../types/calendar'
 
 export function cn(...inputs: ClassValue[]) {
@@ -107,47 +106,4 @@ export interface ApiError {
 export interface ApiSuccess<T = unknown> {
   data?: T
   message?: string
-}
-
-export function createErrorResponse(
-  error: string,
-  status: number,
-  details?: string[],
-  message?: string
-): NextResponse<ApiError> {
-  const errorBody: ApiError = { error }
-  if (details) errorBody.details = details
-  if (message) errorBody.message = message
-
-  return NextResponse.json(errorBody, { status })
-}
-
-export function createSuccessResponse<T>(
-  data?: T,
-  status: number = 200,
-  message?: string
-): NextResponse<ApiSuccess<T>> {
-  const successBody: ApiSuccess<T> = {}
-  if (data !== undefined) successBody.data = data
-  if (message) successBody.message = message
-
-  return NextResponse.json(successBody, { status })
-}
-
-export function createValidationErrorResponse(
-  validationErrors: string[]
-): NextResponse<ApiError> {
-  return createErrorResponse('Validation failed', 400, validationErrors)
-}
-
-export function createNotFoundResponse(
-  resource: string = 'Resource'
-): NextResponse<ApiError> {
-  return createErrorResponse(`${resource} not found`, 404)
-}
-
-export function createServerErrorResponse(
-  operation: string = 'operation'
-): NextResponse<ApiError> {
-  return createErrorResponse(`Failed to ${operation}`, 500)
 }

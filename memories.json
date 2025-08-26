@@ -1561,7 +1561,98 @@
       "lastAccessed": "2025-08-24T10:02:55.782Z",
       "lastVerified": "2025-08-24T10:02:55.782Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1756196501222_imucykni2",
+      "content": "Starting cleanup protocol for calendar-aggregator project. Cleanup scope: full codebase analysis. Safety level: evidence-based removal with comprehensive verification. Target: remove junk files, unused dependencies, dead code, build artifacts.",
+      "type": "general",
+      "tags": [
+        "general",
+        "cleanup",
+        "calendar-aggregator",
+        "safety",
+        "evidence-based"
+      ],
+      "timestamp": "2025-08-26T08:21:41.222Z",
+      "context": "Project cleanup initialization",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-26T08:21:41.222Z",
+      "lastVerified": "2025-08-26T08:21:41.222Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1756196556495_h7rebdvck",
+      "content": "Starting dead code and unused imports analysis for calendar-aggregator project. Will use static analysis to find unused imports, dead code patterns, and unused exports across the TypeScript/JavaScript codebase.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "javascript",
+        "dead-code",
+        "analysis",
+        "cleanup"
+      ],
+      "timestamp": "2025-08-26T08:22:36.495Z",
+      "context": "Dead code analysis task - Agent 3",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-26T08:22:36.495Z",
+      "lastVerified": "2025-08-26T08:22:36.495Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1756197286896_mjnf34a6l",
+      "content": "Git History Analysis for Stale Files - Calendar Aggregator Project\n\nKey findings:\n- Project is very new (created July 31, 2025, so only about 3-4 weeks old)\n- No files are genuinely 6+ months old since project is younger than that\n- Found 47 Task Master command files in .claude/commands/tm/ directory\n- Found 5 agent files in .claude/agents/ directory  \n- Several favicon files from early August haven't been touched recently\n- Some configuration files from project setup haven't been modified\n\nMost recent activity shows project is actively developed with recent commits for cleanup analysis and Supabase integration work.",
+      "type": "config",
+      "tags": [
+        "config",
+        "git-history",
+        "stale-files",
+        "project-analysis",
+        "calendar-aggregator"
+      ],
+      "timestamp": "2025-08-26T08:34:46.896Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-26T08:34:46.896Z",
+      "lastVerified": "2025-08-26T08:34:46.896Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1756197357514_6stp1tkv8",
+      "content": "Completed comprehensive static analysis of the calendar-aggregator codebase. Found key usage patterns:\n\nUSED FUNCTIONS & UTILITIES:\n- All utility functions in utils.ts (cn, storage functions) are used\n- All API error handling functions appear to be exported but NOT used\n- Calendar utility functions (validateCalendarUrl, normalizeCalendarUrl) are used\n- All validation functions appear to be used\n- All type interfaces are used across the codebase\n\nPOTENTIAL DEAD CODE FOUND:\n1. API response utilities in utils.ts (lines 112-153) - exported but never imported elsewhere\n2. Some type interfaces may be over-specified but all appear to have usage\n3. calendar-fetcher.ts exports FetchResult type and functions that don't appear to be used in current iCal-focused architecture\n\nNeed to generate detailed findings report next.",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "api",
+        "dead-code",
+        "analysis",
+        "findings",
+        "unused-code"
+      ],
+      "timestamp": "2025-08-26T08:35:57.514Z",
+      "context": "Dead code analysis completion",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-26T08:35:57.514Z",
+      "lastVerified": "2025-08-26T08:35:57.514Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1756197726443_0ezjf6zf4",
+      "content": "Parallel agent analysis results:\nJUNK FILES: .next/ (118MB), tsconfig.tsbuildinfo, pre-cleanup files - all safe to remove\nDEPENDENCIES: Only 1 unused - critters package - safe to remove\nDEAD CODE: calendar-fetcher.ts (325 lines), API response utilities (42 lines), StoredCalendarCollection interface - all unused\nGIT HISTORY: Project too new for stale files, but 47 Task Master command files may be redundant\nCONFIG BLOAT: builder.config.json unused, Next.js SVG rules unused, Tailwind safelist 80% unused, MCP has unused API keys",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "cleanup",
+        "analysis-complete",
+        "evidence-gathered"
+      ],
+      "timestamp": "2025-08-26T08:42:06.443Z",
+      "context": "Agent analysis complete - ready for cleanup execution",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-26T08:42:06.443Z",
+      "lastVerified": "2025-08-26T08:42:06.443Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-24T10:02:55.782Z"
+  "lastUpdated": "2025-08-26T08:42:06.443Z"
 }
