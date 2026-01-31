@@ -201,6 +201,8 @@ calendar-data/
 feed-cache/
 calendar-cache/
 sync-logs/
+test-screenshots/
+skills/
 
 # ===============================================
 # TASK MANAGEMENT (Taskmaster)

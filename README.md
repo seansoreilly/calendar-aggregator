@@ -279,19 +279,27 @@ This calendar aggregator is built with modern, cutting-edge technologies:
 ```
 src/
 ├── app/
+│   ├── page.tsx                # Home page with glassmorphism UI
+│   ├── privacy/                # Privacy policy page
 │   └── api/                    # API endpoints
 │       ├── collections/        # Collection CRUD operations
 │       │   └── [guid]/         # Individual collection management
 │       ├── calendar/[guid]/    # Main calendar feed endpoint
-│       └── health/             # Health check endpoint (includes Supabase status)
+│       └── health/             # Health check endpoint
+├── components/
+│   ├── create-collection-form.tsx  # Collection creation form
+│   ├── live-status.tsx         # Real-time system status
+│   └── ui/                     # Reusable UI components
 ├── lib/
 │   ├── calendar-utils.ts       # URL validation and connection testing
 │   ├── calendar-fetcher.ts     # iCal fetching and parsing
-│   ├── ical-combiner.ts        # Real-time iCal combination utility
-│   └── supabase.ts             # Supabase client and database operations
+│   ├── ical-combiner.ts        # Real-time iCal combination
+│   ├── validation.ts           # Input validation and sanitization
+│   ├── errors.ts               # Custom error classes
+│   ├── utils.ts                # Utility functions and storage
+│   └── supabase.ts             # Supabase client and database ops
 └── types/
-    └── calendar.ts             # TypeScript interfaces for collections and calendars
-schema.sql                      # Database schema for Supabase setup
+    └── calendar.ts             # TypeScript interfaces
 ```
 
 ## 🧪 Testing & Development
