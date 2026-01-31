@@ -12,32 +12,30 @@ vi.mock('@/components/live-status', () => ({
   ),
 }))
 
+// Mock the CreateCollectionForm component to avoid form complexity in tests
+vi.mock('@/components/create-collection-form', () => ({
+  default: () => <div data-testid="create-collection-form-mock">Form</div>,
+}))
+
 describe('HomePage', () => {
-  it('renders calendar aggregator title', () => {
+  it('renders hero title', () => {
     render(<HomePage />)
 
-    expect(screen.getByText('Calendar Aggregator')).toBeInTheDocument()
+    expect(screen.getByText('Unify Your')).toBeInTheDocument()
+    expect(screen.getByText('Digital Rhythm')).toBeInTheDocument()
   })
 
-  it('displays main sections', () => {
+  it('displays feature badges', () => {
     render(<HomePage />)
 
-    expect(screen.getByText('API Endpoints')).toBeInTheDocument()
-    expect(screen.getByText('Live Status')).toBeInTheDocument()
-    expect(screen.getByText('Quick Start')).toBeInTheDocument()
+    expect(screen.getByText('Zero-Knowledge Proxy')).toBeInTheDocument()
+    expect(screen.getByText('Edge-Cached Sync')).toBeInTheDocument()
+    expect(screen.getByText('iCal Compliant')).toBeInTheDocument()
   })
 
-  it('shows api endpoint links', () => {
+  it('shows aggregation protocol badge', () => {
     render(<HomePage />)
 
-    expect(screen.getAllByText('/api/collections')).toHaveLength(2) // Appears in API section and Quick Start
-    expect(screen.getAllByText('/api/calendar/[guid]')).toHaveLength(2) // Appears in API section and Quick Start
-    expect(screen.getByText('/api/health')).toBeInTheDocument()
-  })
-
-  it('has functioning test api button', () => {
-    render(<HomePage />)
-
-    expect(screen.getByRole('link', { name: 'Test API' })).toBeInTheDocument()
+    expect(screen.getByText('Aggregation Protocol v2.0')).toBeInTheDocument()
   })
 })

@@ -21,18 +21,12 @@ export function normalizeCalendarUrl(urlString: string): string {
 }
 
 /**
- * Validation result interface
+ * Connection test result interface
  */
-export interface ValidationResult {
+export interface ConnectionTestResult {
   isValid: boolean
   error?: string
   warnings?: string[]
-}
-
-/**
- * Connection test result interface
- */
-export interface ConnectionTestResult extends ValidationResult {
   statusCode?: number
   contentType?: string
   hasCalendarData?: boolean

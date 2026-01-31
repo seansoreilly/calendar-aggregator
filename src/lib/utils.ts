@@ -96,14 +96,3 @@ export function updateCollectionInStorage(
   collection.updatedAt = new Date().toISOString()
   return collection
 }
-
-export interface ApiError {
-  error: string
-  details?: string[]
-  message?: string
-}
-
-export interface ApiSuccess<T = unknown> {
-  data?: T
-  message?: string
-}

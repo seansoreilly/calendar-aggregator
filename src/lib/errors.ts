@@ -44,18 +44,6 @@ export class ValidationError extends CalendarCollectionError {
   }
 }
 
-export class DatabaseConnectionError extends CalendarCollectionError {
-  constructor(originalError: unknown) {
-    super(
-      'Database connection failed',
-      'DATABASE_CONNECTION_ERROR',
-      503,
-      originalError
-    )
-    this.name = 'DatabaseConnectionError'
-  }
-}
-
 export class DatabaseOperationError extends CalendarCollectionError {
   constructor(operation: string, originalError: unknown) {
     super(
@@ -65,18 +53,6 @@ export class DatabaseOperationError extends CalendarCollectionError {
       originalError
     )
     this.name = 'DatabaseOperationError'
-  }
-}
-
-export class DuplicateCollectionError extends CalendarCollectionError {
-  constructor(guid: string) {
-    super(
-      `Calendar collection with GUID '${guid}' already exists`,
-      'DUPLICATE_COLLECTION',
-      409,
-      { guid }
-    )
-    this.name = 'DuplicateCollectionError'
   }
 }
 

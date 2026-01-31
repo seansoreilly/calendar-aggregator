@@ -231,17 +231,18 @@ describe('Calendar Collections Integration Tests', () => {
       expect(errorData.details).toBeDefined()
     })
 
-    it('should return 404 for non-existent collection GUID', async () => {
+    it('should return 404 for non-existent collection', async () => {
+      // Note: This GUID passes validation as a custom ID but doesn't exist in storage
       const nonExistentGuid = '00000000-0000-0000-0000-000000000000'
       const params = Promise.resolve({ guid: nonExistentGuid })
       const request = createMockRequest()
 
       const response = await getCollectionById(request, { params })
 
-      expect(response.status).toBe(400)
+      expect(response.status).toBe(404)
 
       const errorData = await response.json()
-      expect(errorData.error).toBe('Validation failed: Invalid GUID format')
+      expect(errorData.code).toBe('COLLECTION_NOT_FOUND')
     })
 
     it('should handle empty collections list', async () => {
