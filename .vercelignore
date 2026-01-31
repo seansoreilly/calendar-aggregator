@@ -1,20 +1,16 @@
 # ===============================================
 # DOCUMENTATION & README FILES
 # ===============================================
-README.md
 docs/
-*.md
 CHANGELOG*
 LICENSE*
 CONTRIBUTING*
 CODE_OF_CONDUCT*
 PROJECT_GUIDE.md
-CLAUDE.md
 
 # ===============================================
 # DEVELOPMENT CONFIGURATION
 # ===============================================
-.gitignore
 .prettierrc*
 .prettierignore
 .eslintrc*
@@ -46,13 +42,7 @@ jest-html-reports/
 # ===============================================
 # BUILD & COMPILATION
 # ===============================================
-tsconfig.json
-tsconfig.*.json
 *.tsbuildinfo
-next.config.ts
-next.config.js
-postcss.config.*
-tailwind.config.*
 
 # ===============================================
 # SOURCE MAPS & DEBUG
@@ -267,3 +257,7 @@ private/
 .firebase/
 .aws/
 .gcp/
+# AI & Tools
+.gemini/
+nanobanana-output/
+current_ui.png

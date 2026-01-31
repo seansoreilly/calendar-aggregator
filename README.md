@@ -1,30 +1,32 @@
 # Calendar Aggregator
 
-A powerful GUID-based calendar aggregation API that combines multiple iCal feeds into unified calendar collections. Built with Next.js 15, TypeScript, and modern serverless architecture featuring a beautiful glassmorphism UI.
+A powerful GUID-based calendar aggregation service that seamlessly combines multiple iCal feeds into unified calendar collections. Built with Next.js 15, TypeScript, and modern serverless architecture featuring a stunning glassmorphism UI.
 
 ## ✨ Modern Web Interface
 
-Experience the **stunning glassmorphism design** with:
+Experience the **beautiful glassmorphism design** with:
 
 - 🎨 **Glass-effect panels** with backdrop blur and transparency
-- 🌊 **Animated gradient blobs** creating a dynamic background
-- 💫 **Smooth hover animations** and visual effects
-- 🌓 **Dark/light mode support** with automatic theme detection
-- 📱 **Responsive design** optimized for all devices
-- ⚡ **Interactive elements** with gradient accents and shadows
+- 🌊 **Animated gradient blobs** creating dynamic backgrounds
+- 💫 **Smooth hover animations** and interactive transitions
+- 🌈 **Gradient accents** throughout the interface
+- 📱 **Responsive design** optimized for all screen sizes
+- ⚡ **Real-time status indicators** and health monitoring
+- 🎯 **Intuitive API exploration** directly from the web interface
 
 ## 📅 What It Does
 
-The Calendar Aggregator allows you to:
+The Calendar Aggregator empowers you to:
 
-- **Create calendar collections** with unique GUIDs or custom IDs for secure access
+- **Create calendar collections** with unique GUIDs or memorable custom IDs
 - **Custom memorable URLs** - Use your own IDs like `my-work-schedule` instead of random UUIDs
-- **Real-time calendar aggregation** without persistent storage
+- **Real-time calendar aggregation** with dual storage modes (Supabase + in-memory fallback)
 - **Combine multiple calendars** from different sources (Google Calendar, Outlook, Apple Calendar, etc.)
-- **Validate and test** calendar URLs before adding them
+- **Validate and test** calendar URLs with comprehensive error handling
 - **Direct iCal feed output** compatible with all calendar applications
-- **Concurrent fetching** with error handling and timeout protection
-- **Beautiful web interface** for easy collection management
+- **Concurrent fetching** with timeout protection and graceful error handling
+- **Beautiful web interface** for easy collection management and API testing
+- **Live system monitoring** with health status and Supabase connectivity
 
 ## 🌐 Live Demo
 
@@ -231,18 +233,46 @@ https://www.calendar-aggregator.online/api/calendar/my-calendars
 
 ## 🛠️ Technology Stack
 
-This calendar aggregator is built with:
+This calendar aggregator is built with modern, cutting-edge technologies:
 
-- **[Next.js 15.3.5](https://nextjs.org/)** - React framework with App Router and serverless functions
-- **[React 19.1.0](https://react.dev/)** - Latest React with improved performance
-- **[TypeScript 5.8.3](https://www.typescriptlang.org/)** - Type safety and better developer experience
-- **[Tailwind CSS 3.4.16](https://tailwindcss.com/)** - Utility-first CSS framework for styling
-- **[node-ical 0.20.1](https://www.npmjs.com/package/node-ical)** - iCal parsing and processing
-- **[Vitest 3.2.4](https://vitest.dev/)** - Fast unit testing framework
-- **[Zod 4.0.5](https://zod.dev/)** - TypeScript-first schema validation
-- **[Supabase](https://supabase.com/)** - Optional PostgreSQL database for persistent storage
-- **Real-time aggregation** - Fetches calendars on-demand with optional persistence
-- **GUID-based collections** - Secure access with cryptographically secure identifiers
+### Core Framework
+
+- **[Next.js 15.3.5](https://nextjs.org/)** - React framework with App Router and serverless API routes
+- **[React 19.1.0](https://react.dev/)** - Latest React with server components and enhanced performance
+- **[TypeScript 5.8.3](https://www.typescriptlang.org/)** - Full type safety across frontend and backend
+
+### Styling & UI
+
+- **[Tailwind CSS 3.4.16](https://tailwindcss.com/)** - Utility-first CSS with glassmorphism effects
+- **[Lucide React](https://lucide.dev/)** - Beautiful, customizable icons
+- **Custom CSS animations** - Smooth blob animations and gradient transitions
+
+### Calendar Processing
+
+- **[node-ical 0.20.1](https://www.npmjs.com/package/node-ical)** - Robust iCal parsing and processing
+- **[Axios 1.11.0](https://axios-http.com/)** - HTTP client for calendar feed fetching
+- **Custom iCal combiner** - Real-time calendar aggregation with deduplication
+
+### Database & Storage
+
+- **[Supabase](https://supabase.com/)** - PostgreSQL database with real-time capabilities
+- **Dual storage modes** - Database persistence with in-memory fallback
+- **Graceful degradation** - Automatic fallback when database unavailable
+
+### Development & Testing
+
+- **[Vitest 3.2.4](https://vitest.dev/)** - Fast unit testing with React Testing Library
+- **[ESLint](https://eslint.org/)** - Code quality and consistency
+- **[Prettier](https://prettier.io/)** - Automated code formatting
+- **[Husky](https://typicode.github.io/husky/)** - Git hooks for quality gates
+
+### Architecture Features
+
+- **Serverless functions** - Scalable API endpoints
+- **GUID-based security** - Cryptographically secure collection identifiers
+- **Real-time aggregation** - On-demand calendar fetching with concurrent processing
+- **Timeout protection** - Robust error handling with 15-second timeouts
+- **Event deduplication** - Intelligent duplicate removal by UID
 
 ## 📁 Project Structure
 
