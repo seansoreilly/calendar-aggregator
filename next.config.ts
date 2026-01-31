@@ -14,12 +14,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  eslint: {
-    dirs: ['src'],
-  },
-  typescript: {
-    ignoreBuildErrors: false,
-  },
   headers: async () => {
     return [
       {
