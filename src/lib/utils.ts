@@ -16,11 +16,6 @@ export function initializeStorage(): void {
   }
 }
 
-export function getStorageCollections(): CalendarCollection[] {
-  initializeStorage()
-  return globalThis.calendarCollections
-}
-
 export function addCollectionToStorage(collection: CalendarCollection): void {
   initializeStorage()
   globalThis.calendarCollections.push(collection)

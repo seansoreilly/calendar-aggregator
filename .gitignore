@@ -222,6 +222,7 @@ builder.config.json
 # DEVELOPMENT & MISC
 # ===============================================
 .local
+*.code-workspace
 .husky/_/
 *.patch
 .yarnrc.yml

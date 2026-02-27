@@ -65,7 +65,7 @@ export function Footer() {
                 <Github className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href="https://x.com/seansoreilly"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
