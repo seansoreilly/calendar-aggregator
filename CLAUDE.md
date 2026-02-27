@@ -7,6 +7,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md
 
+## Known Issues & Gotchas
+
+### Supabase RLS Policies
+
+- The app uses the Supabase **anon key**, not service_role
+- RLS is enabled on `calendar_aggregator.collections` — any new tables need anon policies or operations will silently fail
+- All Supabase queries use `.schema('calendar_aggregator')` (custom schema, not public)
+
+### Silent Fallback Anti-Pattern in `src/lib/supabase.ts`
+
+- All database functions (`saveCollectionToDatabase`, `findCollectionByGuidInDatabase`, `getAllCollectionsFromDatabase`) catch errors and silently fall back to in-memory `globalThis.calendarCollections`
+- On Vercel serverless, in-memory is empty on every cold start — so database failures look like missing data (404), not errors (500)
+- When debugging "missing" collections, always check if the Supabase query is actually succeeding
+
+### Supabase CLI Limitations
+
+- `supabase db dump` requires Docker — not available in WSL2 without Docker Desktop
+- Use the Management API for remote queries: `POST https://api.supabase.com/v1/projects/ogdfhmnnhlmqwuhlikem/database/query`
+- REST API requires `Accept-Profile: calendar_aggregator` / `Content-Profile: calendar_aggregator` headers for the custom schema
+
 ## Development Commands
 
 ### Core Development Workflow
