@@ -8,11 +8,11 @@ export function middleware(_request: NextRequest): NextResponse {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com; " +
       "style-src 'self' 'unsafe-inline'; " +
       "img-src 'self' data: https:; " +
       "font-src 'self' data:; " +
-      "connect-src 'self'; " +
+      "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
       "form-action 'self'"
