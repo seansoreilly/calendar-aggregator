@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CreateCollectionRequest } from '../../../types/calendar'
 import {
   saveCollectionToDatabase,
-  getAllCollectionsFromDatabase,
   findCollectionByGuidInDatabase,
 } from '../../../lib/supabase'
 import { validateCreateCollectionRequest } from '../../../lib/validation'
@@ -15,26 +14,6 @@ import {
   generateGuid,
   processCalendarInputs,
 } from '../../../lib/collection-service'
-
-/**
- * GET /api/collections - Get all calendar collections
- */
-export async function GET() {
-  try {
-    const collections = await getAllCollectionsFromDatabase()
-    return NextResponse.json(collections)
-  } catch (error) {
-    console.error('Error fetching collections:', error)
-    const appError = toCalendarCollectionError(error, 'fetch_collections')
-    return NextResponse.json(
-      {
-        error: appError.message,
-        code: appError.code,
-      },
-      { status: appError.statusCode }
-    )
-  }
-}
 
 /**
  * POST /api/collections - Create new calendar collection

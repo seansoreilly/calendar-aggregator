@@ -27,6 +27,7 @@ export default function CreateCollectionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successUrl, setSuccessUrl] = useState<string | null>(null)
+  const [successGuid, setSuccessGuid] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [activeColorIndex, setActiveColorIndex] = useState<number | null>(null)
 
@@ -94,6 +95,7 @@ export default function CreateCollectionForm() {
 
       const url = `${window.location.origin}/api/calendar/${data.guid}`
       setSuccessUrl(url)
+      setSuccessGuid(data.guid)
       trackEvent('collection_created', {
         calendar_count: calendarCount,
         has_custom_id: customId ? 1 : 0,
@@ -106,6 +108,18 @@ export default function CreateCollectionForm() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleDelete = async () => {
+    if (!successGuid) return
+    if (!confirm('Delete this collection? This cannot be undone.')) return
+    await fetch(`/api/collections/${successGuid}`, { method: 'DELETE' })
+    setSuccessUrl(null)
+    setSuccessGuid(null)
+    setName('')
+    setCustomId('')
+    setCalendars([{ url: '', name: 'Main Calendar', color: '#3b82f6' }])
+    trackEvent('collection_deleted')
   }
 
   const copyToClipboard = () => {
@@ -159,6 +173,7 @@ export default function CreateCollectionForm() {
             <button
               onClick={() => {
                 setSuccessUrl(null)
+                setSuccessGuid(null)
                 setName('')
                 setCustomId('')
                 setCalendars([
@@ -178,6 +193,12 @@ export default function CreateCollectionForm() {
               Test Feed
             </a>
           </div>
+          <button
+            onClick={handleDelete}
+            className="w-full py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+          >
+            Delete this collection
+          </button>
         </div>
       </div>
     )

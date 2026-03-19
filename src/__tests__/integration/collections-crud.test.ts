@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST, GET } from '../../app/api/collections/route'
+import { POST } from '../../app/api/collections/route'
 import {
   GET as getById,
   PUT,
@@ -245,9 +245,7 @@ describe('Calendar Collections CRUD Operations', () => {
       const collection2 = await collection2Response.json()
 
       // Verify both exist
-      const allCollectionsResponse = await GET()
-      const allCollections = await allCollectionsResponse.json()
-      expect(allCollections).toHaveLength(2)
+      expect(globalThis.calendarCollections).toHaveLength(2)
 
       // Update collection 1
       const updateRequest = createMockRequest(
@@ -263,10 +261,8 @@ describe('Calendar Collections CRUD Operations', () => {
       await DELETE(deleteRequest, { params: deleteParams })
 
       // Verify final state
-      const finalCollectionsResponse = await GET()
-      const finalCollections = await finalCollectionsResponse.json()
-      expect(finalCollections).toHaveLength(1)
-      expect(finalCollections[0]).toMatchObject({
+      expect(globalThis.calendarCollections).toHaveLength(1)
+      expect(globalThis.calendarCollections[0]).toMatchObject({
         guid: collection1.guid,
         name: 'Updated Collection 1',
       })

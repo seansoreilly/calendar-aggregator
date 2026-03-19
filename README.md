@@ -45,7 +45,6 @@ Optional: `?timeout=5000` (milliseconds, 1000–30000, default 15000)
 
 | Method   | Path                      | Description                           |
 | -------- | ------------------------- | ------------------------------------- |
-| `GET`    | `/api/collections`        | List all collections                  |
 | `GET`    | `/api/collections/{guid}` | Get a collection                      |
 | `PUT`    | `/api/collections/{guid}` | Update a collection                   |
 | `DELETE` | `/api/collections/{guid}` | Delete a collection                   |

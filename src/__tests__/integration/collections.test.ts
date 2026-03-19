@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { GET, POST } from '../../app/api/collections/route'
+import { POST } from '../../app/api/collections/route'
 import { GET as getCollectionById } from '../../app/api/collections/[guid]/route'
 
 // Mock the calendar validation function to avoid network calls in tests
@@ -117,15 +117,9 @@ describe('Calendar Collections Integration Tests', () => {
       const createResponse = await POST(createRequest)
       const createdCollection = await createResponse.json()
 
-      // Then retrieve all collections
-      const getAllResponse = await GET()
-
-      expect(getAllResponse.status).toBe(200)
-
-      const collections = await getAllResponse.json()
-      expect(Array.isArray(collections)).toBe(true)
-      expect(collections).toHaveLength(1)
-      expect(collections[0]).toMatchObject({
+      // Verify it was stored in memory
+      expect(globalThis.calendarCollections).toHaveLength(1)
+      expect(globalThis.calendarCollections[0]).toMatchObject({
         guid: createdCollection.guid,
         name: mockCalendarData.name,
         description: mockCalendarData.description,
@@ -246,13 +240,7 @@ describe('Calendar Collections Integration Tests', () => {
     })
 
     it('should handle empty collections list', async () => {
-      const response = await GET()
-
-      expect(response.status).toBe(200)
-
-      const collections = await response.json()
-      expect(Array.isArray(collections)).toBe(true)
-      expect(collections).toHaveLength(0)
+      expect(globalThis.calendarCollections).toHaveLength(0)
     })
 
     it('should assign sequential IDs to calendars within a collection', async () => {
