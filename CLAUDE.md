@@ -45,9 +45,11 @@ npm run format:check # Check code formatting without changes
 ### Testing Commands
 
 ```bash
-npm test            # Run unit tests with Vitest
-npm run test:watch  # Run tests in watch mode
-npm run test:ui     # Run tests with web UI interface
+npm test                                              # Run all tests with Vitest
+npm run test:watch                                    # Run tests in watch mode
+npm run test:ui                                       # Run tests with web UI interface
+npm test -- src/__tests__/utils.test.ts               # Run a single test file
+npm test -- src/__tests__/integration/                # Run only integration tests
 ```
 
 ### Pre-commit Hooks
@@ -73,10 +75,9 @@ The project uses Husky and lint-staged for automated code quality:
 
 #### GUID-Based Collections System
 
-The application uses a **stateless, in-memory collection system**:
+Collections are persisted in **Supabase** (`calendar_aggregator.collections`) with an in-memory `globalThis.calendarCollections` fallback for when the DB is unavailable:
 
-- **No database** - All data stored in `globalThis.calendarCollections` during serverless function lifetime
-- **GUID security** - Each collection identified by cryptographically secure UUID
+- **Dual ID support** - `guid` field accepts either a standard UUID or a human-readable custom slug (e.g., `seansoreilly`). UUID lookup is case-sensitive and exact; custom slug lookup uses `ilike` (case-insensitive) in DB and lowercased comparison in memory.
 - **Real-time aggregation** - Calendar feeds fetched and combined on-demand
 - **Concurrent fetching** - Multiple calendar sources processed in parallel with timeout protection
 
@@ -141,12 +142,18 @@ The application processes iCal at the **text level** rather than parsing to obje
 
 #### Security Headers Configuration
 
-`next.config.ts` implements comprehensive security:
+Security headers are set in `src/middleware.ts` (not `next.config.ts`). The middleware matcher excludes `/api/*`, `/_next/static`, `/_next/image`, and `favicon.ico` — so **API routes do not receive these headers**.
 
-- **CSP** - Content Security Policy with strict directives
-- **HSTS** - HTTP Strict Transport Security for HTTPS enforcement
-- **Frame Protection** - X-Frame-Options: DENY prevents embedding
-- **Content Sniffing** - X-Content-Type-Options: nosniff prevents MIME attacks
+#### Error Hierarchy
+
+`src/lib/errors.ts` defines structured error classes for API routes:
+
+- `CalendarCollectionError` — base class with `code`, `statusCode`, `details`
+- `CollectionNotFoundError` — 404, code `COLLECTION_NOT_FOUND`
+- `ValidationError` — 400, code `VALIDATION_ERROR`
+- `DatabaseOperationError` — 500, code `DATABASE_OPERATION_ERROR`
+
+Use `isCalendarCollectionError()` to type-narrow in catch blocks.
 
 ### Frontend Architecture
 
