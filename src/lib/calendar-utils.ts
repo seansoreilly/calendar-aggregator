@@ -1,6 +1,7 @@
 import axios from 'axios'
 import * as ical from 'node-ical'
 import { CalendarSource } from '../types/calendar'
+import { assertNotSsrfTarget } from './validation'
 
 /**
  * Validates if a string is a properly formatted URL
@@ -72,6 +73,9 @@ async function testCalendarConnection(
     }
 
     const normalizedUrl = normalizeCalendarUrl(urlString)
+
+    // Block SSRF targets before making any network request
+    assertNotSsrfTarget(normalizedUrl)
 
     // Make HTTP request with timeout
     const response = await axios.get(normalizedUrl, {

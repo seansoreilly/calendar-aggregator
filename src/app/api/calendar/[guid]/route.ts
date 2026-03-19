@@ -92,11 +92,7 @@ export async function GET(
         }
 
         return NextResponse.json(
-          {
-            error: 'Failed to fetch calendar data',
-            details: combineResult.errors,
-            warnings: combineResult.warnings,
-          },
+          { error: 'One or more calendar sources are unavailable' },
           { status: 503 }
         )
       }

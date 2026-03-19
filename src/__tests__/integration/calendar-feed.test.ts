@@ -291,8 +291,8 @@ describe('GET /api/calendar/[guid]', () => {
 
       expect(response.status).toBe(503)
       const body = await response.json()
-      expect(body.error).toContain('Failed to fetch')
-      expect(body.details).toHaveLength(1)
+      expect(body.error).toContain('unavailable')
+      expect(body.details).toBeUndefined()
     })
   })
 })

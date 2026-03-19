@@ -161,6 +161,45 @@ export function validateCollectionDescription(description?: string): void {
   }
 }
 
+const PRIVATE_IP_PATTERNS = [
+  /^127\./, // 127.0.0.0/8 loopback
+  /^10\./, // 10.0.0.0/8 private
+  /^172\.(1[6-9]|2\d|3[01])\./, // 172.16.0.0/12 private
+  /^192\.168\./, // 192.168.0.0/16 private
+  /^169\.254\./, // 169.254.0.0/16 link-local (AWS IMDS)
+  /^0\./, // 0.0.0.0/8
+  /^\[::1\]$/, // IPv6 loopback
+  /^\[fc00:/i, // IPv6 unique local
+  /^\[fe80:/i, // IPv6 link-local
+]
+
+const BLOCKED_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
+
+/**
+ * Throws if the URL's hostname resolves to a private/internal address.
+ * Prevents SSRF attacks against cloud metadata endpoints and internal services.
+ */
+export function assertNotSsrfTarget(url: string): void {
+  const parsed = new URL(url)
+  const hostname = parsed.hostname.toLowerCase()
+
+  if (BLOCKED_HOSTNAMES.has(hostname)) {
+    throw new ValidationError(
+      'Calendar URL hostname is not permitted',
+      'url',
+      url
+    )
+  }
+
+  if (PRIVATE_IP_PATTERNS.some(p => p.test(hostname))) {
+    throw new ValidationError(
+      'Calendar URL must not point to a private network address',
+      'url',
+      url
+    )
+  }
+}
+
 /**
  * Validate calendar source URL
  */
@@ -178,7 +217,9 @@ export function validateCalendarSourceUrl(url: string): void {
         url
       )
     }
-  } catch {
+    assertNotSsrfTarget(url)
+  } catch (error) {
+    if (error instanceof ValidationError) throw error
     throw new ValidationError(
       'Calendar source URL is not a valid URL',
       'url',

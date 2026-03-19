@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         )
       }
-      collectionId = body.customId
+      collectionId = body.customId.toLowerCase()
     } else {
       // Generate UUID as fallback
       collectionId = generateGuid()

@@ -10,7 +10,10 @@ import {
   updateCollectionInDatabase,
   findCollectionByGuidInDatabase,
 } from '../../../../lib/supabase'
-import { validateId } from '../../../../lib/validation'
+import {
+  validateId,
+  validateCalendarSourceUrl,
+} from '../../../../lib/validation'
 import {
   CollectionNotFoundError,
   isCalendarCollectionError,
@@ -114,6 +117,18 @@ export async function PUT(
           { error: 'Calendars must be a non-empty array' },
           { status: 400 }
         )
+      }
+
+      // Validate each URL before processing
+      for (const cal of body.calendars) {
+        try {
+          validateCalendarSourceUrl(cal.url)
+        } catch {
+          return NextResponse.json(
+            { error: `Invalid calendar URL: ${cal.url}` },
+            { status: 400 }
+          )
+        }
       }
 
       const processedCalendars: CalendarSource[] =
