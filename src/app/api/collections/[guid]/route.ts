@@ -4,7 +4,7 @@ import {
   CalendarSource,
   UpdateCollectionRequest,
 } from '../../../../types/calendar'
-import { normalizeCalendarUrl } from '../../../../lib/calendar-utils'
+import { buildCalendarSource } from '../../../../lib/calendar-utils'
 import {
   deleteCollectionFromDatabase,
   updateCollectionInDatabase,
@@ -116,18 +116,8 @@ export async function PUT(
         )
       }
 
-      // Process calendars (simplified version)
-      const processedCalendars: CalendarSource[] = body.calendars.map(
-        (cal, i) => ({
-          id: i + 1,
-          url: normalizeCalendarUrl(cal.url),
-          name: cal.name,
-          color: cal.color || '#3b82f6',
-          enabled: cal.enabled !== false,
-          createdAt: new Date().toISOString(),
-          syncStatus: 'idle',
-        })
-      )
+      const processedCalendars: CalendarSource[] =
+        body.calendars.map(buildCalendarSource)
 
       updates.calendars = processedCalendars
     }

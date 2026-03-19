@@ -1,5 +1,6 @@
 import axios from 'axios'
 import * as ical from 'node-ical'
+import { CalendarSource } from '../types/calendar'
 
 /**
  * Validates if a string is a properly formatted URL
@@ -18,6 +19,24 @@ function isValidUrl(urlString: string): boolean {
  */
 export function normalizeCalendarUrl(urlString: string): string {
   return urlString.replace(/^webcal:\/\//, 'https://')
+}
+
+/**
+ * Builds a CalendarSource from raw input, normalizing URL and applying defaults
+ */
+export function buildCalendarSource(
+  cal: { url: string; name: string; color?: string; enabled?: boolean },
+  index: number
+): CalendarSource {
+  return {
+    id: index + 1,
+    url: normalizeCalendarUrl(cal.url),
+    name: cal.name,
+    color: cal.color || '#3b82f6',
+    enabled: cal.enabled !== false,
+    createdAt: new Date().toISOString(),
+    syncStatus: 'idle',
+  }
 }
 
 /**

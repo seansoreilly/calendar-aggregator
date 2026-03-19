@@ -6,7 +6,7 @@ import {
 } from '../../../types/calendar'
 import {
   validateCalendarUrl,
-  normalizeCalendarUrl,
+  buildCalendarSource,
 } from '../../../lib/calendar-utils'
 import {
   saveCollectionToDatabase,
@@ -118,19 +118,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const normalizedUrl = normalizeCalendarUrl(calendarData.url)
-
-      const processedCalendar: CalendarSource = {
-        id: i + 1, // Temporary ID for the collection context
-        url: normalizedUrl,
-        name: calendarData.name,
-        color: calendarData.color || '#3b82f6',
-        enabled: calendarData.enabled !== false,
-        createdAt: new Date().toISOString(),
-        syncStatus: 'idle',
-      }
-
-      processedCalendars.push(processedCalendar)
+      processedCalendars.push(buildCalendarSource(calendarData, i))
     }
 
     if (validationErrors.length > 0) {
