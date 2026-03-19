@@ -2,256 +2,110 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Known Issues & Gotchas
-
-### Supabase RLS Policies
-
-- The app uses the Supabase **anon key**, not service_role
-- RLS is enabled on `calendar_aggregator.collections` — any new tables need anon policies or operations will silently fail
-- All Supabase queries use `.schema('calendar_aggregator')` (custom schema, not public)
-
-### Silent Fallback Anti-Pattern in `src/lib/supabase.ts`
-
-- All database functions (`saveCollectionToDatabase`, `findCollectionByGuidInDatabase`, `getAllCollectionsFromDatabase`) catch errors and silently fall back to in-memory `globalThis.calendarCollections`
-- On Vercel serverless, in-memory is empty on every cold start — so database failures look like missing data (404), not errors (500)
-- When debugging "missing" collections, always check if the Supabase query is actually succeeding
-
-### Supabase CLI Limitations
-
-- `supabase db dump` requires Docker — not available in WSL2 without Docker Desktop
-- Use the Management API for remote queries: `POST https://api.supabase.com/v1/projects/ogdfhmnnhlmqwuhlikem/database/query`
-- REST API requires `Accept-Profile: calendar_aggregator` / `Content-Profile: calendar_aggregator` headers for the custom schema
-
 ## Development Commands
 
-### Core Development Workflow
-
 ```bash
-npm run dev          # Start development server with Turbo (http://localhost:3000)
+npm run dev          # Start development server (http://localhost:3000)
 npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Check code quality with ESLint
-npm run lint:fix     # Auto-fix linting issues
-npm run type-check   # TypeScript validation without emitting files
-npm run format       # Format code with Prettier
-npm run format:check # Check code formatting without changes
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix lint issues
+npm run type-check   # TypeScript validation
+npm run format       # Prettier format
+npm test             # Run all tests
+npm test -- src/__tests__/utils.test.ts        # Single test file
+npm test -- src/__tests__/integration/        # Integration tests only
 ```
 
-### Testing Commands
-
-```bash
-npm test                                              # Run all tests with Vitest
-npm run test:watch                                    # Run tests in watch mode
-npm run test:ui                                       # Run tests with web UI interface
-npm test -- src/__tests__/utils.test.ts               # Run a single test file
-npm test -- src/__tests__/integration/                # Run only integration tests
-```
-
-### Pre-commit Hooks
-
-The project uses Husky and lint-staged for automated code quality:
-
-- ESLint fixes and Prettier formatting applied automatically on commit
-- TypeScript files: `eslint --fix` + `prettier --write`
-- JSON/CSS/MD files: `prettier --write`
+Pre-commit hooks run `eslint --fix` + `prettier --write` automatically via Husky/lint-staged.
 
 ## Architecture Overview
 
-### Technology Stack
+### API Routes
 
-- **Next.js 15.3.5** - React framework with App Router and serverless API routes
-- **React 19.1.0** - Latest React with server components
-- **TypeScript 5.8.3** - Full type safety across frontend and backend
-- **Tailwind CSS 3.4.16** - Utility-first styling with glassmorphism design
-- **Vitest 3.2.4** - Fast unit testing with JSdom environment
-- **node-ical 0.20.1** - iCal parsing and processing library
-
-### Core Architecture Patterns
-
-#### GUID-Based Collections System
-
-Collections are persisted in **Supabase** (`calendar_aggregator.collections`) with an in-memory `globalThis.calendarCollections` fallback for when the DB is unavailable:
-
-- **Dual ID support** - `guid` field accepts either a standard UUID or a human-readable custom slug (e.g., `seansoreilly`). UUID lookup is case-sensitive and exact; custom slug lookup uses `ilike` (case-insensitive) in DB and lowercased comparison in memory.
-- **Real-time aggregation** - Calendar feeds fetched and combined on-demand
-- **Concurrent fetching** - Multiple calendar sources processed in parallel with timeout protection
-
-#### API Route Structure
+Only four routes exist:
 
 ```
-/api/collections          # Collection CRUD operations (POST, GET all)
-/api/collections/[guid]   # Individual collection management (GET, PUT, DELETE)
-/api/calendar/[guid]      # Main iCal feed endpoint for calendar apps
-/api/calendars           # Calendar URL validation and testing
-/api/events              # Event aggregation endpoints
-/api/health              # Health check and status
+GET/POST  /api/collections          # List all / create collection
+GET/PUT/DELETE /api/collections/[guid]  # Individual collection management
+GET/HEAD  /api/calendar/[guid]      # iCal feed for calendar apps (main endpoint)
+GET       /api/health               # Health check
 ```
 
-#### Type System Architecture
+### Library Modules (`src/lib/`)
 
-All data flows through strongly-typed interfaces defined in `src/types/calendar.ts`:
+| File                    | Purpose                                                                                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase.ts`           | DB CRUD — `saveCollectionToDatabase`, `findCollectionByGuidInDatabase`, `getAllCollectionsFromDatabase`, `updateCollectionInDatabase`, `deleteCollectionFromDatabase` |
+| `ical-combiner.ts`      | Fetches source calendars and combines them into one iCal — `combineICalFeeds()` is the only export                                                                    |
+| `collection-service.ts` | Extracted POST handler logic — `processCalendarInputs`, `buildCollectionRecord`, `generateGuid`                                                                       |
+| `calendar-response.ts`  | iCal HTTP response builders — `createCalendarSuccessResponse`, `createCalendarPartialResponse`, `createCalendarHeadResponse`, `parseCalendarTimeout`                  |
+| `calendar-utils.ts`     | URL normalisation (`normalizeCalendarUrl`), validation (`validateCalendarUrl`), and source construction (`buildCalendarSource`)                                       |
+| `validation.ts`         | Input validation — `UUID_REGEX`, `validateId`, `validateCustomId`, `validateCreateCollectionRequest`, sanitizers                                                      |
+| `errors.ts`             | Error class hierarchy — `CalendarCollectionError`, `CollectionNotFoundError`, `ValidationError`; use `isCalendarCollectionError()` to type-narrow                     |
+| `utils.ts`              | `cn()` for Tailwind class merging; in-memory fallback storage (`globalThis.calendarCollections`)                                                                      |
 
-- **CalendarCollection** - GUID-based collection with metadata
-- **CalendarSource** - Individual calendar feed configuration
-- **CalendarEvent** - Standardized event structure across sources
-- **CombineResult** - iCal combination operation results
+### Data Flow
 
-### Data Flow Patterns
+**Creating a collection:**
+`POST /api/collections` → `validateCreateCollectionRequest` → `processCalendarInputs` (validates URLs, calls `validateCalendarUrl`) → `buildCollectionRecord` → `saveCollectionToDatabase`
 
-#### Calendar Aggregation Flow
+**Serving a feed:**
+`GET /api/calendar/[guid]` → `findCollectionByGuidInDatabase` → `combineICalFeeds` (fetches all source URLs in parallel, deduplicates events by UID, preserves timezones) → `createCalendarSuccessResponse`
 
-1. **Collection Creation** (`/api/collections`) - Validates URLs, creates GUID
-2. **Feed Access** (`/api/calendar/[guid]`) - Retrieves collection, fetches calendars
-3. **iCal Combination** (`lib/ical-combiner.ts`) - Merges raw iCal content
-4. **Event Deduplication** - Removes duplicates by UID, preserves timezone data
-5. **Response Delivery** - Returns combined iCal with proper headers
+### GUID / Custom ID System
 
-#### Validation Pipeline
+`guid` accepts either a UUID (exact match) or a custom slug like `seansoreilly` (case-insensitive via `ilike` in DB, lowercased comparison in memory). `UUID_REGEX` in `validation.ts` is the single source of truth for the detection pattern — used by `utils.ts`, `supabase.ts`, and `validation.ts`.
 
-Calendar URLs processed through `lib/calendar-utils.ts`:
+### Storage
 
-- **URL Normalization** - Converts `webcal://` to `https://`
-- **Format Validation** - Checks URL structure and reachability
-- **Content Verification** - Validates iCal format and accessibility
-- **Error Handling** - Provides detailed validation feedback
+Supabase is the primary store (`calendar_aggregator.collections`, custom schema not public). All DB functions silently fall back to `globalThis.calendarCollections` on error. On Vercel serverless, in-memory is empty on every cold start — DB failures appear as 404s, not 500s. When debugging missing collections, verify the Supabase query is actually succeeding.
 
-### Key Implementation Details
+- App uses the **anon key**, not service_role
+- RLS is enabled — new tables need explicit anon policies or writes silently fail
+- All queries must chain `.schema('calendar_aggregator')`
 
-#### Raw iCal Processing
+### Security Headers
 
-The application processes iCal at the **text level** rather than parsing to objects:
+Set in `src/middleware.ts` (not `next.config.ts`). Matcher excludes `/api/*`, `/_next/*`, `favicon.ico` — **API routes do not get these headers**. CSP includes `googletagmanager.com` (script-src) and `google-analytics.com` (connect-src) for GA.
 
-- **Event Extraction** - Preserves original formatting between `BEGIN:VEVENT`/`END:VEVENT`
-- **Timezone Preservation** - Maintains `VTIMEZONE` definitions and references
-- **Deduplication** - Uses UID extraction for duplicate removal
-- **Combination** - Merges headers, timezones, events, and footers properly
+### Google Analytics
 
-#### Concurrent Fetching Strategy
+`G-ESZWBFZV7F` is hardcoded in `src/components/google-analytics.tsx` (injected in `layout.tsx`). Custom events tracked from `create-collection-form.tsx`:
 
-`lib/calendar-fetcher.ts` implements robust concurrent processing:
+- `collection_created` — params: `calendar_count`, `has_custom_id`
+- `collection_creation_failed` — param: `error`
+- `feed_url_copied`
 
-- **Promise.allSettled** - Allows partial failures without breaking aggregation
-- **Timeout Protection** - 15-second default timeout per calendar source
-- **Error Isolation** - Individual calendar failures don't affect others
-- **Result Aggregation** - Combines successful fetches, reports errors
+`window.gtag` type is declared in `google-analytics.tsx`.
 
-#### Security Headers Configuration
+### iCal Processing
 
-Security headers are set in `src/middleware.ts` (not `next.config.ts`). The middleware matcher excludes `/api/*`, `/_next/static`, `/_next/image`, and `favicon.ico` — so **API routes do not receive these headers**.
+`combineICalFeeds` operates at the text level (no object parsing). It extracts `BEGIN:VEVENT`/`END:VEVENT` blocks, deduplicates by UID (first occurrence wins), deduplicates timezones by TZID, then assembles: header → timezones → events → `END:VCALENDAR`. Uses `Promise.allSettled` so individual source failures don't break the whole feed; partial failures return HTTP 206.
 
-#### Error Hierarchy
+### Supabase CLI Limitation
 
-`src/lib/errors.ts` defines structured error classes for API routes:
-
-- `CalendarCollectionError` — base class with `code`, `statusCode`, `details`
-- `CollectionNotFoundError` — 404, code `COLLECTION_NOT_FOUND`
-- `ValidationError` — 400, code `VALIDATION_ERROR`
-- `DatabaseOperationError` — 500, code `DATABASE_OPERATION_ERROR`
-
-Use `isCalendarCollectionError()` to type-narrow in catch blocks.
-
-### Frontend Architecture
-
-#### Glassmorphism Design System
-
-The UI implements modern glassmorphism effects:
-
-- **Backdrop Blur** - CSS `backdrop-filter: blur()` for glass effects
-- **Gradient Overlays** - Dynamic background gradients with animated blobs
-- **Transparency Layers** - Semi-transparent panels with border highlights
-- **Responsive Design** - Mobile-first approach with Tailwind breakpoints
-
-#### Component Structure
+`supabase db dump` requires Docker — not available in WSL2 without Docker Desktop. Use the Management API instead:
 
 ```
-src/components/ui/      # Reusable UI components
-├── button.tsx         # Styled button variants
-├── card.tsx           # Glass-effect card container
-├── dialog.tsx         # Modal overlay system
-├── error-boundary.tsx # React error handling
-├── input.tsx          # Form input components
-├── loading.tsx        # Loading state indicators
-├── select.tsx         # Dropdown selection
-└── toast.tsx          # Notification system
+POST https://api.supabase.com/v1/projects/ogdfhmnnhlmqwuhlikem/database/query
+Authorization: Bearer <management_key>
 ```
 
-### Testing Strategy
+REST API requires `Accept-Profile: calendar_aggregator` header for the custom schema.
 
-#### Test Configuration
-
-- **Vitest** with React Testing Library for component testing
-- **JSdom** environment for DOM simulation
-- **Coverage** with v8 provider for detailed metrics
-- **Path Aliases** - `@/` mapped to `src/` for clean imports
-
-#### Test Structure
+## Test Structure
 
 ```
 src/__tests__/
-├── setup.ts          # Test environment configuration
-├── example.test.tsx  # Component testing examples
-└── utils.test.ts     # Utility function tests
+├── example.test.tsx           # HomePage component smoke tests
+├── utils.test.ts              # cn() utility
+├── ical-combiner.test.ts      # combineICalFeeds — mocks global fetch
+└── integration/
+    ├── collections.test.ts        # POST/GET route handlers
+    ├── collections-crud.test.ts   # PUT/DELETE route handlers
+    ├── custom-ids.test.ts         # Custom ID validation & collision
+    ├── calendar-feed.test.ts      # GET/HEAD /api/calendar/[guid]
+    └── supabase-guid-types.test.ts # Live DB tests (skipped without env vars)
 ```
 
-### Development Guidelines
-
-#### File Organization
-
-- **App Router** - API routes in `src/app/api/`, pages in `src/app/`
-- **Library Code** - Utilities in `src/lib/`, types in `src/types/`
-- **Components** - UI components in `src/components/`, hooks in `src/hooks/`
-- **Styles** - Global CSS in `src/styles/`, Tailwind configuration in root
-
-#### Code Quality Standards
-
-- **TypeScript Strict Mode** - No `any` types, full type coverage required
-- **ESLint Rules** - Next.js recommended configuration with additional rules
-- **Prettier Formatting** - Automated code formatting on save and commit
-- **Import Organization** - Group external, internal, and relative imports
-
-#### API Development Patterns
-
-- **Error Handling** - Consistent error response format with status codes
-- **Validation** - Zod schemas for request/response validation
-- **Headers** - Proper content-type headers for iCal feeds
-- **Caching** - Appropriate cache-control headers for calendar content
-
-#### Environment Configuration
-
-- **Node.js 18.17.0+** - Required for latest Next.js features
-- **Turbo Mode** - Enabled for faster development builds
-- **Hot Reload** - Automatic refresh on file changes during development
-
-### Common Development Tasks
-
-#### Adding New API Endpoints
-
-1. Create route handler in `src/app/api/[route]/route.ts`
-2. Define request/response types in `src/types/calendar.ts`
-3. Implement validation using existing patterns
-4. Add error handling following established conventions
-5. Update OpenAPI spec if maintaining API documentation
-
-#### Implementing New Calendar Sources
-
-1. Extend `CalendarSource` interface if needed
-2. Add URL validation logic in `calendar-utils.ts`
-3. Update fetching logic in `calendar-fetcher.ts`
-4. Test with real calendar URLs from the source
-5. Handle source-specific iCal format variations
-
-#### UI Component Development
-
-1. Follow existing glassmorphism design patterns
-2. Use Tailwind utility classes for consistency
-3. Implement proper TypeScript props interfaces
-4. Add error boundaries for robust error handling
-5. Ensure responsive design across breakpoints
-
-#### Testing New Features
-
-1. Write unit tests for utility functions
-2. Create component tests for UI elements
-3. Test API endpoints with various input scenarios
-4. Validate iCal output with calendar applications
-5. Verify error handling and edge cases
+Integration tests mock Supabase (fall through to in-memory) and mock `validateCalendarUrl`. The `ical-combiner` tests stub `globalThis.fetch`.
