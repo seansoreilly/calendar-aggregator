@@ -44,7 +44,7 @@ export class ValidationError extends CalendarCollectionError {
   }
 }
 
-export class DatabaseOperationError extends CalendarCollectionError {
+class DatabaseOperationError extends CalendarCollectionError {
   constructor(operation: string, originalError: unknown) {
     super(
       `Database ${operation} operation failed`,

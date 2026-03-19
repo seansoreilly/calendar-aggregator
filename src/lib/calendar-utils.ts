@@ -4,7 +4,7 @@ import * as ical from 'node-ical'
 /**
  * Validates if a string is a properly formatted URL
  */
-export function isValidUrl(urlString: string): boolean {
+function isValidUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString)
     return url.protocol === 'http:' || url.protocol === 'https:'
@@ -37,7 +37,7 @@ export interface ConnectionTestResult {
 /**
  * Tests if a calendar URL is accessible and returns valid iCal data
  */
-export async function testCalendarConnection(
+async function testCalendarConnection(
   urlString: string,
   timeoutMs: number = 10000
 ): Promise<ConnectionTestResult> {
