@@ -2,6 +2,16 @@
 
 import Script from 'next/script'
 
+declare global {
+  interface Window {
+    gtag: (
+      command: string,
+      ...args: (string | number | Date | Record<string, string | number>)[]
+    ) => void
+    dataLayer: unknown[]
+  }
+}
+
 const GoogleAnalytics = () => {
   const GA_MEASUREMENT_ID = 'G-ESZWBFZV7F'
 

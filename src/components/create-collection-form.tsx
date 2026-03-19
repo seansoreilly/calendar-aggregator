@@ -54,11 +54,26 @@ export default function CreateCollectionForm() {
     setCalendars(newCalendars)
   }
 
+  const trackEvent = (
+    eventName: string,
+    params?: Record<string, string | number>
+  ) => {
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      if (params) {
+        window.gtag('event', eventName, params)
+      } else {
+        window.gtag('event', eventName)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
     setSuccessUrl(null)
+
+    const calendarCount = calendars.filter(c => c.url && c.name).length
 
     try {
       const response = await fetch('/api/collections', {
@@ -67,7 +82,7 @@ export default function CreateCollectionForm() {
         body: JSON.stringify({
           name,
           customId: customId || undefined,
-          calendars: calendars.filter(c => c.url && c.name), // Filter out empty ones
+          calendars: calendars.filter(c => c.url && c.name),
         }),
       })
 
@@ -79,12 +94,15 @@ export default function CreateCollectionForm() {
 
       const url = `${window.location.origin}/api/calendar/${data.guid}`
       setSuccessUrl(url)
+      trackEvent('collection_created', {
+        calendar_count: calendarCount,
+        has_custom_id: customId ? 1 : 0,
+      })
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('An unexpected error occurred')
-      }
+      const message =
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(message)
+      trackEvent('collection_creation_failed', { error: message })
     } finally {
       setIsSubmitting(false)
     }
@@ -95,6 +113,7 @@ export default function CreateCollectionForm() {
       navigator.clipboard.writeText(successUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      trackEvent('feed_url_copied')
     }
   }
 
