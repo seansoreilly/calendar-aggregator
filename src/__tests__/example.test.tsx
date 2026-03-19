@@ -2,17 +2,14 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import HomePage from '@/app/page'
 
-// Mock the LiveStatus component to avoid API calls in tests
 vi.mock('@/components/live-status', () => ({
   default: () => (
     <div data-testid="live-status-mock">
       <div>System Status</div>
-      <div>All Systems Operational</div>
     </div>
   ),
 }))
 
-// Mock the CreateCollectionForm component to avoid form complexity in tests
 vi.mock('@/components/create-collection-form', () => ({
   default: () => <div data-testid="create-collection-form-mock">Form</div>,
 }))
@@ -20,22 +17,30 @@ vi.mock('@/components/create-collection-form', () => ({
 describe('HomePage', () => {
   it('renders hero title', () => {
     render(<HomePage />)
-
-    expect(screen.getByText('Unify Your')).toBeInTheDocument()
-    expect(screen.getByText('Digital Rhythm')).toBeInTheDocument()
+    expect(screen.getByText('Calendar Aggregator')).toBeInTheDocument()
   })
 
-  it('displays feature badges', () => {
+  it('renders tagline', () => {
     render(<HomePage />)
-
-    expect(screen.getByText('Zero-Knowledge Proxy')).toBeInTheDocument()
-    expect(screen.getByText('Edge-Cached Sync')).toBeInTheDocument()
-    expect(screen.getByText('iCal Compliant')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Combine multiple iCal feeds into one URL/i)
+    ).toBeInTheDocument()
   })
 
-  it('shows aggregation protocol badge', () => {
+  it('renders how it works steps', () => {
     render(<HomePage />)
+    expect(screen.getByText('Paste your iCal URLs')).toBeInTheDocument()
+    expect(screen.getByText('Name your collection')).toBeInTheDocument()
+    expect(
+      screen.getByText('Subscribe in your calendar app')
+    ).toBeInTheDocument()
+  })
 
-    expect(screen.getByText('Aggregation Protocol v2.0')).toBeInTheDocument()
+  it('renders the form and status components', () => {
+    render(<HomePage />)
+    expect(
+      screen.getByTestId('create-collection-form-mock')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('live-status-mock')).toBeInTheDocument()
   })
 })

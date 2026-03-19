@@ -22,10 +22,16 @@ export function Navbar() {
 
         <div className="flex items-center gap-6">
           <Link
+            href="/privacy"
+            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          >
+            Privacy
+          </Link>
+          <Link
             href="/api/health"
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
-            Health Status
+            Status
           </Link>
           <a
             href="https://github.com/seansoreilly/calendar-aggregator"
