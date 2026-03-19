@@ -1,48 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  CalendarCollection,
-  CalendarSource,
-  CreateCollectionRequest,
-} from '../../../types/calendar'
-import {
-  validateCalendarUrl,
-  buildCalendarSource,
-} from '../../../lib/calendar-utils'
+import { CreateCollectionRequest } from '../../../types/calendar'
 import {
   saveCollectionToDatabase,
   getAllCollectionsFromDatabase,
   findCollectionByGuidInDatabase,
 } from '../../../lib/supabase'
-import {
-  validateCreateCollectionRequest,
-  sanitizeCollectionName,
-  sanitizeCollectionDescription,
-} from '../../../lib/validation'
+import { validateCreateCollectionRequest } from '../../../lib/validation'
 import {
   isCalendarCollectionError,
   toCalendarCollectionError,
 } from '../../../lib/errors'
-
-/**
- * Generate a cryptographically secure GUID using Web Crypto API
- */
-function generateGuid(): string {
-  // Use built-in crypto for UUID generation
-  if (
-    typeof globalThis !== 'undefined' &&
-    'crypto' in globalThis &&
-    globalThis.crypto.randomUUID
-  ) {
-    return globalThis.crypto.randomUUID()
-  }
-
-  // Fallback implementation for environments without crypto.randomUUID
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
-}
+import {
+  buildCollectionRecord,
+  generateGuid,
+  processCalendarInputs,
+} from '../../../lib/collection-service'
 
 /**
  * GET /api/collections - Get all calendar collections
@@ -88,38 +60,8 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    // Process and validate calendars with URL validation
-    const processedCalendars: CalendarSource[] = []
-    const validationErrors: string[] = []
-
-    for (let i = 0; i < body.calendars.length; i++) {
-      const calendarData = body.calendars[i]
-
-      if (!calendarData || !calendarData.url || !calendarData.name) {
-        validationErrors.push(`Calendar ${i + 1}: URL and name are required`)
-        continue
-      }
-
-      // Validate calendar URL (lenient mode for development)
-      const validationResult = await validateCalendarUrl(calendarData.url)
-      if (!validationResult.isValid) {
-        // For server errors (5xx), add as warning but allow creation
-        if (validationResult.statusCode && validationResult.statusCode >= 500) {
-          // Log warning but continue - server might be temporarily down
-          console.warn(
-            `Warning for ${calendarData.name}: ${validationResult.error}`
-          )
-        } else {
-          // For other errors (invalid URL, 4xx), still block creation
-          validationErrors.push(
-            `Calendar ${i + 1} (${calendarData.name}): ${validationResult.error}`
-          )
-          continue
-        }
-      }
-
-      processedCalendars.push(buildCalendarSource(calendarData, i))
-    }
+    const { calendars: processedCalendars, validationErrors } =
+      await processCalendarInputs(body.calendars)
 
     if (validationErrors.length > 0) {
       return NextResponse.json(
@@ -161,21 +103,11 @@ export async function POST(request: NextRequest) {
       collectionId = generateGuid()
     }
 
-    // Create new collection with sanitized data
-    const now = new Date().toISOString()
-    const newCollection: CalendarCollection = {
-      guid: collectionId,
-      name: sanitizeCollectionName(body.name),
-      calendars: processedCalendars,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    // Add description only if provided after sanitization
-    const sanitizedDescription = sanitizeCollectionDescription(body.description)
-    if (sanitizedDescription) {
-      newCollection.description = sanitizedDescription
-    }
+    const newCollection = buildCollectionRecord(
+      body,
+      collectionId,
+      processedCalendars
+    )
 
     // Save to database with fallback to memory
     const savedCollection = await saveCollectionToDatabase(newCollection)
