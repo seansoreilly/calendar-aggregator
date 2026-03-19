@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseHealth } from '../../../lib/supabase'
+import { version } from '../../../../package.json'
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
       {
         status: isHealthy ? 'healthy' : 'degraded',
         timestamp: new Date().toISOString(),
-        version: '0.1.0',
+        version,
         services: {
           supabase: supabaseHealth,
         },
