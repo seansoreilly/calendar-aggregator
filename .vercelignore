@@ -1,16 +1,4 @@
-# ===============================================
-# DOCUMENTATION & README FILES
-# ===============================================
-docs/
-CHANGELOG*
-LICENSE*
-CONTRIBUTING*
-CODE_OF_CONDUCT*
-PROJECT_GUIDE.md
-
-# ===============================================
-# DEVELOPMENT CONFIGURATION
-# ===============================================
+# Development configuration
 .prettierrc*
 .prettierignore
 .eslintrc*
@@ -20,41 +8,25 @@ eslint.config.*
 .github/
 .vscode/
 .idea/
-.devcontainer/
 
-# ===============================================
-# TESTING & COVERAGE
-# ===============================================
+# Testing
 coverage/
 .nyc_output
 test-results/
 playwright-report/
 .playwright/
-__tests__/
-*.test.*
-*.spec.*
+src/__tests__/
+vitest.config.*
 jest.config.*
 playwright.config.*
-vitest.config.*
 jest-html-reports/
 .vitest/
 
-# ===============================================
-# BUILD & COMPILATION
-# ===============================================
+# Build artifacts
 *.tsbuildinfo
-
-# ===============================================
-# SOURCE MAPS & DEBUG
-# ===============================================
 *.map
-*.map.js
-*.map.css
 
-# ===============================================
-# ENVIRONMENT FILES
-# ===============================================
-# Keep .env for production if needed
+# Environment (production .env is set via Vercel dashboard, not files)
 .env.local
 .env.development.local
 .env.test.local
@@ -63,203 +35,71 @@ jest-html-reports/
 secrets.json
 .envrc
 
-# ===============================================
-# LOGS & DEBUG FILES
-# ===============================================
+# Logs & debug
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-bun-debug.log*
-debug-request.json
 debug-*.json
-*.error
 *.heapsnapshot
 
-# ===============================================
-# CACHE & TEMPORARY
-# ===============================================
+# Cache & temp
 .cache/
 .eslintcache
-.stylelintcache
-.parcel-cache
 .turbo/
 .swc/
 tmp/
 temp/
 *.tmp
-*.temp
 
-# ===============================================
-# PACKAGE MANAGERS
-# ===============================================
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-bun.lockb
-.yarn/
-.pnp.*
-.yarnrc.yml
-.pnpmfile.cjs
-
-# ===============================================
-# IDE & EDITOR FILES
-# ===============================================
-*.swp
-*.swo
-*~
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-.eclipse/
-.metadata/
-
-# ===============================================
-# OS GENERATED FILES
-# ===============================================
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-desktop.ini
-$RECYCLE.BIN/
-.Spotlight-V100
-.Trashes
-
-# ===============================================
-# AI & DEVELOPMENT TOOLS
-# ===============================================
+# AI & development tools
 .cursor/
 .anthropic/
 .claude/
-*.ai
 .aider*
 .continue/
+.gemini/
+nanobanana-output/
 
-# ===============================================
-# TASK MANAGEMENT
-# ===============================================
+# Task management
 .taskmaster/
-tasks.json
-tasks/
 
-# ===============================================
-# PROJECT SPECIFIC FILES
-# ===============================================
-memories.json
-openapi.yaml
-builder.config.json
-.builder.config.json
-schema*.sql
-migrations/
+# OS generated
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
 
-# ===============================================
-# CALENDAR AGGREGATOR SPECIFIC
-# ===============================================
-*.ics
-*.ical
-calendar-data/
-feed-cache/
-calendar-cache/
-sync-logs/
-test-screenshots/
-skills/
-
-# ===============================================
-# LARGE MEDIA FILES
-# ===============================================
-*.mov
-*.mp4
-*.avi
-*.mkv
-*.zip
-*.tar.gz
-*.rar
-*.7z
-*.dmg
-*.iso
-*.exe
-
-# ===============================================
-# CONTAINERIZATION
-# ===============================================
+# Containerization (not used in Vercel deployment)
 docker-compose*.yml
 Dockerfile.dev
 Dockerfile.local
 .dockerignore
 .docker/
 
-# ===============================================
-# PERFORMANCE & MONITORING
-# ===============================================
-.audit/
-.lighthouse/
-lighthouse/
-bundle-analyzer/
-.size-limit.json
-
-# ===============================================
-# DATABASE FILES
-# ===============================================
+# Database files
 *.db
 *.sqlite
 *.sqlite3
-*.db-journal
 .supabase/
 
-# ===============================================
-# DESIGN & ASSETS
-# ===============================================
-*.sketch
-*.fig
-*.psd
-*.ai
-*.xd
-*.afdesign
-*.afphoto
-design/
-assets/design/
+# Large media
+*.mov
+*.mp4
+*.zip
+*.tar.gz
+*.rar
+*.7z
 
-# ===============================================
-# REPOSITORY & GIT
-# ===============================================
+# Git
 .git/
 .gitattributes
 .gitmodules
 
-# ===============================================
-# BACKUP & ARCHIVE
-# ===============================================
-*.backup
-*.bak
-backups/
-
-# ===============================================
-# VERSION MANAGERS
-# ===============================================
-.tool-versions
-.nvmrc
-.nvmrc.local
-.node-version
-
-# ===============================================
-# SECURITY & SECRETS
-# ===============================================
-.env.secrets
-.secrets
-secrets/
-private/
-
-# ===============================================
-# DEPLOYMENT SPECIFIC
-# ===============================================
+# Misc
 .netlify/
 .firebase/
 .aws/
 .gcp/
-# AI & Tools
-.gemini/
-nanobanana-output/
-current_ui.png
+.audit/
+.lighthouse/
+backups/
+*.backup
+*.bak
