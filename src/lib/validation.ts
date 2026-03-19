@@ -6,6 +6,9 @@
 import { CreateCollectionRequest } from '../types/calendar'
 import { ValidationError } from './errors'
 
+export const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 /**
  * Validate ID format - accepts both UUIDs and custom IDs
  */
@@ -19,9 +22,7 @@ export function validateId(id: string): void {
   }
 
   // Check if it's a UUID
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-  if (uuidRegex.test(id)) {
+  if (UUID_REGEX.test(id)) {
     // Valid UUID, no further validation needed
     return
   }

@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { CalendarCollection } from '../types/calendar'
+import { UUID_REGEX } from './validation'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -25,10 +26,7 @@ export function removeCollectionFromStorage(guid: string): boolean {
   initializeStorage()
 
   // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      guid
-    )
+  const isUuid = UUID_REGEX.test(guid)
 
   const index = isUuid
     ? globalThis.calendarCollections.findIndex(col => col.guid === guid)
@@ -49,10 +47,7 @@ export function findCollectionInStorage(
   initializeStorage()
 
   // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      guid
-    )
+  const isUuid = UUID_REGEX.test(guid)
 
   if (isUuid) {
     // Exact match for UUIDs
@@ -74,10 +69,7 @@ export function updateCollectionInStorage(
   initializeStorage()
 
   // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      guid
-    )
+  const isUuid = UUID_REGEX.test(guid)
 
   const collection = isUuid
     ? globalThis.calendarCollections.find(col => col.guid === guid)

@@ -8,6 +8,7 @@ import {
   findCollectionInStorage,
   initializeStorage,
 } from './utils'
+import { UUID_REGEX } from './validation'
 
 // Lazy-initialized Supabase client with custom schema
 let supabaseClient: SupabaseClient<Database> | null = null
@@ -29,9 +30,6 @@ export function getSupabase() {
 
   return supabaseClient
 }
-
-// Export client getter for convenience
-export const supabase = getSupabase
 
 // Test function to verify database connection
 export async function testSupabaseConnection() {
@@ -112,6 +110,19 @@ export async function getSupabaseHealth() {
   }
 }
 
+function mapRow(
+  record: Database['calendar_aggregator']['Tables']['collections']['Row']
+): CalendarCollection {
+  return {
+    guid: record.guid,
+    name: record.name,
+    description: record.description || '',
+    calendars: record.sources || [],
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  }
+}
+
 export async function saveCollectionToDatabase(
   collection: CalendarCollection
 ): Promise<CalendarCollection> {
@@ -164,14 +175,7 @@ export async function getAllCollectionsFromDatabase(): Promise<
 
     if (error) throw error
 
-    return data.map(record => ({
-      guid: record.guid,
-      name: record.name,
-      description: record.description || '',
-      calendars: record.sources || [],
-      createdAt: record.created_at,
-      updatedAt: record.updated_at,
-    }))
+    return data.map(mapRow)
   } catch {
     // Fall back to memory storage when database is unavailable
     initializeStorage()
@@ -186,10 +190,7 @@ export async function findCollectionByGuidInDatabase(
     const supabase = getSupabase()
 
     // Use case-insensitive search for custom IDs, exact match for UUIDs
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        guid
-      )
+    const isUuid = UUID_REGEX.test(guid)
 
     let query = supabase
       .schema('calendar_aggregator')
@@ -213,14 +214,7 @@ export async function findCollectionByGuidInDatabase(
       throw error
     }
 
-    return {
-      guid: data.guid,
-      name: data.name,
-      description: data.description || '',
-      calendars: data.sources || [],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    }
+    return mapRow(data)
   } catch {
     return findCollectionInStorage(guid)
   }
@@ -257,14 +251,7 @@ export async function updateCollectionInDatabase(
       throw error
     }
 
-    return {
-      guid: data.guid,
-      name: data.name,
-      description: data.description || '',
-      calendars: data.sources || [],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    }
+    return mapRow(data)
   } catch {
     return updateCollectionInStorage(guid, updates)
   }
