@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Sparkles, Database, Activity } from 'lucide-react'
+import { Sparkles, Database, Activity } from 'lucide-react'
 
 interface HealthData {
   status: string
@@ -127,33 +127,17 @@ export default function LiveStatus() {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Response Time */}
-        <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-          <div className="flex items-center gap-2 text-purple-300 mb-1">
-            <Zap className="w-4 h-4" />
-            <span className="text-xs uppercase font-semibold tracking-wider">
-              Latency
-            </span>
-          </div>
-          <span className="text-2xl font-bold text-white">
-            {healthData?.services.supabase.response_time_ms || 0}
-            <span className="text-sm text-gray-400 font-normal ml-1">ms</span>
+      {/* Version */}
+      <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+        <div className="flex items-center gap-2 text-cyan-300 mb-1">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-xs uppercase font-semibold tracking-wider">
+            Version
           </span>
         </div>
-
-        {/* Version */}
-        <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-          <div className="flex items-center gap-2 text-cyan-300 mb-1">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-xs uppercase font-semibold tracking-wider">
-              Version
-            </span>
-          </div>
-          <span className="text-2xl font-bold text-white">
-            v{healthData?.version}
-          </span>
-        </div>
+        <span className="text-2xl font-bold text-white">
+          v{healthData?.version}
+        </span>
       </div>
 
       {/* Last Updated */}
