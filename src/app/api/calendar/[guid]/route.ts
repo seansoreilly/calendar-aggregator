@@ -9,6 +9,7 @@ import {
   createCalendarSuccessResponse,
   parseCalendarTimeout,
 } from '../../../../lib/calendar-response'
+import { trackEvent } from '../../../../lib/analytics'
 
 async function findValidatedCollection(guid: string) {
   validateId(guid)
@@ -39,6 +40,10 @@ export async function GET(
     try {
       const collection = await findValidatedCollection(guid)
       if (!collection) {
+        trackEvent('calendar_feed_error', {
+          collection_id: guid,
+          error_type: 'not_found',
+        })
         return NextResponse.json(
           { error: 'Calendar collection not found' },
           { status: 404 }
@@ -47,6 +52,10 @@ export async function GET(
 
       const enabledCalendars = collection.calendars.filter(cal => cal.enabled)
       if (enabledCalendars.length === 0) {
+        trackEvent('calendar_feed_error', {
+          collection_id: guid,
+          error_type: 'no_enabled_calendars',
+        })
         return NextResponse.json(
           { error: 'No enabled calendars in collection' },
           { status: 404 }
@@ -88,15 +97,31 @@ export async function GET(
         )
 
         if (combineResult.calendarsProcessed > 0 && combineResult.icalContent) {
+          trackEvent('calendar_feed_retrieved', {
+            collection_id: guid,
+            events_count: combineResult.eventsCount,
+            calendars_count: combineResult.calendarsProcessed,
+            partial: 1,
+          })
           return createCalendarPartialResponse(collection, combineResult)
         }
 
+        trackEvent('calendar_feed_error', {
+          collection_id: guid,
+          error_type: 'combine_failed',
+        })
         return NextResponse.json(
           { error: 'One or more calendar sources are unavailable' },
           { status: 503 }
         )
       }
 
+      trackEvent('calendar_feed_retrieved', {
+        collection_id: guid,
+        events_count: combineResult.eventsCount,
+        calendars_count: combineResult.calendarsProcessed,
+        partial: 0,
+      })
       return createCalendarSuccessResponse(collection, combineResult)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
