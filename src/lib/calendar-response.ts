@@ -11,6 +11,10 @@ function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9-_]/g, '-')
 }
 
+function sanitizeHeaderValue(v: string): string {
+  return v.replace(/[\r\n\t\x00-\x1f\x7f]/g, '')
+}
+
 function buildCalendarHeaders(
   collection: CalendarCollection,
   combineResult: Pick<
@@ -32,7 +36,9 @@ function buildCalendarHeaders(
   }
 
   if (combineResult.warnings.length > 0) {
-    headers['X-Calendar-Warnings'] = JSON.stringify(combineResult.warnings)
+    headers['X-Calendar-Warnings'] = sanitizeHeaderValue(
+      JSON.stringify(combineResult.warnings)
+    )
   }
 
   return headers
@@ -41,9 +47,16 @@ function buildCalendarHeaders(
 export function parseCalendarTimeout(requestUrl: string): number | null {
   const url = new URL(requestUrl)
   const timeoutParam = url.searchParams.get('timeout')
-  const timeoutMs = timeoutParam
-    ? parseInt(timeoutParam, 10)
-    : DEFAULT_TIMEOUT_MS
+
+  if (!timeoutParam) {
+    return DEFAULT_TIMEOUT_MS
+  }
+
+  if (!/^\d+$/.test(timeoutParam)) {
+    return null
+  }
+
+  const timeoutMs = parseInt(timeoutParam, 10)
 
   if (timeoutMs < MIN_TIMEOUT_MS || timeoutMs > MAX_TIMEOUT_MS) {
     return null
@@ -95,11 +108,15 @@ export function createCalendarHeadResponse(
     status: 200,
     headers: {
       'Content-Type': CALENDAR_CONTENT_TYPE,
-      'X-Collection-Name': collection.name,
-      'X-Collection-Description': collection.description || '',
+      'X-Collection-Name': sanitizeHeaderValue(collection.name),
+      'X-Collection-Description': sanitizeHeaderValue(
+        collection.description || ''
+      ),
       'X-Calendar-Sources-Count': enabledCalendarsCount.toString(),
-      'X-Collection-Created': collection.createdAt,
-      'X-Collection-Updated': collection.updatedAt || collection.createdAt,
+      'X-Collection-Created': sanitizeHeaderValue(collection.createdAt),
+      'X-Collection-Updated': sanitizeHeaderValue(
+        collection.updatedAt || collection.createdAt
+      ),
       'Cache-Control': CALENDAR_CACHE_CONTROL,
     },
   })

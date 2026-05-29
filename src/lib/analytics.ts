@@ -1,3 +1,5 @@
+import { after } from 'next/server'
+
 const GA_MEASUREMENT_ID = 'G-ESZWBFZV7F'
 
 interface EventParams {
@@ -6,7 +8,9 @@ interface EventParams {
 
 /**
  * Send an event to GA4 via Measurement Protocol (server-side).
- * Fire-and-forget — errors are logged but never thrown.
+ * Uses `after` from next/server to defer the fetch until after the response
+ * is sent, preventing Vercel Fluid Compute from freezing the function early.
+ * Falls back to fire-and-forget if called outside a request scope.
  * Requires GA_API_SECRET env var; silently skips if absent.
  */
 export function trackEvent(name: string, params: EventParams): void {
@@ -19,10 +23,19 @@ export function trackEvent(name: string, params: EventParams): void {
     events: [{ name, params }],
   })
 
-  fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${apiSecret}`,
-    { method: 'POST', body }
-  ).catch(err => {
-    console.error('[Analytics] Failed to send event:', err)
-  })
+  const measurementId = encodeURIComponent(GA_MEASUREMENT_ID)
+  const secret = encodeURIComponent(apiSecret)
+  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${secret}`
+
+  const sendEvent = (): void => {
+    fetch(url, { method: 'POST', body }).catch(err => {
+      console.error('[Analytics] Failed to send event:', err)
+    })
+  }
+
+  try {
+    after(sendEvent)
+  } catch {
+    sendEvent()
+  }
 }
