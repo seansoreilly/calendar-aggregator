@@ -10,6 +10,42 @@ import {
 } from './utils'
 import { UUID_REGEX } from './validation'
 
+/**
+ * Escape special LIKE/ILIKE wildcard characters in a pattern string.
+ * PostgreSQL LIKE/ILIKE treats `%` (any string), `_` (any single char), and
+ * `\` (escape char) as special. supabase-js does NOT escape these automatically,
+ * so a custom slug like `s_ansoreilly` would match `seansoreilly` without this.
+ */
+export function escapeLikePattern(s: string): string {
+  // Order matters: escape backslash first to avoid double-escaping
+  return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
+
+/**
+ * Minimal structural interface for the Supabase filter builder methods we use.
+ * Using a structural type avoids importing the deeply-parameterised internal
+ * class while still being fully typed at the call sites.
+ */
+interface GuidFilterable<T extends GuidFilterable<T>> {
+  eq(column: string, value: string): T
+  ilike(column: string, pattern: string): T
+}
+
+/**
+ * Apply the correct GUID filter to a Supabase query builder.
+ * UUIDs use exact `.eq` match; custom slugs use case-insensitive `.ilike`
+ * with LIKE wildcards escaped so that `_` in the slug matches only itself.
+ */
+export function applyGuidFilter<T extends GuidFilterable<T>>(
+  query: T,
+  guid: string
+): T {
+  if (UUID_REGEX.test(guid)) {
+    return query.eq('guid', guid)
+  }
+  return query.ilike('guid', escapeLikePattern(guid))
+}
+
 // Lazy-initialized Supabase client with custom schema
 let supabaseClient: SupabaseClient<Database> | null = null
 
@@ -189,23 +225,12 @@ export async function findCollectionByGuidInDatabase(
   try {
     const supabase = getSupabase()
 
-    // Use case-insensitive search for custom IDs, exact match for UUIDs
-    const isUuid = UUID_REGEX.test(guid)
-
-    let query = supabase
+    const baseQuery = supabase
       .schema('calendar_aggregator')
       .from('collections')
       .select('*')
 
-    if (isUuid) {
-      // Exact match for UUIDs
-      query = query.eq('guid', guid)
-    } else {
-      // Case-insensitive match for custom IDs using PostgreSQL ilike
-      query = query.ilike('guid', guid)
-    }
-
-    const { data, error } = await query.single()
+    const { data, error } = await applyGuidFilter(baseQuery, guid).single()
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -215,7 +240,8 @@ export async function findCollectionByGuidInDatabase(
     }
 
     return mapRow(data)
-  } catch {
+  } catch (error) {
+    console.error('findCollectionByGuidInDatabase failed, falling back to memory:', error)
     return findCollectionInStorage(guid)
   }
 }
@@ -236,11 +262,12 @@ export async function updateCollectionInDatabase(
       updateData.sources = updates.calendars
     }
 
-    const { data, error } = await supabase
+    const baseQuery = supabase
       .schema('calendar_aggregator')
       .from('collections')
       .update(updateData)
-      .eq('guid', guid)
+
+    const { data, error } = await applyGuidFilter(baseQuery, guid)
       .select()
       .single()
 
@@ -252,7 +279,8 @@ export async function updateCollectionInDatabase(
     }
 
     return mapRow(data)
-  } catch {
+  } catch (error) {
+    console.error('updateCollectionInDatabase failed, falling back to memory:', error)
     return updateCollectionInStorage(guid, updates)
   }
 }
@@ -262,15 +290,18 @@ export async function deleteCollectionFromDatabase(
 ): Promise<boolean> {
   try {
     const supabase = getSupabase()
-    const { error } = await supabase
+
+    const baseQuery = supabase
       .schema('calendar_aggregator')
       .from('collections')
       .delete()
-      .eq('guid', guid)
+
+    const { data, error } = await applyGuidFilter(baseQuery, guid).select()
 
     if (error) throw error
-    return true
-  } catch {
+    return data.length > 0
+  } catch (error) {
+    console.error('deleteCollectionFromDatabase failed, falling back to memory:', error)
     return removeCollectionFromStorage(guid)
   }
 }
