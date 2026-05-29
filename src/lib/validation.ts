@@ -9,6 +9,10 @@ import { ValidationError } from './errors'
 export const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+// Matches C0 control characters (0x00–0x1F, incl. CR/LF) and DEL (0x7F).
+// Used to reject inputs that could enable CRLF/header injection.
+const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/
+
 /**
  * Validate ID format - accepts both UUIDs and custom IDs
  */
@@ -136,6 +140,16 @@ export function validateCollectionName(name: string): void {
       name
     )
   }
+
+  // Reject CR/LF and other C0 control characters to prevent CRLF/header
+  // injection (the name is later echoed into response headers).
+  if (CONTROL_CHAR_REGEX.test(name)) {
+    throw new ValidationError(
+      'Collection name must not contain control characters',
+      'name',
+      name
+    )
+  }
 }
 
 /**
@@ -158,6 +172,16 @@ export function validateCollectionDescription(description?: string): void {
         description
       )
     }
+
+    // Reject CR/LF and other C0 control characters to prevent CRLF/header
+    // injection.
+    if (CONTROL_CHAR_REGEX.test(description)) {
+      throw new ValidationError(
+        'Description must not contain control characters',
+        'description',
+        description
+      )
+    }
   }
 }
 
@@ -167,13 +191,41 @@ const PRIVATE_IP_PATTERNS = [
   /^172\.(1[6-9]|2\d|3[01])\./, // 172.16.0.0/12 private
   /^192\.168\./, // 192.168.0.0/16 private
   /^169\.254\./, // 169.254.0.0/16 link-local (AWS IMDS)
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // 100.64.0.0/10 CGNAT
   /^0\./, // 0.0.0.0/8
+  /^255\.255\.255\.255$/, // limited broadcast
   /^\[::1\]$/, // IPv6 loopback
-  /^\[fc00:/i, // IPv6 unique local
+  /^\[::\]$/, // IPv6 unspecified
+  /^\[::ffff:/i, // IPv4-mapped IPv6 (e.g. [::ffff:7f00:1])
+  /^\[f[cd][0-9a-f]{2}:/i, // IPv6 unique local fc00::/7 (fc00:–fdff:)
   /^\[fe80:/i, // IPv6 link-local
 ]
 
 const BLOCKED_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
+
+/**
+ * Returns true if the given hostname/IP string is a private, reserved, or
+ * otherwise non-routable address that must not be reached over the network.
+ * Operates purely on the textual representation, so it can be applied both to
+ * URL hostnames and to DNS-resolved IP literals. IPv6 literals are expected to
+ * retain their surrounding brackets (matching `URL.hostname` behaviour); bare
+ * IPv6 literals are bracketed before matching.
+ */
+export function isPrivateAddress(host: string): boolean {
+  let hostname = host.toLowerCase()
+
+  if (BLOCKED_HOSTNAMES.has(hostname)) {
+    return true
+  }
+
+  // Normalise bare IPv6 literals (e.g. from DNS resolution) to the bracketed
+  // form the patterns expect.
+  if (hostname.includes(':') && !hostname.startsWith('[')) {
+    hostname = `[${hostname}]`
+  }
+
+  return PRIVATE_IP_PATTERNS.some(p => p.test(hostname))
+}
 
 /**
  * Throws if the URL's hostname resolves to a private/internal address.
@@ -191,7 +243,7 @@ export function assertNotSsrfTarget(url: string): void {
     )
   }
 
-  if (PRIVATE_IP_PATTERNS.some(p => p.test(hostname))) {
+  if (isPrivateAddress(hostname)) {
     throw new ValidationError(
       'Calendar URL must not point to a private network address',
       'url',
