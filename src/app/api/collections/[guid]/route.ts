@@ -89,6 +89,23 @@ export async function PUT(
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
     }
 
+    // Validate ID format (UUID or custom ID)
+    try {
+      validateId(guid)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        )
+      }
+      throw error
+    }
+
     // Check if collection exists
     const existingCollection = await findCollectionByGuidInDatabase(guid)
     if (!existingCollection) {
@@ -169,6 +186,23 @@ export async function DELETE(
 
     if (!guid) {
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
+    }
+
+    // Validate ID format (UUID or custom ID)
+    try {
+      validateId(guid)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        )
+      }
+      throw error
     }
 
     // Check if collection exists first

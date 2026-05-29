@@ -14,6 +14,22 @@ function makeEvent(uid: string, summary: string): string {
   ].join('\r\n')
 }
 
+function makeRecurrenceOverride(
+  uid: string,
+  recurrenceId: string,
+  summary: string
+): string {
+  return [
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `RECURRENCE-ID:${recurrenceId}`,
+    `SUMMARY:${summary}`,
+    'DTSTART:20240101T090000Z',
+    'DTEND:20240101T100000Z',
+    'END:VEVENT',
+  ].join('\r\n')
+}
+
 function makeTimezone(tzid: string): string {
   return [
     'BEGIN:VTIMEZONE',
@@ -55,6 +71,18 @@ function makeSource(
   }
 }
 
+/** Build a Response-like object that safeFetch will pass through (no 3xx). */
+function makeOkResponse(content: string): Response {
+  return new Response(content, {
+    status: 200,
+    headers: { 'Content-Type': 'text/calendar' },
+  })
+}
+
+function makeErrorResponse(status: number, body = ''): Response {
+  return new Response(body, { status })
+}
+
 describe('combineICalFeeds', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
@@ -63,15 +91,6 @@ describe('combineICalFeeds', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
-
-  function mockFetch(content: string, status = 200) {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(content, {
-        status,
-        headers: { 'Content-Type': 'text/calendar' },
-      })
-    )
-  }
 
   function mockFetchError(message: string) {
     vi.mocked(fetch).mockRejectedValue(new Error(message))
@@ -95,7 +114,7 @@ describe('combineICalFeeds', () => {
 
     it('skips disabled calendars and only fetches enabled ones', async () => {
       const event = makeEvent('uid-1@test', 'Active Event')
-      mockFetch(makeCalendar([event]))
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar([event])))
 
       const sources = [
         makeSource('https://example.com/active.ics', { enabled: true }),
@@ -106,7 +125,7 @@ describe('combineICalFeeds', () => {
 
       expect(result.success).toBe(true)
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
+      expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
         'https://example.com/active.ics'
       )
     })
@@ -115,7 +134,7 @@ describe('combineICalFeeds', () => {
   describe('successful combining', () => {
     it('combines a single calendar', async () => {
       const event = makeEvent('uid-1@test', 'Meeting')
-      mockFetch(makeCalendar([event]))
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar([event])))
 
       const result = await combineICalFeeds([
         makeSource('https://example.com/cal.ics'),
@@ -135,18 +154,8 @@ describe('combineICalFeeds', () => {
       const event2 = makeEvent('uid-2@test', 'Event Two')
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event1]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event2]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event1])))
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event2])))
 
       const sources = [
         makeSource('https://example.com/cal1.ics', { id: 1 }),
@@ -168,18 +177,8 @@ describe('combineICalFeeds', () => {
       const event2 = makeEvent(uid, 'Duplicate')
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event1]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event2]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event1])))
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event2])))
 
       const sources = [
         makeSource('https://example.com/cal1.ics', { id: 1 }),
@@ -202,18 +201,8 @@ describe('combineICalFeeds', () => {
       const event2 = makeEvent('uid-2@test', 'Event Two')
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event1], [tz]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event2], [tz]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event1], [tz])))
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event2], [tz])))
 
       const sources = [
         makeSource('https://example.com/cal1.ics', { id: 1 }),
@@ -231,7 +220,9 @@ describe('combineICalFeeds', () => {
     it('places timezones before events in the output', async () => {
       const tz = makeTimezone('Europe/London')
       const event = makeEvent('uid-1@test', 'London Meeting')
-      mockFetch(makeCalendar([event], [tz]))
+      vi.mocked(fetch).mockResolvedValue(
+        makeOkResponse(makeCalendar([event], [tz]))
+      )
 
       const result = await combineICalFeeds([
         makeSource('https://example.com/cal.ics'),
@@ -244,7 +235,9 @@ describe('combineICalFeeds', () => {
     })
 
     it('output starts with VCALENDAR header and ends with footer', async () => {
-      mockFetch(makeCalendar([makeEvent('uid-1@test', 'Event')]))
+      vi.mocked(fetch).mockResolvedValue(
+        makeOkResponse(makeCalendar([makeEvent('uid-1@test', 'Event')]))
+      )
 
       const result = await combineICalFeeds([
         makeSource('https://example.com/cal.ics'),
@@ -257,7 +250,7 @@ describe('combineICalFeeds', () => {
     })
 
     it('warns when a calendar has no events', async () => {
-      mockFetch(makeCalendar([]))
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar([])))
 
       const result = await combineICalFeeds([
         makeSource('https://example.com/cal.ics', { name: 'Empty Cal' }),
@@ -281,16 +274,11 @@ describe('combineICalFeeds', () => {
       expect(result.errors.length).toBeGreaterThan(0)
     })
 
-    it('returns partial success (206) content when some calendars fail', async () => {
+    it('partial failure: success===false, calendarsProcessed>0, non-empty icalContent', async () => {
       const event = makeEvent('uid-1@test', 'Good Event')
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(makeCalendar([event]), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([event])))
         .mockRejectedValueOnce(new Error('Network timeout'))
 
       const sources = [
@@ -300,17 +288,19 @@ describe('combineICalFeeds', () => {
 
       const result = await combineICalFeeds(sources)
 
-      expect(result.success).toBe(true)
+      // Partial: one succeeded, one failed
+      expect(result.success).toBe(false)
       expect(result.calendarsProcessed).toBe(1)
       expect(result.eventsCount).toBe(1)
+      // icalContent must be populated for the route to serve HTTP 206
+      expect(result.icalContent).toContain('BEGIN:VCALENDAR')
+      expect(result.icalContent).toContain('Good Event')
       expect(result.errors.length).toBeGreaterThan(0)
       expect(result.errors.some(e => e.includes('Bad Cal'))).toBe(true)
     })
 
     it('records error when server returns HTTP error status', async () => {
-      vi.mocked(fetch).mockResolvedValue(
-        new Response('Not Found', { status: 404 })
-      )
+      vi.mocked(fetch).mockResolvedValue(makeErrorResponse(404, 'Not Found'))
 
       const result = await combineICalFeeds([
         makeSource('https://example.com/cal.ics', { name: 'Missing Cal' }),
@@ -337,6 +327,129 @@ describe('combineICalFeeds', () => {
     })
   })
 
+  describe('recurrence-aware deduplication', () => {
+    it('keeps recurring-event overrides (same UID, different RECURRENCE-ID) as distinct events', async () => {
+      const uid = 'recurring-uid@test'
+      const masterEvent = makeEvent(uid, 'Weekly Standup')
+      const override = makeRecurrenceOverride(
+        uid,
+        '20240108T090000Z',
+        'Weekly Standup (rescheduled)'
+      )
+
+      vi.mocked(fetch).mockResolvedValue(
+        makeOkResponse(makeCalendar([masterEvent, override]))
+      )
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics'),
+      ])
+
+      expect(result.success).toBe(true)
+      // Both the master and the override must appear
+      expect(result.eventsCount).toBe(2)
+      expect(result.icalContent).toContain('SUMMARY:Weekly Standup\r\n')
+      expect(result.icalContent).toContain('SUMMARY:Weekly Standup (rescheduled)')
+    })
+
+    it('deduplicates exact-duplicate events (same UID, same RECURRENCE-ID) across calendars', async () => {
+      const uid = 'shared-override@test'
+      const override = makeRecurrenceOverride(
+        uid,
+        '20240108T090000Z',
+        'Override Event'
+      )
+
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([override])))
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar([override])))
+
+      const sources = [
+        makeSource('https://example.com/cal1.ics', { id: 1 }),
+        makeSource('https://example.com/cal2.ics', { id: 2 }),
+      ]
+
+      const result = await combineICalFeeds(sources)
+
+      expect(result.success).toBe(true)
+      // Exact duplicate: should appear only once
+      expect(result.eventsCount).toBe(1)
+      expect(result.warnings.some(w => w.includes('duplicate'))).toBe(true)
+    })
+
+    it('keeps overrides with different RECURRENCE-IDs for the same base event', async () => {
+      const uid = 'multi-override@test'
+      const master = makeEvent(uid, 'Team Meeting')
+      const override1 = makeRecurrenceOverride(
+        uid,
+        '20240108T090000Z',
+        'Team Meeting (Jan 8 override)'
+      )
+      const override2 = makeRecurrenceOverride(
+        uid,
+        '20240115T090000Z',
+        'Team Meeting (Jan 15 override)'
+      )
+
+      vi.mocked(fetch).mockResolvedValue(
+        makeOkResponse(makeCalendar([master, override1, override2]))
+      )
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics'),
+      ])
+
+      expect(result.success).toBe(true)
+      expect(result.eventsCount).toBe(3)
+    })
+  })
+
+  describe('size / DoS guard', () => {
+    it('rejects a source whose response exceeds MAX_SOURCE_BYTES', async () => {
+      // Build a response just over 5 MB
+      const bigContent =
+        'BEGIN:VCALENDAR\r\nVERSION:2.0\r\n' +
+        'X-JUNK:' +
+        'A'.repeat(25_000_001) +
+        '\r\nEND:VCALENDAR'
+
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(bigContent))
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/huge.ics', { name: 'Huge Cal' }),
+      ])
+
+      expect(result.success).toBe(false)
+      expect(result.errors.some(e => e.includes('Huge Cal'))).toBe(true)
+      expect(
+        result.errors.some(e => e.toLowerCase().includes('large') || e.toLowerCase().includes('limit'))
+      ).toBe(true)
+    })
+
+    it('truncates combined events when MAX_TOTAL_EVENTS is exceeded', async () => {
+      // Build a calendar with 50,001 events — one over the cap.
+      const eventCount = 50_001
+      const events: string[] = []
+      for (let i = 0; i < eventCount; i++) {
+        events.push(makeEvent(`uid-${i}@test`, `Event ${i}`))
+      }
+      const calContent = makeCalendar(events)
+
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(calContent))
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics'),
+      ])
+
+      // Success because the single source fetched OK; events are capped.
+      expect(result.success).toBe(true)
+      expect(result.eventsCount).toBe(50_000)
+      expect(result.warnings.some(w => w.includes('cap') || w.includes('truncated'))).toBe(
+        true
+      )
+    })
+  })
+
   describe('result structure', () => {
     it('initialises counts to zero on empty-calendar failure', async () => {
       const result = await combineICalFeeds([])
@@ -355,18 +468,8 @@ describe('combineICalFeeds', () => {
       const events2 = [makeEvent('uid-c@test', 'C')]
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          new Response(makeCalendar(events1), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
-        .mockResolvedValueOnce(
-          new Response(makeCalendar(events2), {
-            status: 200,
-            headers: { 'Content-Type': 'text/calendar' },
-          })
-        )
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar(events1)))
+        .mockResolvedValueOnce(makeOkResponse(makeCalendar(events2)))
 
       const sources = [
         makeSource('https://example.com/cal1.ics', { id: 1 }),

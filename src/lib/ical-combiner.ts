@@ -1,4 +1,15 @@
 import { CalendarSource, CombineResult } from '../types/calendar'
+import { safeFetch } from './safe-fetch'
+
+/**
+ * Maximum bytes accepted from a single calendar source. Sized as an anti-DoS
+ * ceiling that comfortably exceeds a legitimate MAX_TOTAL_EVENTS-sized calendar
+ * (~10-20MB), so normal large calendars are not rejected.
+ */
+const MAX_SOURCE_BYTES = 25_000_000
+
+/** Maximum total events across all sources before truncation. */
+const MAX_TOTAL_EVENTS = 50_000
 
 /**
  * Generate standard iCal header
@@ -100,6 +111,23 @@ function extractEventUID(eventContent: string): string | null {
 }
 
 /**
+ * Extract RECURRENCE-ID from an event string. Returns empty string when absent.
+ */
+function extractEventRecurrenceId(eventContent: string): string {
+  const lines = eventContent.split(/\r?\n/)
+  for (const line of lines) {
+    // RECURRENCE-ID may carry parameters, e.g. RECURRENCE-ID;TZID=...:value
+    if (line.startsWith('RECURRENCE-ID')) {
+      const colonIdx = line.indexOf(':')
+      if (colonIdx !== -1) {
+        return line.substring(colonIdx + 1).trim()
+      }
+    }
+  }
+  return ''
+}
+
+/**
  * Extract TZID from a timezone string
  */
 function extractTimezoneID(timezoneContent: string): string | null {
@@ -113,19 +141,30 @@ function extractTimezoneID(timezoneContent: string): string | null {
 }
 
 /**
- * Deduplicate events by UID (keeps the first occurrence)
+ * Deduplicate events by the composite key UID + RECURRENCE-ID.
+ *
+ * - Events with the same UID and the same RECURRENCE-ID (including both absent)
+ *   are exact duplicates — first occurrence wins.
+ * - Events with the same UID but different RECURRENCE-ID values are recurring-
+ *   event overrides and must be kept distinct.
+ * - Events without a UID are kept unconditionally (shouldn't occur in well-formed
+ *   iCal, but we preserve them rather than silently dropping them).
  */
 function deduplicateEvents(events: string[]): string[] {
-  const seenUIDs = new Set<string>()
+  const seenKeys = new Set<string>()
   const uniqueEvents: string[] = []
 
   for (const event of events) {
     const uid = extractEventUID(event)
-    if (uid && !seenUIDs.has(uid)) {
-      seenUIDs.add(uid)
+    if (uid === null) {
+      // Keep events without UIDs
       uniqueEvents.push(event)
-    } else if (!uid) {
-      // Keep events without UIDs (shouldn't happen in well-formed iCal)
+      continue
+    }
+    const recurrenceId = extractEventRecurrenceId(event)
+    const key = `${uid}\x00${recurrenceId}`
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key)
       uniqueEvents.push(event)
     }
   }
@@ -155,17 +194,21 @@ function deduplicateTimezones(timezones: string[]): string[] {
 }
 
 /**
- * Fetch calendar data as raw iCal content
+ * Fetch calendar data as raw iCal content via safeFetch (SSRF-hardened).
+ * The `signal` is forwarded to the underlying fetch call so that
+ * AbortController-based timeouts cancel the request promptly.
  */
 async function fetchRawICalContent(
-  calendar: CalendarSource
+  calendar: CalendarSource,
+  signal: AbortSignal
 ): Promise<{ success: boolean; content?: string; error?: string }> {
   try {
-    const response = await fetch(calendar.url, {
+    const response = await safeFetch(calendar.url, {
       headers: {
         'User-Agent': 'Calendar-Aggregator/1.0',
         Accept: 'text/calendar, text/plain, */*',
       },
+      signal,
     })
 
     if (!response.ok) {
@@ -175,9 +218,17 @@ async function fetchRawICalContent(
       }
     }
 
-    const content = await response.text()
+    const raw = await response.text()
 
-    if (!content.includes('BEGIN:VCALENDAR')) {
+    // Size guard: reject excessively large responses before further processing.
+    if (raw.length > MAX_SOURCE_BYTES) {
+      return {
+        success: false,
+        error: `Response too large (${raw.length} bytes, limit ${MAX_SOURCE_BYTES})`,
+      }
+    }
+
+    if (!raw.includes('BEGIN:VCALENDAR')) {
       return {
         success: false,
         error: 'Response does not contain valid iCal data',
@@ -186,7 +237,7 @@ async function fetchRawICalContent(
 
     return {
       success: true,
-      content,
+      content: raw,
     }
   } catch (error) {
     return {
@@ -197,8 +248,14 @@ async function fetchRawICalContent(
 }
 
 /**
- * Combine multiple iCal feeds into a single unified iCal output
- * This function fetches raw iCal data directly and combines at the iCal level
+ * Combine multiple iCal feeds into a single unified iCal output.
+ *
+ * Contract:
+ *  - `result.success === true`  ⟺  every enabled source fetched OK
+ *    (`result.errors.length === 0`).
+ *  - `result.success === false` + `calendarsProcessed > 0` + non-empty
+ *    `icalContent`  ⟹  PARTIAL (route serves HTTP 206).
+ *  - `calendarsProcessed === 0`  ⟹  total failure (route serves HTTP 503).
  */
 export async function combineICalFeeds(
   calendars: CalendarSource[],
@@ -225,26 +282,21 @@ export async function combineICalFeeds(
     return result
   }
 
-  // Fetch raw iCal content from all calendars
+  // Fetch raw iCal content from all calendars, each with its own AbortController
+  // so the timeout actually cancels the underlying network request.
   const fetchPromises = enabledCalendars.map(async calendar => {
-    const timeoutPromise = new Promise<{ success: boolean; error: string }>(
-      (_, reject) => {
-        setTimeout(
-          () => reject(new Error(`Timeout after ${timeoutMs}ms`)),
-          timeoutMs
-        )
-      }
-    )
-
-    const fetchPromise = fetchRawICalContent(calendar)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
-      return await Promise.race([fetchPromise, timeoutPromise])
+      return await fetchRawICalContent(calendar, controller.signal)
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       }
+    } finally {
+      clearTimeout(timer)
     }
   })
 
@@ -263,8 +315,6 @@ export async function combineICalFeeds(
       'content' in fetchResult.value &&
       fetchResult.value.content
     ) {
-      result.calendarsProcessed++
-
       // Extract events and timezones from this calendar
       const events = extractEventsFromICal(fetchResult.value.content)
       const timezones = extractTimezonesFromICal(fetchResult.value.content)
@@ -289,7 +339,7 @@ export async function combineICalFeeds(
     }
   })
 
-  // Count successful fetches
+  // Count successful fetches as the single source of truth.
   result.calendarsProcessed = fetchResults.filter(
     r => r.status === 'fulfilled' && r.value.success
   ).length
@@ -308,7 +358,16 @@ export async function combineICalFeeds(
     result.warnings.push(`Removed ${duplicateEvents} duplicate events`)
   }
 
-  // Build the combined iCal content
+  // Total event cap: drop excess events and warn rather than ballooning memory.
+  let cappedEvents = uniqueEvents
+  if (uniqueEvents.length > MAX_TOTAL_EVENTS) {
+    cappedEvents = uniqueEvents.slice(0, MAX_TOTAL_EVENTS)
+    result.warnings.push(
+      `Event cap reached: truncated to ${MAX_TOTAL_EVENTS} events (${uniqueEvents.length} total)`
+    )
+  }
+
+  // Build the combined iCal content.
   const icalParts: string[] = []
 
   // Add header
@@ -320,16 +379,18 @@ export async function combineICalFeeds(
   }
 
   // Add events
-  if (uniqueEvents.length > 0) {
-    icalParts.push(...uniqueEvents)
+  if (cappedEvents.length > 0) {
+    icalParts.push(...cappedEvents)
   }
 
   // Add footer
   icalParts.push(generateICalFooter())
 
   result.icalContent = icalParts.join('\r\n')
-  result.eventsCount = uniqueEvents.length
-  result.success = true
+  result.eventsCount = cappedEvents.length
+
+  // success === true only when every enabled source was fetched without error.
+  result.success = result.errors.length === 0
 
   return result
 }

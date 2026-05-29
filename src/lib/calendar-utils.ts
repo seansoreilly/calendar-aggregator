@@ -1,7 +1,6 @@
-import axios from 'axios'
 import * as ical from 'node-ical'
 import { CalendarSource } from '../types/calendar'
-import { assertNotSsrfTarget } from './validation'
+import { safeFetch } from './safe-fetch'
 
 /**
  * Validates if a string is a properly formatted URL
@@ -64,31 +63,18 @@ async function testCalendarConnection(
   const startTime = Date.now()
 
   try {
-    // Basic URL validation
-    if (!isValidUrl(urlString)) {
-      return {
-        isValid: false,
-        error: 'Invalid URL format',
-      }
-    }
+    const signal = AbortSignal.timeout(timeoutMs)
 
-    const normalizedUrl = normalizeCalendarUrl(urlString)
-
-    // Block SSRF targets before making any network request
-    assertNotSsrfTarget(normalizedUrl)
-
-    // Make HTTP request with timeout
-    const response = await axios.get(normalizedUrl, {
-      timeout: timeoutMs,
+    // safeFetch performs SSRF check on initial URL and every redirect hop
+    const response = await safeFetch(urlString, {
       headers: {
         'User-Agent': 'Calendar-Aggregator/1.0',
       },
-      maxRedirects: 5,
-      validateStatus: () => true, // Accept all status codes, handle them manually
+      signal,
     })
 
     const responseTime = Date.now() - startTime
-    const contentType = response.headers['content-type'] || ''
+    const contentType = response.headers.get('content-type') ?? ''
 
     // Handle server errors (5xx) more gracefully
     if (response.status >= 500) {
@@ -112,10 +98,11 @@ async function testCalendarConnection(
       }
     }
 
+    const body = await response.text()
+
     // Check if response looks like calendar data
     const hasCalendarData =
-      contentType.includes('text/calendar') ||
-      response.data.includes('BEGIN:VCALENDAR')
+      contentType.includes('text/calendar') || body.includes('BEGIN:VCALENDAR')
 
     if (!hasCalendarData) {
       return {
@@ -134,7 +121,7 @@ async function testCalendarConnection(
     // Try to parse the calendar data
     let eventCount = 0
     try {
-      const calendarData = ical.parseICS(response.data)
+      const calendarData = ical.parseICS(body)
       eventCount = Object.values(calendarData).filter(
         component =>
           component &&
@@ -164,19 +151,11 @@ async function testCalendarConnection(
   } catch (error) {
     const responseTime = Date.now() - startTime
 
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         return {
           isValid: false,
           error: `Connection timeout after ${timeoutMs}ms`,
-          responseTime,
-        }
-      }
-
-      if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-        return {
-          isValid: false,
-          error: 'Unable to connect to server',
           responseTime,
         }
       }
@@ -212,13 +191,16 @@ export async function validateCalendarUrl(
 
   const trimmedUrl = urlString.trim()
 
-  if (!isValidUrl(trimmedUrl)) {
+  // Normalize first so webcal:// URLs pass the http/https check
+  const normalized = normalizeCalendarUrl(trimmedUrl)
+
+  if (!isValidUrl(normalized)) {
     return {
       isValid: false,
       error: 'Invalid URL format',
     }
   }
 
-  // Test connection
-  return await testCalendarConnection(trimmedUrl)
+  // Test connection using the normalized URL
+  return await testCalendarConnection(normalized)
 }

@@ -129,6 +129,18 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(errorData.error).toBe('Collection not found')
     })
 
+    it('should return 400 for invalid guid on update', async () => {
+      const updateData = { name: 'New Name' }
+      const updateRequest = createMockRequest(updateData, 'PUT')
+      const params = Promise.resolve({ guid: '-invalid-guid' })
+      const updateResponse = await PUT(updateRequest, { params })
+
+      expect(updateResponse.status).toBe(400)
+
+      const errorData = await updateResponse.json()
+      expect(errorData.error).toBeDefined()
+    })
+
     it('should validate empty name on update', async () => {
       // Create a collection
       const createRequest = createMockRequest(mockCalendarData)
@@ -224,6 +236,18 @@ describe('Calendar Collections CRUD Operations', () => {
 
       const errorData = await deleteResponse.json()
       expect(errorData.error).toBe('GUID is required')
+    })
+
+    it('should return 400 for invalid guid on delete', async () => {
+      const params = Promise.resolve({ guid: '-invalid-guid' })
+      const deleteRequest = createMockRequest(undefined, 'DELETE')
+
+      const deleteResponse = await DELETE(deleteRequest, { params })
+
+      expect(deleteResponse.status).toBe(400)
+
+      const errorData = await deleteResponse.json()
+      expect(errorData.error).toBeDefined()
     })
   })
 
