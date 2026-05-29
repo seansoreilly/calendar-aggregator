@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   assertNotSsrfTarget,
   validateCalendarSourceUrl,
+  validateCollectionName,
+  validateCollectionDescription,
 } from '@/lib/validation'
 import { ValidationError } from '@/lib/errors'
 
@@ -27,7 +29,25 @@ describe('assertNotSsrfTarget', () => {
     it.each([
       ['IPv6 loopback', 'http://[::1]/'],
       ['IPv6 unique local fc00', 'http://[fc00::1]/'],
+      ['IPv6 unique local fd00', 'http://[fd00::1]/'],
+      ['IPv6 unique local fd12', 'http://[fd12::1]/'],
       ['IPv6 link-local fe80', 'http://[fe80::1]/'],
+      ['IPv6 unspecified', 'http://[::]/'],
+      [
+        'IPv4-mapped IMDS',
+        'http://[::ffff:169.254.169.254]/',
+      ],
+      ['IPv4-mapped loopback', 'http://[::ffff:127.0.0.1]/'],
+    ])('%s (%s)', (_, url) => {
+      expect(() => assertNotSsrfTarget(url)).toThrow(ValidationError)
+    })
+  })
+
+  describe('blocks additional reserved IPv4 ranges', () => {
+    it.each([
+      ['CGNAT 100.64.0.0/10 low', 'http://100.64.0.1/'],
+      ['CGNAT 100.64.0.0/10 high', 'http://100.127.255.255/'],
+      ['limited broadcast', 'http://255.255.255.255/'],
     ])('%s (%s)', (_, url) => {
       expect(() => assertNotSsrfTarget(url)).toThrow(ValidationError)
     })
@@ -94,5 +114,43 @@ describe('validateCalendarSourceUrl', () => {
     expect(() =>
       validateCalendarSourceUrl('webcal://example.com/cal.ics')
     ).not.toThrow()
+  })
+})
+
+describe('validateCollectionName control-character rejection', () => {
+  it.each([
+    ['CR', 'Team\rCalendar'],
+    ['LF', 'Team\nCalendar'],
+    ['CRLF header injection', 'Calendar\r\nSet-Cookie: x=y'],
+    ['tab', 'Team\tCalendar'],
+    ['null byte', 'Team\x00Calendar'],
+    ['DEL', 'Team\x7fCalendar'],
+  ])('rejects %s in collection name', (_, name) => {
+    expect(() => validateCollectionName(name)).toThrow(ValidationError)
+  })
+
+  it('accepts a clean collection name', () => {
+    expect(() => validateCollectionName('My Calendar Set')).not.toThrow()
+  })
+})
+
+describe('validateCollectionDescription control-character rejection', () => {
+  it.each([
+    ['CR', 'Line one\rLine two'],
+    ['LF', 'Line one\nLine two'],
+    ['CRLF header injection', 'desc\r\nSet-Cookie: x=y'],
+    ['null byte', 'desc\x00'],
+    ['DEL', 'desc\x7f'],
+  ])('rejects %s in description', (_, description) => {
+    expect(() => validateCollectionDescription(description)).toThrow(
+      ValidationError
+    )
+  })
+
+  it('accepts a clean description and undefined', () => {
+    expect(() =>
+      validateCollectionDescription('A normal description.')
+    ).not.toThrow()
+    expect(() => validateCollectionDescription(undefined)).not.toThrow()
   })
 })
