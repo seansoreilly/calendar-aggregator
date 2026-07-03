@@ -15,16 +15,18 @@ function sanitizeHeaderValue(v: string): string {
   return v.replace(/[\r\n\t\x00-\x1f\x7f]/g, '')
 }
 
+function countEnabledCalendars(collection: CalendarCollection): number {
+  return collection.calendars.filter(cal => cal.enabled).length
+}
+
 function buildCalendarHeaders(
   collection: CalendarCollection,
   combineResult: Pick<
     CombineResult,
     'eventsCount' | 'calendarsProcessed' | 'warnings'
   >
-): HeadersInit {
-  const enabledCalendarsCount = collection.calendars.filter(
-    cal => cal.enabled
-  ).length
+): Record<string, string> {
+  const enabledCalendarsCount = countEnabledCalendars(collection)
 
   const headers: Record<string, string> = {
     'Content-Type': CALENDAR_CONTENT_TYPE,
@@ -85,10 +87,7 @@ export function createCalendarPartialResponse(
     'icalContent' | 'eventsCount' | 'calendarsProcessed' | 'warnings' | 'errors'
   >
 ): NextResponse {
-  const headers = buildCalendarHeaders(collection, combineResult) as Record<
-    string,
-    string
-  >
+  const headers = buildCalendarHeaders(collection, combineResult)
   headers['X-Calendar-Errors'] = JSON.stringify(combineResult.errors)
 
   return new NextResponse(combineResult.icalContent, {
@@ -100,9 +99,7 @@ export function createCalendarPartialResponse(
 export function createCalendarHeadResponse(
   collection: CalendarCollection
 ): NextResponse {
-  const enabledCalendarsCount = collection.calendars.filter(
-    cal => cal.enabled
-  ).length
+  const enabledCalendarsCount = countEnabledCalendars(collection)
 
   return new NextResponse(null, {
     status: 200,
