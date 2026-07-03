@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { combineICalFeeds } from '../../../../lib/ical-combiner'
 import { findCollectionByGuidInDatabase } from '../../../../lib/supabase'
 import { validateId } from '../../../../lib/validation'
-import { isCalendarCollectionError } from '../../../../lib/errors'
+import {
+  errorResponse,
+  isCalendarCollectionError,
+} from '../../../../lib/errors'
 import {
   createCalendarHeadResponse,
   createCalendarPartialResponse,
@@ -125,13 +128,7 @@ export async function GET(
       return createCalendarSuccessResponse(collection, combineResult)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            code: error.code,
-          },
-          { status: error.statusCode }
-        )
+        return errorResponse(error, false)
       }
       throw error
     }

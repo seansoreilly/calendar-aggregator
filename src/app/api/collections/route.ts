@@ -6,6 +6,7 @@ import {
 } from '../../../lib/supabase'
 import { validateCreateCollectionRequest } from '../../../lib/validation'
 import {
+  errorResponse,
   isCalendarCollectionError,
   toCalendarCollectionError,
 } from '../../../lib/errors'
@@ -27,14 +28,7 @@ export async function POST(request: NextRequest) {
       validateCreateCollectionRequest(body)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            code: error.code,
-            details: error.details,
-          },
-          { status: error.statusCode }
-        )
+        return errorResponse(error)
       }
       throw error
     }
@@ -97,24 +91,11 @@ export async function POST(request: NextRequest) {
 
     // Use structured error handling
     if (isCalendarCollectionError(error)) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-        },
-        { status: error.statusCode }
-      )
+      return errorResponse(error)
     }
 
     // Handle unexpected errors
     const appError = toCalendarCollectionError(error, 'create_collection')
-    return NextResponse.json(
-      {
-        error: appError.message,
-        code: appError.code,
-      },
-      { status: appError.statusCode }
-    )
+    return errorResponse(appError, false)
   }
 }

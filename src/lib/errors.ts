@@ -3,6 +3,8 @@
  * Provides structured error handling with meaningful error messages
  */
 
+import { NextResponse } from 'next/server'
+
 export class CalendarCollectionError extends Error {
   public readonly code: string
   public readonly statusCode: number
@@ -63,6 +65,25 @@ export function isCalendarCollectionError(
   error: unknown
 ): error is CalendarCollectionError {
   return error instanceof CalendarCollectionError
+}
+
+/**
+ * Build the standard JSON error response for a CalendarCollectionError.
+ * `includeDetails` controls whether `error.details` is echoed to the client;
+ * validation errors include it, converted/unexpected errors must not.
+ */
+export function errorResponse(
+  error: CalendarCollectionError,
+  includeDetails = true
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: error.message,
+      code: error.code,
+      ...(includeDetails ? { details: error.details } : {}),
+    },
+    { status: error.statusCode }
+  )
 }
 
 /**

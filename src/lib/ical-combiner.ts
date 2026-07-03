@@ -32,109 +32,66 @@ function generateICalFooter(): string {
 }
 
 /**
- * Extract events from raw iCal content
- * Returns array of event strings (including BEGIN:VEVENT to END:VEVENT)
+ * Extract complete component blocks (BEGIN:<name> to END:<name>, inclusive)
+ * from raw iCal content. Handles nested blocks of the same component by
+ * tracking depth, returning only the outermost blocks.
  */
-function extractEventsFromICal(icalContent: string): string[] {
-  const events: string[] = []
+function extractComponentBlocks(
+  icalContent: string,
+  componentName: 'VEVENT' | 'VTIMEZONE'
+): string[] {
+  const beginMarker = `BEGIN:${componentName}`
+  const endMarker = `END:${componentName}`
+  const blocks: string[] = []
   const lines = icalContent.split(/\r?\n/)
 
-  let currentEvent: string[] = []
-  let inEvent = false
+  let currentBlock: string[] = []
+  let depth = 0
 
   for (const line of lines) {
-    if (line.trim() === 'BEGIN:VEVENT') {
-      inEvent = true
-      currentEvent = [line]
-    } else if (line.trim() === 'END:VEVENT' && inEvent) {
-      currentEvent.push(line)
-      events.push(currentEvent.join('\r\n'))
-      currentEvent = []
-      inEvent = false
-    } else if (inEvent) {
-      currentEvent.push(line)
-    }
-  }
-
-  return events
-}
-
-/**
- * Extract timezone information from raw iCal content
- * Returns array of timezone strings (including BEGIN:VTIMEZONE to END:VTIMEZONE)
- */
-function extractTimezonesFromICal(icalContent: string): string[] {
-  const timezones: string[] = []
-  const lines = icalContent.split(/\r?\n/)
-
-  let currentTimezone: string[] = []
-  let inTimezone = false
-  let timezoneDepth = 0
-
-  for (const line of lines) {
-    if (line.trim() === 'BEGIN:VTIMEZONE') {
-      if (!inTimezone) {
-        inTimezone = true
-        currentTimezone = [line]
-        timezoneDepth = 1
+    const trimmed = line.trim()
+    if (trimmed === beginMarker) {
+      if (depth === 0) {
+        currentBlock = [line]
       } else {
-        timezoneDepth++
-        currentTimezone.push(line)
+        currentBlock.push(line)
       }
-    } else if (line.trim() === 'END:VTIMEZONE' && inTimezone) {
-      timezoneDepth--
-      currentTimezone.push(line)
-      if (timezoneDepth === 0) {
-        timezones.push(currentTimezone.join('\r\n'))
-        currentTimezone = []
-        inTimezone = false
+      depth++
+    } else if (trimmed === endMarker && depth > 0) {
+      depth--
+      currentBlock.push(line)
+      if (depth === 0) {
+        blocks.push(currentBlock.join('\r\n'))
+        currentBlock = []
       }
-    } else if (inTimezone) {
-      currentTimezone.push(line)
+    } else if (depth > 0) {
+      currentBlock.push(line)
     }
   }
 
-  return timezones
+  return blocks
 }
 
 /**
- * Extract UID from an event string
+ * Extract the value of a property from a component block.
+ * With `allowParams`, lines like `NAME;PARAM=X:value` also match; otherwise
+ * only bare `NAME:value` lines do. Returns null when the property is absent.
  */
-function extractEventUID(eventContent: string): string | null {
-  const lines = eventContent.split(/\r?\n/)
+function extractPropertyValue(
+  blockContent: string,
+  propertyName: string,
+  allowParams = false
+): string | null {
+  const bareMarker = `${propertyName}:`
+  const lines = blockContent.split(/\r?\n/)
   for (const line of lines) {
-    if (line.startsWith('UID:')) {
-      return line.substring(4).trim()
-    }
-  }
-  return null
-}
-
-/**
- * Extract RECURRENCE-ID from an event string. Returns empty string when absent.
- */
-function extractEventRecurrenceId(eventContent: string): string {
-  const lines = eventContent.split(/\r?\n/)
-  for (const line of lines) {
-    // RECURRENCE-ID may carry parameters, e.g. RECURRENCE-ID;TZID=...:value
-    if (line.startsWith('RECURRENCE-ID')) {
+    if (
+      allowParams ? line.startsWith(propertyName) : line.startsWith(bareMarker)
+    ) {
       const colonIdx = line.indexOf(':')
       if (colonIdx !== -1) {
         return line.substring(colonIdx + 1).trim()
       }
-    }
-  }
-  return ''
-}
-
-/**
- * Extract TZID from a timezone string
- */
-function extractTimezoneID(timezoneContent: string): string | null {
-  const lines = timezoneContent.split(/\r?\n/)
-  for (const line of lines) {
-    if (line.startsWith('TZID:')) {
-      return line.substring(5).trim()
     }
   }
   return null
@@ -155,13 +112,15 @@ function deduplicateEvents(events: string[]): string[] {
   const uniqueEvents: string[] = []
 
   for (const event of events) {
-    const uid = extractEventUID(event)
+    const uid = extractPropertyValue(event, 'UID')
     if (uid === null) {
       // Keep events without UIDs
       uniqueEvents.push(event)
       continue
     }
-    const recurrenceId = extractEventRecurrenceId(event)
+    // RECURRENCE-ID may carry parameters, e.g. RECURRENCE-ID;TZID=...:value
+    const recurrenceId =
+      extractPropertyValue(event, 'RECURRENCE-ID', true) ?? ''
     const key = `${uid}\x00${recurrenceId}`
     if (!seenKeys.has(key)) {
       seenKeys.add(key)
@@ -180,7 +139,7 @@ function deduplicateTimezones(timezones: string[]): string[] {
   const uniqueTimezones: string[] = []
 
   for (const timezone of timezones) {
-    const tzid = extractTimezoneID(timezone)
+    const tzid = extractPropertyValue(timezone, 'TZID')
     if (tzid && !seenTZIDs.has(tzid)) {
       seenTZIDs.add(tzid)
       uniqueTimezones.push(timezone)
@@ -193,6 +152,10 @@ function deduplicateTimezones(timezones: string[]): string[] {
   return uniqueTimezones
 }
 
+type FetchResult =
+  | { success: true; content: string }
+  | { success: false; error: string }
+
 /**
  * Fetch calendar data as raw iCal content via safeFetch (SSRF-hardened).
  * The `signal` is forwarded to the underlying fetch call so that
@@ -201,7 +164,7 @@ function deduplicateTimezones(timezones: string[]): string[] {
 async function fetchRawICalContent(
   calendar: CalendarSource,
   signal: AbortSignal
-): Promise<{ success: boolean; content?: string; error?: string }> {
+): Promise<FetchResult> {
   try {
     const response = await safeFetch(calendar.url, {
       headers: {
@@ -284,21 +247,23 @@ export async function combineICalFeeds(
 
   // Fetch raw iCal content from all calendars, each with its own AbortController
   // so the timeout actually cancels the underlying network request.
-  const fetchPromises = enabledCalendars.map(async calendar => {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const fetchPromises = enabledCalendars.map(
+    async (calendar): Promise<FetchResult> => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
 
-    try {
-      return await fetchRawICalContent(calendar, controller.signal)
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+      try {
+        return await fetchRawICalContent(calendar, controller.signal)
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      } finally {
+        clearTimeout(timer)
       }
-    } finally {
-      clearTimeout(timer)
     }
-  })
+  )
 
   const fetchResults = await Promise.allSettled(fetchPromises)
 
@@ -309,15 +274,13 @@ export async function combineICalFeeds(
   fetchResults.forEach((fetchResult, index) => {
     const calendar = enabledCalendars[index]
 
-    if (
-      fetchResult.status === 'fulfilled' &&
-      fetchResult.value.success &&
-      'content' in fetchResult.value &&
-      fetchResult.value.content
-    ) {
+    if (fetchResult.status === 'fulfilled' && fetchResult.value.success) {
       // Extract events and timezones from this calendar
-      const events = extractEventsFromICal(fetchResult.value.content)
-      const timezones = extractTimezonesFromICal(fetchResult.value.content)
+      const events = extractComponentBlocks(fetchResult.value.content, 'VEVENT')
+      const timezones = extractComponentBlocks(
+        fetchResult.value.content,
+        'VTIMEZONE'
+      )
 
       allEvents.push(...events)
       allTimezones.push(...timezones)
@@ -329,7 +292,7 @@ export async function combineICalFeeds(
       }
     } else {
       const errorMessage =
-        fetchResult.status === 'fulfilled'
+        fetchResult.status === 'fulfilled' && !fetchResult.value.success
           ? fetchResult.value.error || 'Unknown error'
           : 'Promise rejected'
 

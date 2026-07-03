@@ -13,17 +13,51 @@ export const UUID_REGEX =
 // Used to reject inputs that could enable CRLF/header injection.
 const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/
 
+// URL-safe custom ID format: alphanumeric, hyphens, underscores only
+const CUSTOM_ID_REGEX = /^[a-zA-Z0-9_-]+$/
+
+// Custom IDs that would shadow application routes or reserved namespaces
+const RESERVED_CUSTOM_IDS = new Set([
+  'api',
+  'admin',
+  'root',
+  'system',
+  'config',
+  'health',
+  'status',
+  'calendar',
+  'calendars',
+  'events',
+  'collections',
+  'sync',
+])
+
+/**
+ * Assert that a value is a non-empty, non-whitespace string.
+ * Messages are caller-supplied so existing API error text is preserved.
+ */
+function assertNonEmptyString(
+  value: unknown,
+  field: string,
+  messages: { required: string; empty: string }
+): asserts value is string {
+  if (!value || typeof value !== 'string') {
+    throw new ValidationError(messages.required, field, value)
+  }
+
+  if (value.trim().length === 0) {
+    throw new ValidationError(messages.empty, field, value)
+  }
+}
+
 /**
  * Validate ID format - accepts both UUIDs and custom IDs
  */
 export function validateId(id: string): void {
-  if (!id || typeof id !== 'string') {
-    throw new ValidationError('ID must be a non-empty string', 'id', id)
-  }
-
-  if (id.trim().length === 0) {
-    throw new ValidationError('ID cannot be empty', 'id', id)
-  }
+  assertNonEmptyString(id, 'id', {
+    required: 'ID must be a non-empty string',
+    empty: 'ID cannot be empty',
+  })
 
   // Check if it's a UUID
   if (UUID_REGEX.test(id)) {
@@ -39,17 +73,10 @@ export function validateId(id: string): void {
  * Validate custom ID format - URL-safe alphanumeric with hyphens and underscores
  */
 export function validateCustomId(customId: string): void {
-  if (!customId || typeof customId !== 'string') {
-    throw new ValidationError(
-      'Custom ID must be a non-empty string',
-      'customId',
-      customId
-    )
-  }
-
-  if (customId.trim().length === 0) {
-    throw new ValidationError('Custom ID cannot be empty', 'customId', customId)
-  }
+  assertNonEmptyString(customId, 'customId', {
+    required: 'Custom ID must be a non-empty string',
+    empty: 'Custom ID cannot be empty',
+  })
 
   // Length constraints
   if (customId.length < 3) {
@@ -68,9 +95,7 @@ export function validateCustomId(customId: string): void {
     )
   }
 
-  // URL-safe format: alphanumeric, hyphens, underscores only
-  const customIdRegex = /^[a-zA-Z0-9_-]+$/
-  if (!customIdRegex.test(customId)) {
+  if (!CUSTOM_ID_REGEX.test(customId)) {
     throw new ValidationError(
       'Custom ID can only contain letters, numbers, hyphens, and underscores',
       'customId',
@@ -92,23 +117,7 @@ export function validateCustomId(customId: string): void {
     )
   }
 
-  // Reserved words check
-  const reservedWords = [
-    'api',
-    'admin',
-    'root',
-    'system',
-    'config',
-    'health',
-    'status',
-    'calendar',
-    'calendars',
-    'events',
-    'collections',
-    'sync',
-  ]
-
-  if (reservedWords.includes(customId.toLowerCase())) {
+  if (RESERVED_CUSTOM_IDS.has(customId.toLowerCase())) {
     throw new ValidationError(
       'Custom ID cannot use reserved words',
       'customId',
@@ -121,17 +130,10 @@ export function validateCustomId(customId: string): void {
  * Validate collection name
  */
 export function validateCollectionName(name: string): void {
-  if (!name || typeof name !== 'string') {
-    throw new ValidationError(
-      'Collection name is required and must be a string',
-      'name',
-      name
-    )
-  }
-
-  if (name.trim().length === 0) {
-    throw new ValidationError('Collection name cannot be empty', 'name', name)
-  }
+  assertNonEmptyString(name, 'name', {
+    required: 'Collection name is required and must be a string',
+    empty: 'Collection name cannot be empty',
+  })
 
   if (name.length > 255) {
     throw new ValidationError(

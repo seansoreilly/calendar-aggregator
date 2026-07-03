@@ -3,12 +3,24 @@ import { twMerge } from 'tailwind-merge'
 import { CalendarCollection } from '../types/calendar'
 import { UUID_REGEX } from './validation'
 
-export function cn(...inputs: ClassValue[]) {
+export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs))
 }
 
 declare global {
   var calendarCollections: CalendarCollection[]
+}
+
+/**
+ * Build a predicate matching a collection against a guid: UUIDs match
+ * case-sensitively, custom IDs case-insensitively.
+ */
+function matchesGuid(guid: string): (col: CalendarCollection) => boolean {
+  if (UUID_REGEX.test(guid)) {
+    return col => col.guid === guid
+  }
+  const lowered = guid.toLowerCase()
+  return col => col.guid.toLowerCase() === lowered
 }
 
 export function initializeStorage(): void {
@@ -25,14 +37,7 @@ export function addCollectionToStorage(collection: CalendarCollection): void {
 export function removeCollectionFromStorage(guid: string): boolean {
   initializeStorage()
 
-  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid = UUID_REGEX.test(guid)
-
-  const index = isUuid
-    ? globalThis.calendarCollections.findIndex(col => col.guid === guid)
-    : globalThis.calendarCollections.findIndex(
-        col => col.guid.toLowerCase() === guid.toLowerCase()
-      )
+  const index = globalThis.calendarCollections.findIndex(matchesGuid(guid))
 
   if (index >= 0) {
     globalThis.calendarCollections.splice(index, 1)
@@ -46,20 +51,7 @@ export function findCollectionInStorage(
 ): CalendarCollection | null {
   initializeStorage()
 
-  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid = UUID_REGEX.test(guid)
-
-  if (isUuid) {
-    // Exact match for UUIDs
-    return globalThis.calendarCollections.find(col => col.guid === guid) || null
-  } else {
-    // Case-insensitive match for custom IDs
-    return (
-      globalThis.calendarCollections.find(
-        col => col.guid.toLowerCase() === guid.toLowerCase()
-      ) || null
-    )
-  }
+  return globalThis.calendarCollections.find(matchesGuid(guid)) || null
 }
 
 export function updateCollectionInStorage(
@@ -68,14 +60,7 @@ export function updateCollectionInStorage(
 ): CalendarCollection | null {
   initializeStorage()
 
-  // Check if it's a UUID (case-sensitive) or custom ID (case-insensitive)
-  const isUuid = UUID_REGEX.test(guid)
-
-  const collection = isUuid
-    ? globalThis.calendarCollections.find(col => col.guid === guid)
-    : globalThis.calendarCollections.find(
-        col => col.guid.toLowerCase() === guid.toLowerCase()
-      )
+  const collection = globalThis.calendarCollections.find(matchesGuid(guid))
 
   if (!collection) return null
 

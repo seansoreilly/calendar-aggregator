@@ -16,6 +16,7 @@ import {
 } from '../../../../lib/validation'
 import {
   CollectionNotFoundError,
+  errorResponse,
   isCalendarCollectionError,
   toCalendarCollectionError,
 } from '../../../../lib/errors'
@@ -35,14 +36,7 @@ export async function GET(
       validateId(guid)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            code: error.code,
-            details: error.details,
-          },
-          { status: error.statusCode }
-        )
+        return errorResponse(error)
       }
       throw error
     }
@@ -50,27 +44,14 @@ export async function GET(
     const collection = await findCollectionByGuidInDatabase(guid)
 
     if (!collection) {
-      const notFoundError = new CollectionNotFoundError(guid)
-      return NextResponse.json(
-        {
-          error: notFoundError.message,
-          code: notFoundError.code,
-        },
-        { status: notFoundError.statusCode }
-      )
+      return errorResponse(new CollectionNotFoundError(guid), false)
     }
 
     return NextResponse.json(collection)
   } catch (error) {
     console.error('Error fetching collection:', error)
     const appError = toCalendarCollectionError(error, 'fetch_collection')
-    return NextResponse.json(
-      {
-        error: appError.message,
-        code: appError.code,
-      },
-      { status: appError.statusCode }
-    )
+    return errorResponse(appError, false)
   }
 }
 
@@ -94,14 +75,7 @@ export async function PUT(
       validateId(guid)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            code: error.code,
-            details: error.details,
-          },
-          { status: error.statusCode }
-        )
+        return errorResponse(error)
       }
       throw error
     }
@@ -193,14 +167,7 @@ export async function DELETE(
       validateId(guid)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            code: error.code,
-            details: error.details,
-          },
-          { status: error.statusCode }
-        )
+        return errorResponse(error)
       }
       throw error
     }

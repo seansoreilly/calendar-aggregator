@@ -10,6 +10,15 @@ import {
 } from './utils'
 import { UUID_REGEX } from './validation'
 
+const COLLECTIONS_SCHEMA = 'calendar_aggregator'
+
+// PostgREST code returned by `.single()` when no rows match the query.
+const POSTGREST_NO_ROWS_CODE = 'PGRST116'
+
+function isNoRowsError(error: { code?: string }): boolean {
+  return error.code === POSTGREST_NO_ROWS_CODE
+}
+
 /**
  * Escape special LIKE/ILIKE wildcard characters in a pattern string.
  * PostgreSQL LIKE/ILIKE treats `%` (any string), `_` (any single char), and
@@ -49,32 +58,45 @@ export function applyGuidFilter<T extends GuidFilterable<T>>(
 // Lazy-initialized Supabase client with custom schema
 let supabaseClient: SupabaseClient<Database> | null = null
 
-// Get Supabase client with lazy initialization
-export function getSupabase() {
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+function getSupabaseEnv(): {
+  url: string | undefined
+  anonKey: string | undefined
+} {
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  }
+}
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+// Get Supabase client with lazy initialization
+export function getSupabase(): SupabaseClient<Database> {
+  if (!supabaseClient) {
+    const { url, anonKey } = getSupabaseEnv()
+
+    if (!url || !anonKey) {
       throw new Error(
         'Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.'
       )
     }
 
-    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
+    supabaseClient = createClient<Database>(url, anonKey)
   }
 
   return supabaseClient
 }
 
+/** Query builder scoped to the collections table in the app's custom schema. */
+function collectionsTable() {
+  return getSupabase().schema(COLLECTIONS_SCHEMA).from('collections')
+}
+
 // Test function to verify database connection
 export async function testSupabaseConnection() {
   try {
-    const client = getSupabase()
-    const { error } = await client
-      .schema('calendar_aggregator')
-      .from('collections')
-      .select('*', { count: 'exact', head: true })
+    const { error } = await collectionsTable().select('*', {
+      count: 'exact',
+      head: true,
+    })
 
     if (error) throw error
 
@@ -98,19 +120,16 @@ export async function testSupabaseConnection() {
 // Health check function for API endpoint
 export async function getSupabaseHealth() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const { url, anonKey } = getSupabaseEnv()
 
     // Check if environment variables are configured
-    const envConfigured = !!(supabaseUrl && supabaseAnonKey)
-
-    if (!envConfigured) {
+    if (!url || !anonKey) {
       return {
         status: 'not-configured',
         supabase: {
           connected: false,
-          url: supabaseUrl ? 'configured' : 'missing',
-          key: supabaseAnonKey ? 'configured' : 'missing',
+          url: url ? 'configured' : 'missing',
+          key: anonKey ? 'configured' : 'missing',
         },
         timestamp: new Date().toISOString(),
         message: 'Supabase environment variables not configured',
@@ -130,15 +149,14 @@ export async function getSupabaseHealth() {
       details: connectionTest.success ? undefined : connectionTest.error,
     }
   } catch (error) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const { url, anonKey } = getSupabaseEnv()
 
     return {
       status: 'error',
       supabase: {
         connected: false,
-        url: supabaseUrl ? 'configured' : 'missing',
-        key: supabaseAnonKey ? 'configured' : 'missing',
+        url: url ? 'configured' : 'missing',
+        key: anonKey ? 'configured' : 'missing',
       },
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -163,8 +181,6 @@ export async function saveCollectionToDatabase(
   collection: CalendarCollection
 ): Promise<CalendarCollection> {
   try {
-    const supabase = getSupabase()
-
     // Prepare data for database insertion
     const insertData: Database['calendar_aggregator']['Tables']['collections']['Insert'] =
       {
@@ -176,9 +192,7 @@ export async function saveCollectionToDatabase(
         updated_at: collection.updatedAt || collection.createdAt,
       }
 
-    const { data, error } = await supabase
-      .schema('calendar_aggregator')
-      .from('collections')
+    const { data, error } = await collectionsTable()
       .insert([insertData])
       .select()
       .single()
@@ -201,11 +215,7 @@ export async function getAllCollectionsFromDatabase(): Promise<
   CalendarCollection[]
 > {
   try {
-    const supabase = getSupabase()
-
-    const { data, error } = await supabase
-      .schema('calendar_aggregator')
-      .from('collections')
+    const { data, error } = await collectionsTable()
       .select('*')
       .order('created_at', { ascending: false })
 
@@ -223,17 +233,12 @@ export async function findCollectionByGuidInDatabase(
   guid: string
 ): Promise<CalendarCollection | null> {
   try {
-    const supabase = getSupabase()
-
-    const baseQuery = supabase
-      .schema('calendar_aggregator')
-      .from('collections')
-      .select('*')
+    const baseQuery = collectionsTable().select('*')
 
     const { data, error } = await applyGuidFilter(baseQuery, guid).single()
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (isNoRowsError(error)) {
         return null
       }
       throw error
@@ -241,7 +246,10 @@ export async function findCollectionByGuidInDatabase(
 
     return mapRow(data)
   } catch (error) {
-    console.error('findCollectionByGuidInDatabase failed, falling back to memory:', error)
+    console.error(
+      'findCollectionByGuidInDatabase failed, falling back to memory:',
+      error
+    )
     return findCollectionInStorage(guid)
   }
 }
@@ -251,7 +259,6 @@ export async function updateCollectionInDatabase(
   updates: Partial<CalendarCollection>
 ): Promise<CalendarCollection | null> {
   try {
-    const supabase = getSupabase()
     const now = new Date().toISOString()
 
     const updateData: Record<string, unknown> = { updated_at: now }
@@ -262,17 +269,14 @@ export async function updateCollectionInDatabase(
       updateData.sources = updates.calendars
     }
 
-    const baseQuery = supabase
-      .schema('calendar_aggregator')
-      .from('collections')
-      .update(updateData)
+    const baseQuery = collectionsTable().update(updateData)
 
     const { data, error } = await applyGuidFilter(baseQuery, guid)
       .select()
       .single()
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (isNoRowsError(error)) {
         return null
       }
       throw error
@@ -280,7 +284,10 @@ export async function updateCollectionInDatabase(
 
     return mapRow(data)
   } catch (error) {
-    console.error('updateCollectionInDatabase failed, falling back to memory:', error)
+    console.error(
+      'updateCollectionInDatabase failed, falling back to memory:',
+      error
+    )
     return updateCollectionInStorage(guid, updates)
   }
 }
@@ -289,19 +296,17 @@ export async function deleteCollectionFromDatabase(
   guid: string
 ): Promise<boolean> {
   try {
-    const supabase = getSupabase()
-
-    const baseQuery = supabase
-      .schema('calendar_aggregator')
-      .from('collections')
-      .delete()
+    const baseQuery = collectionsTable().delete()
 
     const { data, error } = await applyGuidFilter(baseQuery, guid).select()
 
     if (error) throw error
     return data.length > 0
   } catch (error) {
-    console.error('deleteCollectionFromDatabase failed, falling back to memory:', error)
+    console.error(
+      'deleteCollectionFromDatabase failed, falling back to memory:',
+      error
+    )
     return removeCollectionFromStorage(guid)
   }
 }
