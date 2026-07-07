@@ -24,9 +24,17 @@ export interface CalendarCollection {
 
 // Extended interface for database storage with Supabase
 
-// iCal combiner result
+// iCal combiner result.
+// `status` is the explicit tri-state the route branches on:
+//   - 'ok'      → every enabled source fetched OK (HTTP 200)
+//   - 'partial' → some sources fetched, at least one failed (HTTP 206)
+//   - 'failed'  → no source could be fetched (HTTP 503)
+// `success` is retained for compatibility and is equivalent to status === 'ok'.
+export type CombineStatus = 'ok' | 'partial' | 'failed'
+
 export interface CombineResult {
   success: boolean
+  status: CombineStatus
   icalContent: string
   eventsCount: number
   calendarsProcessed: number

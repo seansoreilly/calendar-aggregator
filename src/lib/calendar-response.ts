@@ -1,8 +1,19 @@
+import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { CalendarCollection, CombineResult } from '../types/calendar'
 
 const CALENDAR_CONTENT_TYPE = 'text/calendar; charset=utf-8'
 const CALENDAR_CACHE_CONTROL = 'public, max-age=300'
+
+/**
+ * Compute a strong ETag (RFC 7232) for iCal content: a quoted sha-256 hex
+ * digest of the body. Deterministic for identical output, so a client can send
+ * it back via If-None-Match to skip re-downloading unchanged feeds.
+ */
+export function computeICalETag(icalContent: string): string {
+  const hash = createHash('sha256').update(icalContent, 'utf8').digest('hex')
+  return `"${hash}"`
+}
 const MIN_TIMEOUT_MS = 1000
 const MAX_TIMEOUT_MS = 30000
 const DEFAULT_TIMEOUT_MS = 15000
@@ -74,9 +85,12 @@ export function createCalendarSuccessResponse(
     'icalContent' | 'eventsCount' | 'calendarsProcessed' | 'warnings'
   >
 ): NextResponse {
+  const headers = buildCalendarHeaders(collection, combineResult)
+  headers['ETag'] = computeICalETag(combineResult.icalContent)
+
   return new NextResponse(combineResult.icalContent, {
     status: 200,
-    headers: buildCalendarHeaders(collection, combineResult),
+    headers,
   })
 }
 
@@ -89,10 +103,30 @@ export function createCalendarPartialResponse(
 ): NextResponse {
   const headers = buildCalendarHeaders(collection, combineResult)
   headers['X-Calendar-Errors'] = JSON.stringify(combineResult.errors)
+  headers['ETag'] = computeICalETag(combineResult.icalContent)
 
   return new NextResponse(combineResult.icalContent, {
     status: 206,
     headers,
+  })
+}
+
+/**
+ * 304 Not Modified for a matched If-None-Match. Empty body; echoes the same
+ * ETag and Cache-Control the 200/206 would have carried so the client keeps
+ * its cached copy valid.
+ *
+ * Note: the upstream sources are still fetched and combined server-side to
+ * derive the ETag — the 304 saves the client re-downloading and re-parsing the
+ * (unchanged) feed body, not the server-side fetch cost.
+ */
+export function createCalendarNotModifiedResponse(etag: string): NextResponse {
+  return new NextResponse(null, {
+    status: 304,
+    headers: {
+      ETag: etag,
+      'Cache-Control': CALENDAR_CACHE_CONTROL,
+    },
   })
 }
 

@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import { createHash } from 'node:crypto'
 import {
   parseCalendarTimeout,
   createCalendarHeadResponse,
+  createCalendarNotModifiedResponse,
+  computeICalETag,
 } from '../lib/calendar-response'
 import { CalendarCollection } from '../types/calendar'
 
@@ -15,7 +18,9 @@ function makeUrl(timeout?: string): string {
   return `${base}?timeout=${timeout}`
 }
 
-function makeCollection(overrides: Partial<CalendarCollection> = {}): CalendarCollection {
+function makeCollection(
+  overrides: Partial<CalendarCollection> = {}
+): CalendarCollection {
   return {
     guid: 'test-guid',
     name: 'Test Collection',
@@ -56,11 +61,15 @@ describe('parseCalendarTimeout', () => {
   })
 
   it('accepts the exact MIN boundary', () => {
-    expect(parseCalendarTimeout(makeUrl(String(MIN_TIMEOUT_MS)))).toBe(MIN_TIMEOUT_MS)
+    expect(parseCalendarTimeout(makeUrl(String(MIN_TIMEOUT_MS)))).toBe(
+      MIN_TIMEOUT_MS
+    )
   })
 
   it('accepts the exact MAX boundary', () => {
-    expect(parseCalendarTimeout(makeUrl(String(MAX_TIMEOUT_MS)))).toBe(MAX_TIMEOUT_MS)
+    expect(parseCalendarTimeout(makeUrl(String(MAX_TIMEOUT_MS)))).toBe(
+      MAX_TIMEOUT_MS
+    )
   })
 })
 
@@ -96,5 +105,41 @@ describe('createCalendarHeadResponse', () => {
     const collection = makeCollection({ name: 'My Safe Collection' })
     const response = createCalendarHeadResponse(collection)
     expect(response.headers.get('X-Collection-Name')).toBe('My Safe Collection')
+  })
+})
+
+describe('computeICalETag', () => {
+  const ICAL = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR'
+
+  it('returns a quoted sha-256 hex digest of the content', () => {
+    const expected = `"${createHash('sha256').update(ICAL, 'utf8').digest('hex')}"`
+    expect(computeICalETag(ICAL)).toBe(expected)
+  })
+
+  it('is a strong validator (quoted, no weak W/ prefix)', () => {
+    const etag = computeICalETag(ICAL)
+    expect(etag.startsWith('"')).toBe(true)
+    expect(etag.endsWith('"')).toBe(true)
+    expect(etag.startsWith('W/')).toBe(false)
+  })
+
+  it('is deterministic for identical content', () => {
+    expect(computeICalETag(ICAL)).toBe(computeICalETag(ICAL))
+  })
+
+  it('differs for different content', () => {
+    expect(computeICalETag(ICAL)).not.toBe(computeICalETag(ICAL + '\r\n'))
+  })
+})
+
+describe('createCalendarNotModifiedResponse', () => {
+  it('returns 304 with an empty body and echoes the ETag + Cache-Control', async () => {
+    const etag = computeICalETag('BEGIN:VCALENDAR\r\nEND:VCALENDAR')
+    const response = createCalendarNotModifiedResponse(etag)
+
+    expect(response.status).toBe(304)
+    expect(response.headers.get('ETag')).toBe(etag)
+    expect(response.headers.get('Cache-Control')).toBeTruthy()
+    expect(await response.text()).toBe('')
   })
 })

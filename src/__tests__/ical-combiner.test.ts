@@ -349,7 +349,9 @@ describe('combineICalFeeds', () => {
       // Both the master and the override must appear
       expect(result.eventsCount).toBe(2)
       expect(result.icalContent).toContain('SUMMARY:Weekly Standup\r\n')
-      expect(result.icalContent).toContain('SUMMARY:Weekly Standup (rescheduled)')
+      expect(result.icalContent).toContain(
+        'SUMMARY:Weekly Standup (rescheduled)'
+      )
     })
 
     it('deduplicates exact-duplicate events (same UID, same RECURRENCE-ID) across calendars', async () => {
@@ -422,7 +424,11 @@ describe('combineICalFeeds', () => {
       expect(result.success).toBe(false)
       expect(result.errors.some(e => e.includes('Huge Cal'))).toBe(true)
       expect(
-        result.errors.some(e => e.toLowerCase().includes('large') || e.toLowerCase().includes('limit'))
+        result.errors.some(
+          e =>
+            e.toLowerCase().includes('large') ||
+            e.toLowerCase().includes('limit')
+        )
       ).toBe(true)
     })
 
@@ -444,9 +450,63 @@ describe('combineICalFeeds', () => {
       // Success because the single source fetched OK; events are capped.
       expect(result.success).toBe(true)
       expect(result.eventsCount).toBe(50_000)
-      expect(result.warnings.some(w => w.includes('cap') || w.includes('truncated'))).toBe(
-        true
+      expect(
+        result.warnings.some(w => w.includes('cap') || w.includes('truncated'))
+      ).toBe(true)
+    })
+  })
+
+  describe('status field (tri-state)', () => {
+    it("reports status 'ok' when every source fetches successfully", async () => {
+      vi.mocked(fetch).mockResolvedValue(
+        makeOkResponse(makeCalendar([makeEvent('uid-1@test', 'Event')]))
       )
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics'),
+      ])
+
+      expect(result.status).toBe('ok')
+      expect(result.success).toBe(true)
+    })
+
+    it("reports status 'partial' when some sources fail but at least one succeeds", async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(
+          makeOkResponse(makeCalendar([makeEvent('uid-1@test', 'Good')]))
+        )
+        .mockRejectedValueOnce(new Error('Network timeout'))
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/good.ics', { id: 1 }),
+        makeSource('https://example.com/bad.ics', { id: 2 }),
+      ])
+
+      expect(result.status).toBe('partial')
+      expect(result.success).toBe(false)
+      expect(result.calendarsProcessed).toBe(1)
+    })
+
+    it("reports status 'failed' when no source can be fetched", async () => {
+      mockFetchError('Network error')
+
+      const result = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics'),
+      ])
+
+      expect(result.status).toBe('failed')
+      expect(result.success).toBe(false)
+      expect(result.calendarsProcessed).toBe(0)
+    })
+
+    it("reports status 'failed' on empty / disabled input", async () => {
+      const empty = await combineICalFeeds([])
+      expect(empty.status).toBe('failed')
+
+      const disabled = await combineICalFeeds([
+        makeSource('https://example.com/cal.ics', { enabled: false }),
+      ])
+      expect(disabled.status).toBe('failed')
     })
   })
 
@@ -456,6 +516,7 @@ describe('combineICalFeeds', () => {
       expect(result.eventsCount).toBe(0)
       expect(result.calendarsProcessed).toBe(0)
       expect(result.icalContent).toBe('')
+      expect(result.status).toBe('failed')
       expect(Array.isArray(result.errors)).toBe(true)
       expect(Array.isArray(result.warnings)).toBe(true)
     })

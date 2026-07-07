@@ -16,33 +16,63 @@ export interface ProcessCalendarsResult {
   validationErrors: string[]
 }
 
+type CalendarCheck =
+  | { kind: 'ok'; source: CalendarSource }
+  | { kind: 'error'; message: string }
+
+/**
+ * Validate a single calendar input by index. Kept per-index so the concurrent
+ * checks below can preserve error attribution (`Calendar N (...)`) and ordering.
+ */
+async function checkCalendarInput(
+  calendarData: CollectionCalendarInput,
+  index: number
+): Promise<CalendarCheck> {
+  if (!calendarData?.url || !calendarData?.name) {
+    return {
+      kind: 'error',
+      message: `Calendar ${index + 1}: URL and name are required`,
+    }
+  }
+
+  const validationResult = await validateCalendarUrl(calendarData.url)
+  if (!validationResult.isValid) {
+    // 5xx upstream statuses are transient — warn but still include the source.
+    if (validationResult.statusCode && validationResult.statusCode >= 500) {
+      console.warn(
+        `Warning for ${calendarData.name}: ${validationResult.error}`
+      )
+    } else {
+      return {
+        kind: 'error',
+        message: `Calendar ${index + 1} (${calendarData.name}): ${validationResult.error}`,
+      }
+    }
+  }
+
+  return { kind: 'ok', source: buildCalendarSource(calendarData, index) }
+}
+
 export async function processCalendarInputs(
   calendars: CollectionCalendarInput[]
 ): Promise<ProcessCalendarsResult> {
+  // Validate all sources concurrently; results stay index-ordered so error
+  // attribution and the processed-calendar order match the input order.
+  const checks = await Promise.all(
+    calendars.map((calendarData, index) =>
+      checkCalendarInput(calendarData, index)
+    )
+  )
+
   const processedCalendars: CalendarSource[] = []
   const validationErrors: string[] = []
 
-  for (const [index, calendarData] of calendars.entries()) {
-    if (!calendarData?.url || !calendarData?.name) {
-      validationErrors.push(`Calendar ${index + 1}: URL and name are required`)
-      continue
+  for (const check of checks) {
+    if (check.kind === 'ok') {
+      processedCalendars.push(check.source)
+    } else {
+      validationErrors.push(check.message)
     }
-
-    const validationResult = await validateCalendarUrl(calendarData.url)
-    if (!validationResult.isValid) {
-      if (validationResult.statusCode && validationResult.statusCode >= 500) {
-        console.warn(
-          `Warning for ${calendarData.name}: ${validationResult.error}`
-        )
-      } else {
-        validationErrors.push(
-          `Calendar ${index + 1} (${calendarData.name}): ${validationResult.error}`
-        )
-        continue
-      }
-    }
-
-    processedCalendars.push(buildCalendarSource(calendarData, index))
   }
 
   return {
