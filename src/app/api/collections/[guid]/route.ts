@@ -20,6 +20,8 @@ import {
   isCalendarCollectionError,
   toCalendarCollectionError,
 } from '../../../../lib/errors'
+import { authorizeMutation } from '../../../../lib/collection-auth'
+import { stripManagementToken } from '../../../../lib/collection-service'
 
 /**
  * GET /api/collections/[guid] - Get specific collection
@@ -47,7 +49,8 @@ export async function GET(
       return errorResponse(new CollectionNotFoundError(guid), false)
     }
 
-    return NextResponse.json(collection)
+    // Never expose the management token on read paths.
+    return NextResponse.json(stripManagementToken(collection))
   } catch (error) {
     console.error('Error fetching collection:', error)
     const appError = toCalendarCollectionError(error, 'fetch_collection')
@@ -83,6 +86,23 @@ export async function PUT(
       throw error
     }
 
+    // Ownership check: fetch the collection to read its stored token. A 404 here
+    // (no such collection) is returned before any auth error so we don't leak
+    // existence. authorizeMutation() allows legacy tokenless collections through
+    // and otherwise requires a matching Authorization: Bearer <token> header.
+    const existing = await findCollectionByGuidInDatabase(guid)
+    if (!existing) {
+      return errorResponse(new CollectionNotFoundError(guid), false)
+    }
+    try {
+      authorizeMutation(existing, request.headers.get('Authorization'))
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return errorResponse(error)
+      }
+      throw error
+    }
+
     // Prepare update object
     const updates: Partial<CalendarCollection> = {}
     if (body.name !== undefined) updates.name = body.name
@@ -102,7 +122,8 @@ export async function PUT(
       return errorResponse(new CollectionNotFoundError(guid), false)
     }
 
-    return NextResponse.json(updatedCollection)
+    // Never expose the management token on the update response.
+    return NextResponse.json(stripManagementToken(updatedCollection))
   } catch (error) {
     console.error('Error updating collection:', error)
     const appError = toCalendarCollectionError(error, 'update_collection')
@@ -127,6 +148,23 @@ export async function DELETE(
     // Validate ID format (UUID or custom ID)
     try {
       validateId(guid)
+    } catch (error) {
+      if (isCalendarCollectionError(error)) {
+        return errorResponse(error)
+      }
+      throw error
+    }
+
+    // Ownership check: fetch to read the stored token before deleting. 404 is
+    // returned ahead of any auth error so existence isn't leaked.
+    // authorizeMutation() allows legacy tokenless collections and otherwise
+    // requires a matching Authorization: Bearer <token> header.
+    const existing = await findCollectionByGuidInDatabase(guid)
+    if (!existing) {
+      return errorResponse(new CollectionNotFoundError(guid), false)
+    }
+    try {
+      authorizeMutation(existing, request.headers.get('Authorization'))
     } catch (error) {
       if (isCalendarCollectionError(error)) {
         return errorResponse(error)

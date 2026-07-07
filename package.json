@@ -1,6 +1,6 @@
 {
   "name": "calendar-aggregator",
-  "version": "0.1.8",
+  "version": "0.1.13",
   "description": "A modern web application created with kens-webapps",
   "type": "module",
   "private": true,

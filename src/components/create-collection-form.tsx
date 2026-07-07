@@ -9,8 +9,14 @@ import {
   Copy,
   Check,
   Sparkles,
+  Settings,
+  KeyRound,
 } from 'lucide-react'
 import { trackEvent } from '../lib/gtag'
+
+function tokenStorageKey(guid: string): string {
+  return `calendar-aggregator:token:${guid}`
+}
 
 interface CalendarInput {
   id: string
@@ -45,7 +51,9 @@ export default function CreateCollectionForm() {
   )
   const [successUrl, setSuccessUrl] = useState<string | null>(null)
   const [successGuid, setSuccessGuid] = useState<string | null>(null)
+  const [successToken, setSuccessToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [tokenCopied, setTokenCopied] = useState(false)
 
   const addCalendar = () => {
     setCalendars([
@@ -152,6 +160,13 @@ export default function CreateCollectionForm() {
       const url = `${window.location.origin}/api/calendar/${data.guid}`
       setSuccessUrl(url)
       setSuccessGuid(data.guid)
+      if (data.managementToken) {
+        setSuccessToken(data.managementToken)
+        window.localStorage.setItem(
+          tokenStorageKey(data.guid),
+          data.managementToken
+        )
+      }
       trackEvent('collection_created', {
         calendar_count: calendarCount,
         has_custom_id: customId ? 1 : 0,
@@ -173,7 +188,13 @@ export default function CreateCollectionForm() {
     try {
       const response = await fetch(`/api/collections/${successGuid}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${successToken || ''}` },
       })
+
+      if (response.status === 401) {
+        setError('Invalid or missing management token')
+        return
+      }
 
       if (!response.ok) {
         setError('Failed to delete collection. Please try again.')
@@ -182,6 +203,7 @@ export default function CreateCollectionForm() {
 
       setSuccessUrl(null)
       setSuccessGuid(null)
+      setSuccessToken(null)
       setName('')
       setCustomId('')
       setCalendars([
@@ -204,6 +226,14 @@ export default function CreateCollectionForm() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
       trackEvent('feed_url_copied')
+    }
+  }
+
+  const copyTokenToClipboard = () => {
+    if (successToken) {
+      navigator.clipboard.writeText(successToken)
+      setTokenCopied(true)
+      setTimeout(() => setTokenCopied(false), 2000)
     }
   }
 
@@ -245,11 +275,41 @@ export default function CreateCollectionForm() {
             </div>
           </div>
 
+          {successToken && (
+            <div className="bg-amber-500/10 rounded-2xl p-6 border border-amber-500/20 flex flex-col gap-4 text-left">
+              <div className="flex items-center gap-2 text-sm text-amber-300">
+                <KeyRound className="w-4 h-4" />
+                <span>Management Token</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <code className="flex-1 font-mono text-amber-200 text-sm break-all">
+                  {successToken}
+                </code>
+                <button
+                  onClick={copyTokenToClipboard}
+                  className="p-3 hover:bg-white/10 rounded-xl transition-all text-amber-300 hover:text-white hover:scale-105 active:scale-95"
+                  title="Copy to clipboard"
+                >
+                  {tokenCopied ? (
+                    <Check className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-amber-300/80">
+                Save this token — it&apos;s shown only once. You&apos;ll need it
+                to manage or delete this collection.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             <button
               onClick={() => {
                 setSuccessUrl(null)
                 setSuccessGuid(null)
+                setSuccessToken(null)
                 setName('')
                 setCustomId('')
                 setError(null)
@@ -275,6 +335,16 @@ export default function CreateCollectionForm() {
               Test Feed
             </a>
           </div>
+
+          {successGuid && (
+            <a
+              href={`/manage/${successGuid}`}
+              className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all hover:scale-[1.02]"
+            >
+              <Settings className="w-5 h-5" />
+              Manage this collection
+            </a>
+          )}
 
           {error && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm animate-in slide-in-from-top-2 fade-in duration-300 flex items-center gap-3">

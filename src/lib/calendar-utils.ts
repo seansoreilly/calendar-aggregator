@@ -1,6 +1,5 @@
-import * as ical from 'node-ical'
 import { CalendarSource } from '../types/calendar'
-import { safeFetch } from './safe-fetch'
+import { countVevents, fetchCalendarBody } from './calendar-fetch'
 
 /**
  * Validates if a string is a properly formatted URL
@@ -60,118 +59,35 @@ async function testCalendarConnection(
   urlString: string,
   timeoutMs: number = 10000
 ): Promise<ConnectionTestResult> {
-  const startTime = Date.now()
+  // Delegates to the shared, size-capped fetch stack so the create-time
+  // connection test cannot buffer an unbounded body. Event counting is a cheap
+  // `BEGIN:VEVENT` scan rather than full iCal object parsing.
+  const result = await fetchCalendarBody(urlString, { timeoutMs })
 
-  try {
-    const signal = AbortSignal.timeout(timeoutMs)
-
-    // safeFetch performs SSRF check on initial URL and every redirect hop
-    const response = await safeFetch(urlString, {
-      headers: {
-        'User-Agent': 'Calendar-Aggregator/1.0',
-      },
-      signal,
-    })
-
-    const responseTime = Date.now() - startTime
-    const contentType = response.headers.get('content-type') ?? ''
-
-    // Handle server errors (5xx) more gracefully
-    if (response.status >= 500) {
-      return {
-        isValid: false,
-        error: `Server error (${response.status}): Calendar server is temporarily unavailable`,
-        statusCode: response.status,
-        contentType,
-        responseTime,
-      }
-    }
-
-    // Handle client errors (4xx)
-    if (response.status >= 400) {
-      return {
-        isValid: false,
-        error: `Access denied (${response.status}): ${response.statusText}`,
-        statusCode: response.status,
-        contentType,
-        responseTime,
-      }
-    }
-
-    const body = await response.text()
-
-    // Check if response looks like calendar data
-    const hasCalendarData =
-      contentType.includes('text/calendar') || body.includes('BEGIN:VCALENDAR')
-
-    if (!hasCalendarData) {
-      return {
-        isValid: false,
-        error: 'Response does not appear to contain calendar data',
-        warnings: [
-          'Content-Type is not text/calendar',
-          'No VCALENDAR data found',
-        ],
-        statusCode: response.status,
-        contentType,
-        responseTime,
-      }
-    }
-
-    // Try to parse the calendar data
-    let eventCount = 0
-    try {
-      const calendarData = ical.parseICS(body)
-      eventCount = Object.values(calendarData).filter(
-        component =>
-          component &&
-          typeof component === 'object' &&
-          'type' in component &&
-          component.type === 'VEVENT'
-      ).length
-    } catch {
-      return {
-        isValid: false,
-        error: 'Failed to parse calendar data',
-        statusCode: response.status,
-        contentType,
-        hasCalendarData: true,
-        responseTime,
-      }
-    }
-
-    return {
-      isValid: true,
-      statusCode: response.status,
-      contentType,
-      hasCalendarData: true,
-      eventCount,
-      responseTime,
-    }
-  } catch (error) {
-    const responseTime = Date.now() - startTime
-
-    if (error instanceof Error) {
-      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-        return {
-          isValid: false,
-          error: `Connection timeout after ${timeoutMs}ms`,
-          responseTime,
-        }
-      }
-
-      return {
-        isValid: false,
-        error: error.message || 'Network error',
-        responseTime,
-      }
-    }
-
-    return {
+  if (!result.ok) {
+    const base: ConnectionTestResult = {
       isValid: false,
-      error: 'Unknown error occurred',
-      responseTime,
+      error: result.error,
+      responseTime: result.responseTimeMs,
     }
+    if (result.status !== undefined) base.statusCode = result.status
+    if (result.contentType !== undefined) base.contentType = result.contentType
+    if (result.error === 'Response does not appear to contain calendar data') {
+      base.warnings = [
+        'Content-Type is not text/calendar',
+        'No VCALENDAR data found',
+      ]
+    }
+    return base
+  }
+
+  return {
+    isValid: true,
+    statusCode: result.status,
+    contentType: result.contentType,
+    hasCalendarData: true,
+    eventCount: countVevents(result.body),
+    responseTime: result.responseTimeMs,
   }
 }
 

@@ -20,6 +20,10 @@ export interface CalendarCollection {
   calendars: CalendarSource[]
   createdAt: string
   updatedAt?: string
+  // Opaque bearer token authorizing mutations. Present on freshly-created
+  // collections and returned ONCE in the POST response; it is stripped from all
+  // GET responses (see mapRow / serialization). Legacy collections have none.
+  managementToken?: string
 }
 
 // Extended interface for database storage with Supabase

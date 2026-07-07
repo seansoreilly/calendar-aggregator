@@ -204,6 +204,12 @@ function mapRow(
     calendars: record.sources || [],
     createdAt: record.created_at,
     updatedAt: record.updated_at,
+    // Retained server-side so route handlers can enforce ownership on
+    // PUT/DELETE. Stripped from client-facing GET responses via
+    // stripManagementToken() before serialization. Null for legacy rows.
+    ...(record.management_token
+      ? { managementToken: record.management_token }
+      : {}),
   }
 }
 
@@ -220,6 +226,7 @@ export async function saveCollectionToDatabase(
         sources: collection.calendars,
         created_at: collection.createdAt,
         updated_at: collection.updatedAt || collection.createdAt,
+        management_token: collection.managementToken ?? null,
       }
 
     const { error } = await collectionsTable()

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST } from '../../app/api/collections/route'
 import { GET as getCollectionById } from '../../app/api/collections/[guid]/route'
+import { collectionCreateLimiter } from '../../lib/rate-limit'
 
 // Mock the calendar validation function to avoid network calls in tests
 vi.mock('../../lib/calendar-utils', async () => {
@@ -70,6 +71,9 @@ describe('Calendar Collections Integration Tests', () => {
   beforeEach(() => {
     // Initialize global storage before each test
     globalThis.calendarCollections = []
+    // Reset the create limiter so repeated POSTs across tests don't trip the
+    // per-IP window (all requests share the 'unknown' key here).
+    collectionCreateLimiter.reset()
   })
 
   describe('Collections API', () => {

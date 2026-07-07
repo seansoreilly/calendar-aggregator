@@ -46,6 +46,13 @@ export class ValidationError extends CalendarCollectionError {
   }
 }
 
+export class UnauthorizedError extends CalendarCollectionError {
+  constructor(message = 'A valid management token is required') {
+    super(message, 'UNAUTHORIZED', 401)
+    this.name = 'UnauthorizedError'
+  }
+}
+
 export class DatabaseOperationError extends CalendarCollectionError {
   constructor(operation: string, originalError: unknown) {
     super(

@@ -15,6 +15,11 @@ import {
   parseCalendarTimeout,
 } from '../../../../lib/calendar-response'
 import { trackEvent } from '../../../../lib/analytics'
+import {
+  calendarFeedLimiter,
+  clientKeyFromHeaders,
+  rateLimitResponse,
+} from '../../../../lib/rate-limit'
 
 async function findValidatedCollection(guid: string) {
   validateId(guid)
@@ -40,6 +45,14 @@ export async function GET(
 
     if (!guid) {
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
+    }
+
+    // Best-effort per-IP rate limit on the public feed endpoint.
+    const rate = calendarFeedLimiter.check(
+      clientKeyFromHeaders(request.headers)
+    )
+    if (!rate.allowed) {
+      return rateLimitResponse(rate)
     }
 
     try {
