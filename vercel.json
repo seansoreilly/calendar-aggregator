@@ -1,7 +1,7 @@
 {
-  "buildCommand": "bun run build",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "bun install",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "functions": {
     "src/app/api/*/route.ts": {

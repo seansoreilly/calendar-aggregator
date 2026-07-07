@@ -66,7 +66,7 @@ Supabase is the primary store (`calendar_aggregator.collections`, custom schema 
 
 ### Security Headers
 
-Set in `src/middleware.ts` (not `next.config.ts`). Matcher excludes `/api/*`, `/_next/*`, `favicon.ico` — **API routes do not get these headers**. CSP includes `googletagmanager.com` (script-src) and `google-analytics.com` (connect-src) for GA.
+Set in `next.config.ts` `headers()` (single source of truth — `src/middleware.ts` was removed since it duplicated the same headers with a looser CSP). Source pattern `/(.*)` applies to **all routes, including `/api/*`**. CSP includes `googletagmanager.com` (script-src) and `google-analytics.com` / `analytics.google.com` / `region1.google-analytics.com` (connect-src) for GA.
 
 ### Google Analytics
 
