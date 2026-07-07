@@ -54,6 +54,11 @@ jest-html-reports/
 .env.secrets
 secrets.json
 .envrc
+*.pem
+*.key
+*credentials*
+*service-account*
+__pycache__/
 
 # ===============================================
 # LOGS & DEBUG
