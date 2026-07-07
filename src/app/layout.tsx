@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Space_Grotesk } from 'next/font/google'
 import '../styles/globals.css'
 import GoogleAnalytics from '../components/google-analytics'
@@ -11,10 +11,28 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-space',
 })
 
+const title = 'Calendar Aggregator | GUID-based Calendar Collection Service'
+const description =
+  'Seamlessly combine multiple iCal feeds into unified calendar collections with custom IDs. Built with Next.js 15, TypeScript, and glassmorphism UI.'
+
 export const metadata: Metadata = {
-  title: 'Calendar Aggregator | GUID-based Calendar Collection Service',
-  description:
-    'Seamlessly combine multiple iCal feeds into unified calendar collections with custom IDs. Built with Next.js 15, TypeScript, and glassmorphism UI.',
+  metadataBase: new URL('https://www.calendar-aggregator.online'),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    type: 'website',
+  },
+  twitter: {
+    title,
+    description,
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

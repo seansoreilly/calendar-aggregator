@@ -23,19 +23,54 @@ export default function LiveStatus() {
     const fetchHealthData = async () => {
       try {
         const response = await fetch('/api/health')
+        if (!response.ok) {
+          console.error(`Failed to fetch health data: HTTP ${response.status}`)
+          setHealthData(null)
+          return
+        }
         const data = await response.json()
         setHealthData(data)
       } catch (error) {
         console.error('Failed to fetch health data:', error)
+        setHealthData(null)
       } finally {
         setLoading(false)
       }
     }
 
     fetchHealthData()
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchHealthData, 30000)
-    return () => clearInterval(interval)
+
+    // Refresh every 30 seconds, but pause while the tab is hidden.
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    const startPolling = () => {
+      if (interval) return
+      interval = setInterval(fetchHealthData, 30000)
+    }
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        fetchHealthData()
+        startPolling()
+      }
+    }
+
+    startPolling()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   if (loading) {
@@ -136,7 +171,7 @@ export default function LiveStatus() {
           </span>
         </div>
         <span className="text-2xl font-bold text-white">
-          v{healthData?.version}
+          {healthData?.version ? `v${healthData.version}` : 'Unavailable'}
         </span>
       </div>
 
