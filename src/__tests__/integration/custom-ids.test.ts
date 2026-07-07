@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '../../app/api/collections/route'
 import { GET as getCollectionById } from '../../app/api/collections/[guid]/route'
 import { validateCustomId } from '../../lib/validation'
+import { collectionCreateLimiter } from '../../lib/rate-limit'
 
 // Minimal GET request used for collection-by-id lookups.
 function makeGetRequest(): NextRequest {
@@ -35,6 +36,9 @@ describe('Custom ID Functionality', () => {
     if (globalThis.calendarCollections) {
       globalThis.calendarCollections = []
     }
+    // Reset the create limiter so repeated POSTs across tests don't trip the
+    // per-IP window (all requests share the 'unknown' key here).
+    collectionCreateLimiter.reset()
     vi.clearAllMocks()
   })
 

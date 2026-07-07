@@ -6,6 +6,10 @@ import {
   PUT,
   DELETE,
 } from '../../app/api/collections/[guid]/route'
+import {
+  calendarFeedLimiter,
+  collectionCreateLimiter,
+} from '../../lib/rate-limit'
 
 // Mock the calendar validation function
 vi.mock('../../lib/calendar-utils', async () => {
@@ -36,12 +40,17 @@ const mockCalendarData = {
   ],
 }
 
-function createMockRequest(body?: unknown, method = 'POST'): NextRequest {
+function createMockRequest(
+  body?: unknown,
+  method = 'POST',
+  token?: string
+): NextRequest {
   const url = 'http://localhost:3000/api/collections'
-  const init: ConstructorParameters<typeof NextRequest>[1] = {
-    method,
-    headers: body ? { 'content-type': 'application/json' } : {},
-  }
+  const headers: Record<string, string> = body
+    ? { 'content-type': 'application/json' }
+    : {}
+  if (token) headers['authorization'] = `Bearer ${token}`
+  const init: ConstructorParameters<typeof NextRequest>[1] = { method, headers }
   if (body) init.body = JSON.stringify(body)
   return new NextRequest(url, init)
 }
@@ -49,6 +58,10 @@ function createMockRequest(body?: unknown, method = 'POST'): NextRequest {
 describe('Calendar Collections CRUD Operations', () => {
   beforeEach(() => {
     globalThis.calendarCollections = []
+    // Reset best-effort rate limiters so repeated POSTs across tests don't
+    // trip the per-IP window (all requests share the 'unknown' key here).
+    collectionCreateLimiter.reset()
+    calendarFeedLimiter.reset()
   })
 
   describe('PUT Operations', () => {
@@ -72,7 +85,11 @@ describe('Calendar Collections CRUD Operations', () => {
         ],
       }
 
-      const updateRequest = createMockRequest(updateData, 'PUT')
+      const updateRequest = createMockRequest(
+        updateData,
+        'PUT',
+        createdCollection.managementToken
+      )
       const params = Promise.resolve({ guid: createdCollection.guid })
       const updateResponse = await PUT(updateRequest, { params })
 
@@ -104,7 +121,11 @@ describe('Calendar Collections CRUD Operations', () => {
         name: 'Partially Updated Name',
       }
 
-      const updateRequest = createMockRequest(partialUpdateData, 'PUT')
+      const updateRequest = createMockRequest(
+        partialUpdateData,
+        'PUT',
+        createdCollection.managementToken
+      )
       const params = Promise.resolve({ guid: createdCollection.guid })
       const updateResponse = await PUT(updateRequest, { params })
 
@@ -230,7 +251,11 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(getResponse.status).toBe(200)
 
       // Delete the collection
-      const deleteRequest = createMockRequest(undefined, 'DELETE')
+      const deleteRequest = createMockRequest(
+        undefined,
+        'DELETE',
+        createdCollection.managementToken
+      )
       const deleteResponse = await DELETE(deleteRequest, { params })
 
       expect(deleteResponse.status).toBe(200)
@@ -307,13 +332,18 @@ describe('Calendar Collections CRUD Operations', () => {
       // Update collection 1
       const updateRequest = createMockRequest(
         { name: 'Updated Collection 1' },
-        'PUT'
+        'PUT',
+        collection1.managementToken
       )
       const updateParams = Promise.resolve({ guid: collection1.guid })
       await PUT(updateRequest, { params: updateParams })
 
       // Delete collection 2
-      const deleteRequest = createMockRequest(undefined, 'DELETE')
+      const deleteRequest = createMockRequest(
+        undefined,
+        'DELETE',
+        collection2.managementToken
+      )
       const deleteParams = Promise.resolve({ guid: collection2.guid })
       await DELETE(deleteRequest, { params: deleteParams })
 
