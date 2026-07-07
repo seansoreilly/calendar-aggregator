@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, HEAD } from '../../app/api/calendar/[guid]/route'
-import { CalendarCollection } from '../../types/calendar'
+import { CalendarCollection, CalendarSource } from '../../types/calendar'
 
 vi.mock('../../lib/supabase', () => ({
   findCollectionByGuidInDatabase: vi.fn(),
@@ -17,21 +17,23 @@ import { combineICalFeeds } from '../../lib/ical-combiner'
 const mockFind = vi.mocked(findCollectionByGuidInDatabase)
 const mockCombine = vi.mocked(combineICalFeeds)
 
+const BASE_SOURCE: CalendarSource = {
+  id: 1,
+  url: 'https://example.com/cal.ics',
+  name: 'Source 1',
+  color: '#3b82f6',
+  enabled: true,
+  createdAt: new Date().toISOString(),
+  syncStatus: 'idle',
+}
+
+const DISABLED_SOURCE: CalendarSource = { ...BASE_SOURCE, enabled: false }
+
 const BASE_COLLECTION: CalendarCollection = {
   guid: 'test-guid',
   name: 'My Calendar',
   description: 'Test collection',
-  calendars: [
-    {
-      id: 1,
-      url: 'https://example.com/cal.ics',
-      name: 'Source 1',
-      color: '#3b82f6',
-      enabled: true,
-      createdAt: new Date().toISOString(),
-      syncStatus: 'idle',
-    },
-  ],
+  calendars: [BASE_SOURCE],
   createdAt: new Date().toISOString(),
 }
 
@@ -118,7 +120,7 @@ describe('GET /api/calendar/[guid]', () => {
     it('returns 404 when all calendars are disabled', async () => {
       mockFind.mockResolvedValue({
         ...BASE_COLLECTION,
-        calendars: [{ ...BASE_COLLECTION.calendars[0], enabled: false }],
+        calendars: [DISABLED_SOURCE],
       })
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -323,7 +325,7 @@ describe('HEAD /api/calendar/[guid]', () => {
   it('returns 404 when all calendars are disabled', async () => {
     mockFind.mockResolvedValue({
       ...BASE_COLLECTION,
-      calendars: [{ ...BASE_COLLECTION.calendars[0], enabled: false }],
+      calendars: [DISABLED_SOURCE],
     })
     const { request, params } = makeRequest('test-collection')
     const response = await HEAD(request, { params })
