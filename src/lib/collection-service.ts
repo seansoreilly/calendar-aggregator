@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import {
   CalendarCollection,
   CalendarSource,
@@ -81,6 +82,14 @@ export async function processCalendarInputs(
   }
 }
 
+/**
+ * Generate an opaque, URL-safe management token. 24 random bytes → 32 base64url
+ * characters (~192 bits of entropy), unguessable and safe to embed in a header.
+ */
+export function generateManagementToken(): string {
+  return randomBytes(24).toString('base64url')
+}
+
 export function buildCollectionRecord(
   input: Pick<CreateCollectionRequest, 'name' | 'description'>,
   guid: string,
@@ -96,7 +105,29 @@ export function buildCollectionRecord(
     calendars,
     createdAt: now,
     updatedAt: now,
+    // Every newly-created collection gets an ownership token. Returned once in
+    // the POST response, then required (as a bearer token) for future mutations.
+    managementToken: generateManagementToken(),
   }
+}
+
+/**
+ * Public (GET-facing) view of a collection with the management token removed.
+ * The token is an ownership secret and must NEVER appear in GET responses
+ * (single or list) — only in the one-time POST creation response.
+ */
+export type PublicCollection = Omit<CalendarCollection, 'managementToken'>
+
+/**
+ * Strip the management token from a collection before serializing it to a
+ * client on any read path. Returns a shallow copy so the caller's object is
+ * left untouched.
+ */
+export function stripManagementToken(
+  collection: CalendarCollection
+): PublicCollection {
+  const { managementToken: _managementToken, ...publicView } = collection
+  return publicView
 }
 
 export function generateGuid(): string {

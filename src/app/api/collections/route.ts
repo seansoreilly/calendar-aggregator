@@ -15,12 +15,25 @@ import {
   generateGuid,
   processCalendarInputs,
 } from '../../../lib/collection-service'
+import {
+  clientKeyFromHeaders,
+  collectionCreateLimiter,
+  rateLimitResponse,
+} from '../../../lib/rate-limit'
 
 /**
  * POST /api/collections - Create new calendar collection
  */
 export async function POST(request: NextRequest) {
   try {
+    // Best-effort per-IP rate limit on the (write-heavy) create path.
+    const rate = collectionCreateLimiter.check(
+      clientKeyFromHeaders(request.headers)
+    )
+    if (!rate.allowed) {
+      return rateLimitResponse(rate)
+    }
+
     const body: CreateCollectionRequest = await request.json()
 
     // Validate request using structured validation
