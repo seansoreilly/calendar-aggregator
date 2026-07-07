@@ -46,12 +46,12 @@ export class ValidationError extends CalendarCollectionError {
   }
 }
 
-class DatabaseOperationError extends CalendarCollectionError {
+export class DatabaseOperationError extends CalendarCollectionError {
   constructor(operation: string, originalError: unknown) {
     super(
       `Database ${operation} operation failed`,
       'DATABASE_OPERATION_ERROR',
-      500,
+      503,
       originalError
     )
     this.name = 'DatabaseOperationError'
@@ -69,18 +69,31 @@ export function isCalendarCollectionError(
 
 /**
  * Build the standard JSON error response for a CalendarCollectionError.
- * `includeDetails` controls whether `error.details` is echoed to the client;
- * validation errors include it, converted/unexpected errors must not.
+ *
+ * `includeDetails` controls whether `error.details` is echoed to the client.
+ * It defaults to `false` so converted/unexpected errors never leak wrapped
+ * internal details (raw DB messages, etc.). Callers that intend to surface
+ * validation context to the client pass `true` explicitly.
+ *
+ * As a hard safety net, `details` is unconditionally stripped for server
+ * errors (`statusCode >= 500`) regardless of the `includeDetails` argument.
+ * Client errors (`statusCode < 500`) are validation-shaped and safe to echo,
+ * so their details are included by default.
  */
 export function errorResponse(
   error: CalendarCollectionError,
-  includeDetails = true
+  includeDetails = false
 ): NextResponse {
+  const isServerError = error.statusCode >= 500
+  const isClientError = error.statusCode < 500
+  const shouldIncludeDetails =
+    !isServerError && (includeDetails || isClientError)
+
   return NextResponse.json(
     {
       error: error.message,
       code: error.code,
-      ...(includeDetails ? { details: error.details } : {}),
+      ...(shouldIncludeDetails ? { details: error.details } : {}),
     },
     { status: error.statusCode }
   )

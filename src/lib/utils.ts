@@ -64,7 +64,12 @@ export function updateCollectionInStorage(
 
   if (!collection) return null
 
-  Object.assign(collection, updates)
+  // Whitelist mutable fields only — never allow `guid` (or other identity
+  // fields) to be overwritten. Mirrors the DB update path in supabase.ts.
+  if (updates.name !== undefined) collection.name = updates.name
+  if (updates.description !== undefined)
+    collection.description = updates.description
+  if (updates.calendars !== undefined) collection.calendars = updates.calendars
   collection.updatedAt = new Date().toISOString()
   return collection
 }

@@ -4,6 +4,13 @@ import { POST } from '../../app/api/collections/route'
 import { GET as getCollectionById } from '../../app/api/collections/[guid]/route'
 import { validateCustomId } from '../../lib/validation'
 
+// Minimal GET request used for collection-by-id lookups.
+function makeGetRequest(): NextRequest {
+  return new NextRequest('http://localhost:3000/api/collections', {
+    method: 'GET',
+  })
+}
+
 // Mock the calendar validation function to avoid network calls in tests
 vi.mock('../../lib/calendar-utils', async () => {
   const actual = await vi.importActual('../../lib/calendar-utils')
@@ -270,7 +277,7 @@ describe('Custom ID Functionality', () => {
 
       // Then retrieve it using different case
       const params = Promise.resolve({ guid: 'TEST-COLLECTION' })
-      const getResponse = await getCollectionById({}, { params })
+      const getResponse = await getCollectionById(makeGetRequest(), { params })
 
       expect(getResponse.status).toBe(200)
 
@@ -298,7 +305,7 @@ describe('Custom ID Functionality', () => {
 
       // Retrieve using exact UUID
       const params = Promise.resolve({ guid: uuid })
-      const getResponse = await getCollectionById({}, { params })
+      const getResponse = await getCollectionById(makeGetRequest(), { params })
 
       expect(getResponse.status).toBe(200)
 
@@ -308,7 +315,7 @@ describe('Custom ID Functionality', () => {
 
     it('should return 404 for non-existent custom ID', async () => {
       const params = Promise.resolve({ guid: 'non-existent-collection' })
-      const response = await getCollectionById({}, { params })
+      const response = await getCollectionById(makeGetRequest(), { params })
 
       expect(response.status).toBe(404)
 
@@ -339,7 +346,7 @@ describe('Custom ID Functionality', () => {
 
       // Verify it can be accessed via URL path
       const params = Promise.resolve({ guid: customId })
-      const getResponse = await getCollectionById({}, { params })
+      const getResponse = await getCollectionById(makeGetRequest(), { params })
 
       expect(getResponse.status).toBe(200)
 
@@ -371,7 +378,9 @@ describe('Custom ID Functionality', () => {
         expect(createResponse.status).toBe(201)
 
         const params = Promise.resolve({ guid: customId })
-        const getResponse = await getCollectionById({}, { params })
+        const getResponse = await getCollectionById(makeGetRequest(), {
+          params,
+        })
 
         expect(getResponse.status).toBe(200)
 
@@ -431,14 +440,12 @@ describe('Custom ID Functionality', () => {
       const uuidParams = Promise.resolve({ guid: uuidData.guid })
       const customParams = Promise.resolve({ guid: 'my-custom-id' })
 
-      const uuidGetResponse = await getCollectionById(
-        {},
-        { params: uuidParams }
-      )
-      const customGetResponse = await getCollectionById(
-        {},
-        { params: customParams }
-      )
+      const uuidGetResponse = await getCollectionById(makeGetRequest(), {
+        params: uuidParams,
+      })
+      const customGetResponse = await getCollectionById(makeGetRequest(), {
+        params: customParams,
+      })
 
       expect(uuidGetResponse.status).toBe(200)
       expect(customGetResponse.status).toBe(200)

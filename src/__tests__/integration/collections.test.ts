@@ -55,13 +55,14 @@ const mockCalendarData = {
 // Helper function to create a mock NextRequest
 function createMockRequest(body?: unknown): NextRequest {
   const url = 'http://localhost:3000/api/collections'
-  const request = new NextRequest(url, {
+  const init: ConstructorParameters<typeof NextRequest>[1] = {
     method: body ? 'POST' : 'GET',
     headers: {
       'content-type': 'application/json',
     },
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  }
+  if (body) init.body = JSON.stringify(body)
+  const request = new NextRequest(url, init)
   return request
 }
 

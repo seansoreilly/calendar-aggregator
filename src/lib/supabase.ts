@@ -9,14 +9,44 @@ import {
   initializeStorage,
 } from './utils'
 import { UUID_REGEX } from './validation'
+import { toCalendarCollectionError } from './errors'
 
 const COLLECTIONS_SCHEMA = 'calendar_aggregator'
 
 // PostgREST code returned by `.single()` when no rows match the query.
 const POSTGREST_NO_ROWS_CODE = 'PGRST116'
 
+// Substring of the error thrown by `getSupabase()` when env vars are absent.
+const NOT_CONFIGURED_MESSAGE = 'Missing Supabase environment variables'
+
 function isNoRowsError(error: { code?: string }): boolean {
   return error.code === POSTGREST_NO_ROWS_CODE
+}
+
+/**
+ * True when the error indicates Supabase is not configured (env vars missing).
+ * Only in this case is the in-memory fallback permitted — it keeps local dev
+ * and the integration tests (which run without Supabase env vars) working.
+ * Any other error (network, RLS, query) must surface as a real failure.
+ */
+function isNotConfiguredError(error: unknown): boolean {
+  return (
+    error instanceof Error && error.message.includes(NOT_CONFIGURED_MESSAGE)
+  )
+}
+
+/**
+ * Short, greppable description of a database error for structured logging.
+ * Prefers the PostgREST error code, falls back to the message. Never dumps
+ * full rows or row payloads.
+ */
+function describeDbError(error: unknown): string {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = (error as { code?: unknown }).code
+    if (typeof code === 'string' && code.length > 0) return code
+  }
+  if (error instanceof Error) return error.message
+  return 'unknown error'
 }
 
 /**
@@ -192,22 +222,22 @@ export async function saveCollectionToDatabase(
         updated_at: collection.updatedAt || collection.createdAt,
       }
 
-    const { data, error } = await collectionsTable()
+    const { error } = await collectionsTable()
       .insert([insertData])
       .select()
       .single()
 
-    if (error) {
-      console.error('Supabase insert error:', error)
-      throw error
-    }
+    if (error) throw error
 
-    console.log('Successfully saved to Supabase:', data)
+    console.log('[db] saved collection:', collection.guid)
     return collection
   } catch (error) {
-    console.error('Database save failed, falling back to memory:', error)
-    addCollectionToStorage(collection)
-    return collection
+    if (isNotConfiguredError(error)) {
+      addCollectionToStorage(collection)
+      return collection
+    }
+    console.error('[db] save failed:', describeDbError(error))
+    throw toCalendarCollectionError(error, 'save')
   }
 }
 
@@ -222,10 +252,14 @@ export async function getAllCollectionsFromDatabase(): Promise<
     if (error) throw error
 
     return data.map(mapRow)
-  } catch {
-    // Fall back to memory storage when database is unavailable
-    initializeStorage()
-    return globalThis.calendarCollections || []
+  } catch (error) {
+    if (isNotConfiguredError(error)) {
+      // Not configured (local dev / tests): use in-memory storage.
+      initializeStorage()
+      return globalThis.calendarCollections || []
+    }
+    console.error('[db] getAll failed:', describeDbError(error))
+    throw toCalendarCollectionError(error, 'getAll')
   }
 }
 
@@ -246,11 +280,11 @@ export async function findCollectionByGuidInDatabase(
 
     return mapRow(data)
   } catch (error) {
-    console.error(
-      'findCollectionByGuidInDatabase failed, falling back to memory:',
-      error
-    )
-    return findCollectionInStorage(guid)
+    if (isNotConfiguredError(error)) {
+      return findCollectionInStorage(guid)
+    }
+    console.error('[db] find failed:', describeDbError(error))
+    throw toCalendarCollectionError(error, 'find')
   }
 }
 
@@ -261,7 +295,8 @@ export async function updateCollectionInDatabase(
   try {
     const now = new Date().toISOString()
 
-    const updateData: Record<string, unknown> = { updated_at: now }
+    const updateData: Database['calendar_aggregator']['Tables']['collections']['Update'] =
+      { updated_at: now }
     if (updates.name !== undefined) updateData.name = updates.name
     if (updates.description !== undefined)
       updateData.description = updates.description
@@ -284,11 +319,11 @@ export async function updateCollectionInDatabase(
 
     return mapRow(data)
   } catch (error) {
-    console.error(
-      'updateCollectionInDatabase failed, falling back to memory:',
-      error
-    )
-    return updateCollectionInStorage(guid, updates)
+    if (isNotConfiguredError(error)) {
+      return updateCollectionInStorage(guid, updates)
+    }
+    console.error('[db] update failed:', describeDbError(error))
+    throw toCalendarCollectionError(error, 'update')
   }
 }
 
@@ -303,10 +338,10 @@ export async function deleteCollectionFromDatabase(
     if (error) throw error
     return data.length > 0
   } catch (error) {
-    console.error(
-      'deleteCollectionFromDatabase failed, falling back to memory:',
-      error
-    )
-    return removeCollectionFromStorage(guid)
+    if (isNotConfiguredError(error)) {
+      return removeCollectionFromStorage(guid)
+    }
+    console.error('[db] delete failed:', describeDbError(error))
+    throw toCalendarCollectionError(error, 'delete')
   }
 }
