@@ -1,12 +1,5 @@
 import { CalendarSource, CombineResult } from '../types/calendar'
-import { safeFetch } from './safe-fetch'
-
-/**
- * Maximum bytes accepted from a single calendar source. Sized as an anti-DoS
- * ceiling that comfortably exceeds a legitimate MAX_TOTAL_EVENTS-sized calendar
- * (~10-20MB), so normal large calendars are not rejected.
- */
-const MAX_SOURCE_BYTES = 25_000_000
+import { fetchCalendarBody } from './calendar-fetch'
 
 /** Maximum total events across all sources before truncation. */
 const MAX_TOTAL_EVENTS = 50_000
@@ -157,57 +150,22 @@ type FetchResult =
   | { success: false; error: string }
 
 /**
- * Fetch calendar data as raw iCal content via safeFetch (SSRF-hardened).
- * The `signal` is forwarded to the underlying fetch call so that
- * AbortController-based timeouts cancel the request promptly.
+ * Fetch calendar data as raw iCal content via the shared, size-capped fetch
+ * stack (`fetchCalendarBody` — SSRF-hardened, byte-capped, iCal sanity-checked).
+ * The `signal` is forwarded so that the combiner's per-source AbortController
+ * timeout cancels the underlying request promptly.
  */
 async function fetchRawICalContent(
   calendar: CalendarSource,
   signal: AbortSignal
 ): Promise<FetchResult> {
-  try {
-    const response = await safeFetch(calendar.url, {
-      headers: {
-        'User-Agent': 'Calendar-Aggregator/1.0',
-        Accept: 'text/calendar, text/plain, */*',
-      },
-      signal,
-    })
+  const result = await fetchCalendarBody(calendar.url, { signal })
 
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`,
-      }
-    }
-
-    const raw = await response.text()
-
-    // Size guard: reject excessively large responses before further processing.
-    if (raw.length > MAX_SOURCE_BYTES) {
-      return {
-        success: false,
-        error: `Response too large (${raw.length} bytes, limit ${MAX_SOURCE_BYTES})`,
-      }
-    }
-
-    if (!raw.includes('BEGIN:VCALENDAR')) {
-      return {
-        success: false,
-        error: 'Response does not contain valid iCal data',
-      }
-    }
-
-    return {
-      success: true,
-      content: raw,
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
+  if (!result.ok) {
+    return { success: false, error: result.error }
   }
+
+  return { success: true, content: result.body }
 }
 
 /**
