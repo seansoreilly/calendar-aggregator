@@ -12,7 +12,7 @@ import {
 } from '../../../../lib/supabase'
 import {
   validateId,
-  validateCalendarSourceUrl,
+  validateCollectionUpdateRequest,
 } from '../../../../lib/validation'
 import {
   CollectionNotFoundError,
@@ -70,9 +70,12 @@ export async function PUT(
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
     }
 
-    // Validate ID format (UUID or custom ID)
+    // Validate ID format and request body (shared with POST — enforces length
+    // caps and control-char/CRLF rejection so a PUT'd name/description can't be
+    // used to inject response headers downstream).
     try {
       validateId(guid)
+      validateCollectionUpdateRequest(body)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
         return errorResponse(error)
@@ -80,71 +83,30 @@ export async function PUT(
       throw error
     }
 
-    // Check if collection exists
-    const existingCollection = await findCollectionByGuidInDatabase(guid)
-    if (!existingCollection) {
-      return NextResponse.json(
-        { error: 'Collection not found' },
-        { status: 404 }
-      )
-    }
-
-    // Basic validation for name
-    if (body.name !== undefined && !body.name.trim()) {
-      return NextResponse.json(
-        { error: 'Collection name cannot be empty' },
-        { status: 400 }
-      )
-    }
-
     // Prepare update object
     const updates: Partial<CalendarCollection> = {}
     if (body.name !== undefined) updates.name = body.name
     if (body.description !== undefined) updates.description = body.description
     if (body.calendars !== undefined) {
-      // Basic validation for calendars
-      if (!Array.isArray(body.calendars) || body.calendars.length === 0) {
-        return NextResponse.json(
-          { error: 'Calendars must be a non-empty array' },
-          { status: 400 }
-        )
-      }
-
-      // Validate each URL before processing
-      for (const cal of body.calendars) {
-        try {
-          validateCalendarSourceUrl(cal.url)
-        } catch {
-          return NextResponse.json(
-            { error: `Invalid calendar URL: ${cal.url}` },
-            { status: 400 }
-          )
-        }
-      }
-
       const processedCalendars: CalendarSource[] =
         body.calendars.map(buildCalendarSource)
 
       updates.calendars = processedCalendars
     }
 
-    // Update in database
+    // Update in database. updateCollectionInDatabase returns null when no row
+    // matched, so we can map that straight to 404 without a pre-lookup.
     const updatedCollection = await updateCollectionInDatabase(guid, updates)
 
     if (!updatedCollection) {
-      return NextResponse.json(
-        { error: 'Failed to update collection' },
-        { status: 500 }
-      )
+      return errorResponse(new CollectionNotFoundError(guid), false)
     }
 
     return NextResponse.json(updatedCollection)
   } catch (error) {
     console.error('Error updating collection:', error)
-    return NextResponse.json(
-      { error: 'Failed to update collection' },
-      { status: 500 }
-    )
+    const appError = toCalendarCollectionError(error, 'update_collection')
+    return errorResponse(appError, false)
   }
 }
 
@@ -172,33 +134,21 @@ export async function DELETE(
       throw error
     }
 
-    // Check if collection exists first
-    const existingCollection = await findCollectionByGuidInDatabase(guid)
-    if (!existingCollection) {
-      return NextResponse.json(
-        { error: 'Collection not found' },
-        { status: 404 }
-      )
-    }
-
-    // Delete from database
+    // Delete from database. deleteCollectionFromDatabase returns false when no
+    // row matched, so that maps straight to 404 without a pre-lookup.
     const deleted = await deleteCollectionFromDatabase(guid)
 
     if (!deleted) {
-      return NextResponse.json(
-        { error: 'Failed to delete collection' },
-        { status: 500 }
-      )
+      return errorResponse(new CollectionNotFoundError(guid), false)
     }
 
     return NextResponse.json({
       message: 'Collection deleted successfully',
-      collection: existingCollection,
+      guid,
     })
-  } catch {
-    return NextResponse.json(
-      { error: 'Failed to delete collection' },
-      { status: 500 }
-    )
+  } catch (error) {
+    console.error('Error deleting collection:', error)
+    const appError = toCalendarCollectionError(error, 'delete_collection')
+    return errorResponse(appError, false)
   }
 }

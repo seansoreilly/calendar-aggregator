@@ -127,7 +127,7 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(updateResponse.status).toBe(404)
 
       const errorData = await updateResponse.json()
-      expect(errorData.error).toBe('Collection not found')
+      expect(errorData.error).toContain('not found')
     })
 
     it('should return 400 for invalid guid on update', async () => {
@@ -158,7 +158,42 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(updateResponse.status).toBe(400)
 
       const errorData = await updateResponse.json()
-      expect(errorData.error).toBe('Collection name cannot be empty')
+      expect(errorData.error).toContain('cannot be empty')
+    })
+
+    it('rejects a name containing CRLF (header-injection guard)', async () => {
+      // Create a collection
+      const createRequest = createMockRequest(mockCalendarData)
+      const createResponse = await POST(createRequest)
+      const createdCollection = await createResponse.json()
+
+      // PUT a name with an embedded CRLF — previously the PUT path skipped
+      // control-char rejection, allowing header injection downstream.
+      const invalidUpdateData = { name: 'Evil\r\nX-Injected: 1' }
+
+      const updateRequest = createMockRequest(invalidUpdateData, 'PUT')
+      const params = Promise.resolve({ guid: createdCollection.guid })
+      const updateResponse = await PUT(updateRequest, { params })
+
+      expect(updateResponse.status).toBe(400)
+      const errorData = await updateResponse.json()
+      expect(errorData.error).toContain('control characters')
+    })
+
+    it('rejects a description containing control characters', async () => {
+      const createRequest = createMockRequest(mockCalendarData)
+      const createResponse = await POST(createRequest)
+      const createdCollection = await createResponse.json()
+
+      const invalidUpdateData = { description: 'bad\r\nSet-Cookie: x=y' }
+
+      const updateRequest = createMockRequest(invalidUpdateData, 'PUT')
+      const params = Promise.resolve({ guid: createdCollection.guid })
+      const updateResponse = await PUT(updateRequest, { params })
+
+      expect(updateResponse.status).toBe(400)
+      const errorData = await updateResponse.json()
+      expect(errorData.error).toContain('control characters')
     })
 
     it('should validate calendars array on update', async () => {
@@ -177,7 +212,7 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(updateResponse.status).toBe(400)
 
       const errorData = await updateResponse.json()
-      expect(errorData.error).toBe('Calendars must be a non-empty array')
+      expect(errorData.error).toContain('non-empty array')
     })
   })
 
@@ -203,10 +238,7 @@ describe('Calendar Collections CRUD Operations', () => {
       const deleteData = await deleteResponse.json()
       expect(deleteData).toMatchObject({
         message: 'Collection deleted successfully',
-        collection: expect.objectContaining({
-          guid: createdCollection.guid,
-          name: mockCalendarData.name,
-        }),
+        guid: createdCollection.guid,
       })
 
       // Verify it no longer exists
@@ -224,7 +256,7 @@ describe('Calendar Collections CRUD Operations', () => {
       expect(deleteResponse.status).toBe(404)
 
       const errorData = await deleteResponse.json()
-      expect(errorData.error).toBe('Collection not found')
+      expect(errorData.error).toContain('not found')
     })
 
     it('should handle missing GUID parameter', async () => {

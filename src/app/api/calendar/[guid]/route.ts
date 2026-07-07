@@ -7,7 +7,9 @@ import {
   isCalendarCollectionError,
 } from '../../../../lib/errors'
 import {
+  computeICalETag,
   createCalendarHeadResponse,
+  createCalendarNotModifiedResponse,
   createCalendarPartialResponse,
   createCalendarSuccessResponse,
   parseCalendarTimeout,
@@ -86,29 +88,19 @@ export async function GET(
       )
 
       console.log(`[Calendar API] Combine result:`, {
-        success: combineResult.success,
+        status: combineResult.status,
         calendarsProcessed: combineResult.calendarsProcessed,
         eventsCount: combineResult.eventsCount,
         errorsCount: combineResult.errors.length,
         warningsCount: combineResult.warnings.length,
       })
 
-      if (!combineResult.success) {
+      // Total failure: no source could be fetched → 503.
+      if (combineResult.status === 'failed') {
         console.error(
           `[Calendar API] Failed to combine feeds for ${guid}:`,
           combineResult.errors
         )
-
-        if (combineResult.calendarsProcessed > 0 && combineResult.icalContent) {
-          trackEvent('calendar_feed_retrieved', {
-            collection_id: guid,
-            events_count: combineResult.eventsCount,
-            calendars_count: combineResult.calendarsProcessed,
-            partial: 1,
-          })
-          return createCalendarPartialResponse(collection, combineResult)
-        }
-
         trackEvent('calendar_feed_error', {
           collection_id: guid,
           error_type: 'combine_failed',
@@ -119,12 +111,32 @@ export async function GET(
         )
       }
 
+      // Conditional GET: if the client already holds this exact feed (by strong
+      // ETag over the combined body), return 304 with no body. The upstream
+      // sources were still fetched server-side to derive the ETag; the 304 only
+      // saves the client re-downloading and re-parsing the unchanged feed.
+      const etag = computeICalETag(combineResult.icalContent)
+      const ifNoneMatch = request.headers.get('If-None-Match')
+      if (ifNoneMatch && ifNoneMatch === etag) {
+        return createCalendarNotModifiedResponse(etag)
+      }
+
+      const partial = combineResult.status === 'partial'
       trackEvent('calendar_feed_retrieved', {
         collection_id: guid,
         events_count: combineResult.eventsCount,
         calendars_count: combineResult.calendarsProcessed,
-        partial: 0,
+        partial: partial ? 1 : 0,
       })
+
+      if (partial) {
+        console.error(
+          `[Calendar API] Partial feed for ${guid}:`,
+          combineResult.errors
+        )
+        return createCalendarPartialResponse(collection, combineResult)
+      }
+
       return createCalendarSuccessResponse(collection, combineResult)
     } catch (error) {
       if (isCalendarCollectionError(error)) {

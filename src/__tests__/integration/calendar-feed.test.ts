@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, HEAD } from '../../app/api/calendar/[guid]/route'
-import { CalendarCollection, CalendarSource } from '../../types/calendar'
+import {
+  CalendarCollection,
+  CalendarSource,
+  CombineResult,
+} from '../../types/calendar'
+import { computeICalETag } from '../../lib/calendar-response'
 
 vi.mock('../../lib/supabase', () => ({
   findCollectionByGuidInDatabase: vi.fn(),
@@ -50,9 +55,25 @@ const MOCK_ICAL = [
   'END:VCALENDAR',
 ].join('\r\n')
 
+function makeCombineResult(
+  overrides: Partial<CombineResult> = {}
+): CombineResult {
+  return {
+    success: true,
+    status: 'ok',
+    icalContent: MOCK_ICAL,
+    eventsCount: 1,
+    calendarsProcessed: 1,
+    errors: [],
+    warnings: [],
+    ...overrides,
+  }
+}
+
 function makeRequest(
   guid: string,
-  searchParams?: Record<string, string>
+  searchParams?: Record<string, string>,
+  headers?: Record<string, string>
 ): {
   request: NextRequest
   params: Promise<{ guid: string }>
@@ -62,7 +83,9 @@ function makeRequest(
     Object.entries(searchParams).forEach(([k, v]) => url.searchParams.set(k, v))
   }
   return {
-    request: new NextRequest(url.toString()),
+    request: headers
+      ? new NextRequest(url.toString(), { headers })
+      : new NextRequest(url.toString()),
     params: Promise.resolve({ guid }),
   }
 }
@@ -133,14 +156,7 @@ describe('GET /api/calendar/[guid]', () => {
   describe('successful feed', () => {
     it('returns 200 with text/calendar content type', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 1,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(makeCombineResult())
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -157,14 +173,7 @@ describe('GET /api/calendar/[guid]', () => {
         ...BASE_COLLECTION,
         name: 'My Calendar & Events!',
       })
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 1,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(makeCombineResult())
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -179,14 +188,7 @@ describe('GET /api/calendar/[guid]', () => {
 
     it('sets event count and sources headers', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 5,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(makeCombineResult({ eventsCount: 5 }))
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -198,14 +200,12 @@ describe('GET /api/calendar/[guid]', () => {
 
     it('sets warnings header when warnings are present', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 0,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: ['No events found in calendar: Source 1'],
-      })
+      mockCombine.mockResolvedValue(
+        makeCombineResult({
+          eventsCount: 0,
+          warnings: ['No events found in calendar: Source 1'],
+        })
+      )
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -220,14 +220,7 @@ describe('GET /api/calendar/[guid]', () => {
 
     it('passes custom timeout to combineICalFeeds', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 1,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(makeCombineResult())
 
       const { request, params } = makeRequest('test-collection', {
         timeout: '5000',
@@ -240,14 +233,7 @@ describe('GET /api/calendar/[guid]', () => {
     it('accepts UUID as guid', async () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000'
       mockFind.mockResolvedValue({ ...BASE_COLLECTION, guid: uuid })
-      mockCombine.mockResolvedValue({
-        success: true,
-        icalContent: MOCK_ICAL,
-        eventsCount: 1,
-        calendarsProcessed: 1,
-        errors: [],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(makeCombineResult())
 
       const { request, params } = makeRequest(uuid)
       const response = await GET(request, { params })
@@ -256,17 +242,79 @@ describe('GET /api/calendar/[guid]', () => {
     })
   })
 
+  describe('conditional GET (ETag / If-None-Match)', () => {
+    it('sets a strong ETag matching the sha-256 of the body on 200', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(makeCombineResult())
+
+      const { request, params } = makeRequest('test-collection')
+      const response = await GET(request, { params })
+
+      const etag = response.headers.get('ETag')
+      expect(etag).toBe(computeICalETag(MOCK_ICAL))
+      // Strong validator: quoted, no weak "W/" prefix.
+      expect(etag?.startsWith('"')).toBe(true)
+      expect(etag?.startsWith('W/')).toBe(false)
+    })
+
+    it('sets an ETag on 206 partial responses', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(
+        makeCombineResult({
+          success: false,
+          status: 'partial',
+          errors: ['Failed to fetch calendar "Source 2": timeout'],
+        })
+      )
+
+      const { request, params } = makeRequest('test-collection')
+      const response = await GET(request, { params })
+
+      expect(response.status).toBe(206)
+      expect(response.headers.get('ETag')).toBe(computeICalETag(MOCK_ICAL))
+    })
+
+    it('returns 304 with empty body when If-None-Match matches', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(makeCombineResult())
+
+      const { request, params } = makeRequest('test-collection', undefined, {
+        'If-None-Match': computeICalETag(MOCK_ICAL),
+      })
+      const response = await GET(request, { params })
+
+      expect(response.status).toBe(304)
+      expect(response.headers.get('ETag')).toBe(computeICalETag(MOCK_ICAL))
+      expect(response.headers.get('Cache-Control')).toBeTruthy()
+      const body = await response.text()
+      expect(body).toBe('')
+    })
+
+    it('returns 200 with body when If-None-Match does not match', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(makeCombineResult())
+
+      const { request, params } = makeRequest('test-collection', undefined, {
+        'If-None-Match': '"stale-etag"',
+      })
+      const response = await GET(request, { params })
+
+      expect(response.status).toBe(200)
+      const body = await response.text()
+      expect(body).toContain('BEGIN:VCALENDAR')
+    })
+  })
+
   describe('partial and total failure', () => {
     it('returns 206 with partial content when some calendars fail', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: false,
-        icalContent: MOCK_ICAL,
-        eventsCount: 1,
-        calendarsProcessed: 1,
-        errors: ['Failed to fetch calendar "Source 2": timeout'],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(
+        makeCombineResult({
+          success: false,
+          status: 'partial',
+          errors: ['Failed to fetch calendar "Source 2": timeout'],
+        })
+      )
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })
@@ -279,14 +327,16 @@ describe('GET /api/calendar/[guid]', () => {
 
     it('returns 503 when all calendars fail to fetch', async () => {
       mockFind.mockResolvedValue(BASE_COLLECTION)
-      mockCombine.mockResolvedValue({
-        success: false,
-        icalContent: '',
-        eventsCount: 0,
-        calendarsProcessed: 0,
-        errors: ['Failed to fetch calendar "Source 1": Network error'],
-        warnings: [],
-      })
+      mockCombine.mockResolvedValue(
+        makeCombineResult({
+          success: false,
+          status: 'failed',
+          icalContent: '',
+          eventsCount: 0,
+          calendarsProcessed: 0,
+          errors: ['Failed to fetch calendar "Source 1": Network error'],
+        })
+      )
 
       const { request, params } = makeRequest('test-collection')
       const response = await GET(request, { params })

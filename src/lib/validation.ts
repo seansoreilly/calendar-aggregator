@@ -3,7 +3,10 @@
  * Provides input validation and data sanitization
  */
 
-import { CreateCollectionRequest } from '../types/calendar'
+import {
+  CreateCollectionRequest,
+  UpdateCollectionRequest,
+} from '../types/calendar'
 import { ValidationError } from './errors'
 
 export const UUID_REGEX =
@@ -328,6 +331,61 @@ export function validateCreateCollectionRequest(
       )
     }
   })
+}
+
+/**
+ * Validate an update (PUT) request for a collection.
+ *
+ * Applies the same field-level primitives as `validateCreateCollectionRequest`
+ * (length caps, control-char/CRLF rejection, SSRF-safe URLs) but every field is
+ * optional — only the fields present on the request are validated. This closes
+ * the header-injection gap where a PUT'd name/description (later echoed into
+ * `X-Collection-*` response headers) bypassed control-char rejection.
+ */
+export function validateCollectionUpdateRequest(
+  request: UpdateCollectionRequest
+): void {
+  if (!request || typeof request !== 'object') {
+    throw new ValidationError('Request body is required')
+  }
+
+  if (request.name !== undefined) {
+    validateCollectionName(request.name)
+  }
+
+  if (request.description !== undefined) {
+    validateCollectionDescription(request.description)
+  }
+
+  if (request.calendars !== undefined) {
+    if (!Array.isArray(request.calendars) || request.calendars.length === 0) {
+      throw new ValidationError(
+        'Calendars must be a non-empty array',
+        'calendars',
+        request.calendars
+      )
+    }
+
+    request.calendars.forEach((cal, index) => {
+      if (!cal?.url || !cal?.name) {
+        throw new ValidationError(
+          `Calendar ${index + 1}: URL and name are required`,
+          `calendars[${index}]`,
+          cal
+        )
+      }
+
+      validateCalendarSourceUrl(cal.url)
+
+      if (cal.name.trim().length === 0) {
+        throw new ValidationError(
+          `Calendar ${index + 1}: Name cannot be empty`,
+          `calendars[${index}].name`,
+          cal.name
+        )
+      }
+    })
+  }
 }
 
 /**

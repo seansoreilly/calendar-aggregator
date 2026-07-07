@@ -213,12 +213,14 @@ async function fetchRawICalContent(
 /**
  * Combine multiple iCal feeds into a single unified iCal output.
  *
- * Contract:
- *  - `result.success === true`  ⟺  every enabled source fetched OK
- *    (`result.errors.length === 0`).
- *  - `result.success === false` + `calendarsProcessed > 0` + non-empty
- *    `icalContent`  ⟹  PARTIAL (route serves HTTP 206).
- *  - `calendarsProcessed === 0`  ⟹  total failure (route serves HTTP 503).
+ * Contract (see `result.status` — the tri-state the route branches on):
+ *  - `status === 'ok'`      ⟺  every enabled source fetched OK
+ *    (`success === true`, `errors.length === 0`) → route serves HTTP 200.
+ *  - `status === 'partial'` ⟺  `calendarsProcessed > 0` with a non-empty
+ *    `icalContent` and at least one failed source → route serves HTTP 206.
+ *  - `status === 'failed'`  ⟺  `calendarsProcessed === 0` (no source could be
+ *    fetched) → route serves HTTP 503.
+ * `success` is retained for compatibility and equals `status === 'ok'`.
  */
 export async function combineICalFeeds(
   calendars: CalendarSource[],
@@ -226,6 +228,7 @@ export async function combineICalFeeds(
 ): Promise<CombineResult> {
   const result: CombineResult = {
     success: false,
+    status: 'failed',
     icalContent: '',
     eventsCount: 0,
     calendarsProcessed: 0,
@@ -353,7 +356,10 @@ export async function combineICalFeeds(
   result.eventsCount = cappedEvents.length
 
   // success === true only when every enabled source was fetched without error.
+  // At this point calendarsProcessed > 0 (the zero case returned earlier), so
+  // the outcome is either a clean 'ok' or a 'partial' (some sources errored).
   result.success = result.errors.length === 0
+  result.status = result.success ? 'ok' : 'partial'
 
   return result
 }
