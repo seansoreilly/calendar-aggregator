@@ -25,7 +25,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
                 <Link
-                  href="/api/health"
+                  href="/#status"
                   className="hover:text-purple-400 transition-colors"
                 >
                   System Status

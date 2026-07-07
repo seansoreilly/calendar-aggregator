@@ -8,33 +8,54 @@ import {
   Loader2,
   Copy,
   Check,
-  Info,
   Sparkles,
 } from 'lucide-react'
+import { trackEvent } from '../lib/gtag'
 
 interface CalendarInput {
+  id: string
   url: string
   name: string
   color: string
+}
+
+let calendarRowIdCounter = 0
+
+function createCalendarRowId(): string {
+  calendarRowIdCounter += 1
+  return `cal-${Date.now()}-${calendarRowIdCounter}`
 }
 
 export default function CreateCollectionForm() {
   const [name, setName] = useState('')
   const [customId, setCustomId] = useState('')
   const [calendars, setCalendars] = useState<CalendarInput[]>([
-    { url: '', name: 'Main Calendar', color: '#3b82f6' },
+    {
+      id: createCalendarRowId(),
+      url: '',
+      name: 'Main Calendar',
+      color: '#3b82f6',
+    },
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [customIdError, setCustomIdError] = useState<string | null>(null)
+  const [calendarErrors, setCalendarErrors] = useState<Record<string, string>>(
+    {}
+  )
   const [successUrl, setSuccessUrl] = useState<string | null>(null)
   const [successGuid, setSuccessGuid] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const [activeColorIndex, setActiveColorIndex] = useState<number | null>(null)
 
   const addCalendar = () => {
     setCalendars([
       ...calendars,
-      { url: '', name: `Calendar ${calendars.length + 1}`, color: '#8b5cf6' },
+      {
+        id: createCalendarRowId(),
+        url: '',
+        name: `Calendar ${calendars.length + 1}`,
+        color: '#8b5cf6',
+      },
     ])
   }
 
@@ -55,23 +76,33 @@ export default function CreateCollectionForm() {
     setCalendars(newCalendars)
   }
 
-  const trackEvent = (
-    eventName: string,
-    params?: Record<string, string | number>
-  ) => {
-    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      if (params) {
-        window.gtag('event', eventName, params)
-      } else {
-        window.gtag('event', eventName)
+  /**
+   * Parses the "Calendar validation failed" details array returned by the
+   * API. Each entry looks like "Calendar 2 (My Cal): reason" and is matched
+   * back to its row by 1-based position.
+   */
+  const applyCalendarValidationErrors = (details: string[]) => {
+    const errorsByIndex: Record<string, string> = {}
+    details.forEach(detail => {
+      const match = detail.match(/^Calendar (\d+)[^:]*:\s*(.*)$/)
+      const rowNumber = match?.[1]
+      if (match && rowNumber) {
+        const rowIndex = parseInt(rowNumber, 10) - 1
+        const row = calendars[rowIndex]
+        if (row) {
+          errorsByIndex[row.id] = match[2] || detail
+        }
       }
-    }
+    })
+    setCalendarErrors(errorsByIndex)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
+    setCustomIdError(null)
+    setCalendarErrors({})
     setSuccessUrl(null)
 
     const calendarCount = calendars.filter(c => c.url && c.name).length
@@ -83,13 +114,38 @@ export default function CreateCollectionForm() {
         body: JSON.stringify({
           name,
           customId: customId || undefined,
-          calendars: calendars.filter(c => c.url && c.name),
+          calendars: calendars
+            .filter(c => c.url && c.name)
+            .map(({ url, name: calName, color }) => ({
+              url,
+              name: calName,
+              color,
+            })),
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.code === 'COLLECTION_EXISTS') {
+          setCustomIdError('That custom ID is taken — try another')
+          trackEvent('collection_creation_failed', {
+            error: data.error || 'COLLECTION_EXISTS',
+          })
+          return
+        }
+
+        if (
+          Array.isArray(data.details) &&
+          data.details.every((d: unknown) => typeof d === 'string')
+        ) {
+          applyCalendarValidationErrors(data.details)
+          trackEvent('collection_creation_failed', {
+            error: data.error || 'Calendar validation failed',
+          })
+          return
+        }
+
         throw new Error(data.error || 'Failed to create collection')
       }
 
@@ -113,13 +169,33 @@ export default function CreateCollectionForm() {
   const handleDelete = async () => {
     if (!successGuid) return
     if (!confirm('Delete this collection? This cannot be undone.')) return
-    await fetch(`/api/collections/${successGuid}`, { method: 'DELETE' })
-    setSuccessUrl(null)
-    setSuccessGuid(null)
-    setName('')
-    setCustomId('')
-    setCalendars([{ url: '', name: 'Main Calendar', color: '#3b82f6' }])
-    trackEvent('collection_deleted')
+
+    try {
+      const response = await fetch(`/api/collections/${successGuid}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        setError('Failed to delete collection. Please try again.')
+        return
+      }
+
+      setSuccessUrl(null)
+      setSuccessGuid(null)
+      setName('')
+      setCustomId('')
+      setCalendars([
+        {
+          id: createCalendarRowId(),
+          url: '',
+          name: 'Main Calendar',
+          color: '#3b82f6',
+        },
+      ])
+      trackEvent('collection_deleted')
+    } catch {
+      setError('Failed to delete collection. Please try again.')
+    }
   }
 
   const copyToClipboard = () => {
@@ -176,8 +252,14 @@ export default function CreateCollectionForm() {
                 setSuccessGuid(null)
                 setName('')
                 setCustomId('')
+                setError(null)
                 setCalendars([
-                  { url: '', name: 'Main Calendar', color: '#3b82f6' },
+                  {
+                    id: createCalendarRowId(),
+                    url: '',
+                    name: 'Main Calendar',
+                    color: '#3b82f6',
+                  },
                 ])
               }}
               className="px-6 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all hover:scale-[1.02]"
@@ -193,6 +275,14 @@ export default function CreateCollectionForm() {
               Test Feed
             </a>
           </div>
+
+          {error && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm animate-in slide-in-from-top-2 fade-in duration-300 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></div>
+              {error}
+            </div>
+          )}
+
           <button
             onClick={handleDelete}
             className="w-full py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
@@ -218,10 +308,14 @@ export default function CreateCollectionForm() {
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">
+            <label
+              htmlFor="collection-name"
+              className="text-sm font-medium text-gray-300 ml-1"
+            >
               Collection Name
             </label>
             <input
+              id="collection-name"
               type="text"
               required
               value={name}
@@ -231,31 +325,43 @@ export default function CreateCollectionForm() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1 flex items-center gap-2">
+            <label
+              htmlFor="collection-custom-id"
+              className="text-sm font-medium text-gray-300 ml-1"
+            >
               Custom ID
-              <div className="group relative">
-                <Info className="w-4 h-4 text-gray-500 hover:text-gray-300 cursor-help" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-xs text-gray-300 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center shadow-xl">
-                  Custom URL identifier. Leave blank for random.
-                </div>
-              </div>
             </label>
             <div className="relative group">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono group-focus-within:text-purple-400 transition-colors">
                 /
               </span>
               <input
+                id="collection-custom-id"
                 type="text"
                 value={customId}
-                onChange={e =>
+                onChange={e => {
                   setCustomId(
                     e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
                   )
-                }
+                  setCustomIdError(null)
+                }}
                 placeholder="my-calendar-id"
-                className="w-full pl-8 pr-4 py-3.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-mono text-sm"
+                aria-invalid={customIdError ? true : undefined}
+                aria-describedby="collection-custom-id-hint"
+                className={`w-full pl-8 pr-4 py-3.5 rounded-xl bg-black/20 border text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all font-mono text-sm ${
+                  customIdError
+                    ? 'border-red-500/50 focus:ring-red-500/50 focus:border-red-500/50'
+                    : 'border-white/10 focus:ring-purple-500/50 focus:border-purple-500/50'
+                }`}
               />
             </div>
+            <p
+              id="collection-custom-id-hint"
+              className={`text-xs ml-1 ${customIdError ? 'text-red-400' : 'text-gray-500'}`}
+            >
+              {customIdError ||
+                'Custom URL identifier. Leave blank for random.'}
+            </p>
           </div>
         </div>
 
@@ -275,74 +381,103 @@ export default function CreateCollectionForm() {
           </div>
 
           <div className="space-y-3">
-            {calendars.map((cal, index) => (
-              <div
-                key={index}
-                className="group relative flex gap-3 items-start animate-in slide-in-from-left-4 duration-500"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex-1 space-y-3 p-4 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-all">
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        required
-                        value={cal.name}
-                        onChange={e =>
-                          updateCalendar(index, 'name', e.target.value)
-                        }
-                        placeholder="Calendar Name"
-                        className="w-full px-3 py-2 rounded-lg bg-transparent border-b border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors placeholder-gray-600"
-                      />
+            {calendars.map((cal, index) => {
+              const nameFieldId = `calendar-name-${cal.id}`
+              const urlFieldId = `calendar-url-${cal.id}`
+              const rowError = calendarErrors[cal.id]
+              return (
+                <div
+                  key={cal.id}
+                  className="group relative flex gap-3 items-start animate-in slide-in-from-left-4 duration-500"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex-1 space-y-3 p-4 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-all">
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label htmlFor={nameFieldId} className="sr-only">
+                          Calendar Name
+                        </label>
+                        <input
+                          id={nameFieldId}
+                          type="text"
+                          required
+                          value={cal.name}
+                          onChange={e =>
+                            updateCalendar(index, 'name', e.target.value)
+                          }
+                          placeholder="Calendar Name"
+                          className="w-full px-3 py-2 rounded-lg bg-transparent border-b border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors placeholder-gray-600"
+                        />
+                      </div>
+                      <div className="relative">
+                        <div
+                          className="w-9 h-9 rounded-lg border-2 border-white/10 shadow-sm transition-transform pointer-events-none"
+                          style={{ backgroundColor: cal.color }}
+                        >
+                          {/* Color preview */}
+                        </div>
+                        <input
+                          type="color"
+                          value={cal.color}
+                          onChange={e =>
+                            updateCalendar(index, 'color', e.target.value)
+                          }
+                          aria-label={`Color for ${cal.name || 'calendar'}`}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                      </div>
                     </div>
                     <div className="relative">
-                      <div
-                        className="w-9 h-9 rounded-lg cursor-pointer border-2 border-white/10 shadow-sm transition-transform hover:scale-110 active:scale-95"
-                        style={{ backgroundColor: cal.color }}
-                        onClick={() =>
-                          setActiveColorIndex(
-                            activeColorIndex === index ? null : index
-                          )
-                        }
-                      >
-                        {/* Color preview */}
-                      </div>
+                      <label htmlFor={urlFieldId} className="sr-only">
+                        Calendar URL
+                      </label>
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-purple-400 transition-colors" />
                       <input
-                        type="color"
-                        value={cal.color}
+                        id={urlFieldId}
+                        type="url"
+                        required
+                        value={cal.url}
                         onChange={e =>
-                          updateCalendar(index, 'color', e.target.value)
+                          updateCalendar(index, 'url', e.target.value)
                         }
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        placeholder="https://calendar.google.com/..."
+                        aria-invalid={rowError ? true : undefined}
+                        aria-describedby={
+                          rowError ? `${urlFieldId}-error` : undefined
+                        }
+                        className={`w-full pl-10 pr-3 py-2.5 rounded-lg bg-black/20 border text-white text-sm focus:outline-none focus:bg-black/40 focus:ring-1 transition-all font-mono placeholder-gray-600 ${
+                          rowError
+                            ? 'border-red-500/50 focus:ring-red-500/50'
+                            : 'border-white/5 focus:ring-purple-500/30'
+                        }`}
                       />
                     </div>
+                    {rowError && (
+                      <p
+                        id={`${urlFieldId}-error`}
+                        className="text-xs text-red-400 pl-1"
+                      >
+                        {rowError}
+                      </p>
+                    )}
                   </div>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-purple-400 transition-colors" />
-                    <input
-                      type="url"
-                      required
-                      value={cal.url}
-                      onChange={e =>
-                        updateCalendar(index, 'url', e.target.value)
-                      }
-                      placeholder="https://calendar.google.com/..."
-                      className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:bg-black/40 focus:ring-1 focus:ring-purple-500/30 transition-all font-mono placeholder-gray-600"
-                    />
-                  </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => removeCalendar(index)}
-                  disabled={calendars.length <= 1}
-                  className={`p-3 mt-1 rounded-xl transition-all ${calendars.length > 1 ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 cursor-pointer' : 'opacity-0 pointer-events-none'}`}
-                  title="Remove calendar"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => removeCalendar(index)}
+                    disabled={calendars.length <= 1}
+                    className={`p-3 mt-1 rounded-xl transition-all ${
+                      calendars.length > 1
+                        ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 cursor-pointer'
+                        : 'opacity-30 cursor-not-allowed text-gray-500'
+                    }`}
+                    title="Remove calendar"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
 

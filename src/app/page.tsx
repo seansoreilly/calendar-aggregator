@@ -72,7 +72,10 @@ export default function HomePage() {
           </div>
 
           {/* Status */}
-          <div className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div
+            id="status"
+            className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-2xl p-6"
+          >
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
               System Status
             </h2>

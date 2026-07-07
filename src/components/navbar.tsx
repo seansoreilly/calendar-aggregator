@@ -28,7 +28,7 @@ export function Navbar() {
             Privacy
           </Link>
           <Link
-            href="/api/health"
+            href="/#status"
             className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
             Status
