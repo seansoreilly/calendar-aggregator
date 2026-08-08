@@ -93,7 +93,6 @@ pids
 .parcel-cache
 .cache/
 .turbo/
-.swc/
 tmp/
 temp/
 *.tmp
@@ -235,6 +234,7 @@ builder.config.json
 
 # AI & Tools
 .gemini/
-.claude/
+.claude/*
+!.claude/agents/
 nanobanana-output/
 current_ui.png
