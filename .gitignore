@@ -235,6 +235,9 @@ builder.config.json
 
 # AI & Tools
 .gemini/
-.claude/
+# Keep project-scoped Claude Code agents and skills tracked; ignore the rest of .claude/
+.claude/*
+!.claude/agents/
+!.claude/skills/
 nanobanana-output/
 current_ui.png
