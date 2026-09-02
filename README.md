@@ -45,7 +45,28 @@ Optional query parameters:
 - `start=YYYY-MM-DD` / `end=YYYY-MM-DD` — only include events overlapping this inclusive date range (UTC days)
 - `past=<n><d|w|m|y>` / `future=<n><d|w|m|y>` — rolling window relative to the request time, e.g. `past=2w` drops events that ended more than two weeks ago, `future=3m` drops events starting more than three months ahead
 
-Any combination works (`start`/`end` win over `past`/`future` for the same bound). Example: `?past=2w&future=3m`.
+Any combination works (`start`/`end` win over `past`/`future` for the same bound).
+
+Examples:
+
+```
+# Last 2 weeks plus everything upcoming
+/api/calendar/{guid}?past=2w
+
+# Last 2 weeks and the next 3 months
+/api/calendar/{guid}?past=2w&future=3m
+
+# Only the next 30 days
+/api/calendar/{guid}?past=1d&future=30d
+
+# A fixed range, e.g. one academic term
+/api/calendar/{guid}?start=2026-09-01&end=2026-12-18
+
+# Everything from a fixed date until 1 year from now
+/api/calendar/{guid}?start=2026-01-01&future=1y
+```
+
+Invalid values (e.g. `past=2x`, `start=2026-02-30`, or `start` after `end`) return HTTP 400.
 
 Filtering is approximate by design: recurring series are kept whole whenever they could still occur in the window (the client expands the rule), and timezone-qualified times are compared as UTC.
 
