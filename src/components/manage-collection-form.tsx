@@ -75,6 +75,9 @@ export default function ManageCollectionForm({
 
   useEffect(() => {
     const stored = window.localStorage.getItem(tokenStorageKey(guid))
+    // Syncing from localStorage after mount is intentional: reading it in a
+    // lazy initialiser would cause a server/client hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setToken(stored)
   }, [guid])
 
