@@ -61,6 +61,18 @@ nanobanana-output/
 # Task management
 .taskmaster/
 
+# Docs & repo metadata (not needed at build time)
+README.md
+CLAUDE.md
+UBIQUITOUS_LANGUAGE.md
+memories.json
+skills/
+*.code-workspace
+
+# Database migrations (applied out-of-band, not part of the build)
+migrations/
+supabase/
+
 # OS generated
 .DS_Store
 ._*

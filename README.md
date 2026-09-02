@@ -8,9 +8,12 @@ Combine multiple iCal calendar feeds into a single subscription URL. Works with 
 
 1. Paste your iCal feed URLs into the form
 2. Give the collection a name (and optionally a custom ID)
-3. Subscribe to the generated URL in any calendar app
+3. Save the management token shown after creation
+4. Subscribe to the generated URL in any calendar app
 
 When your calendar app fetches the feed, events are pulled from all sources in real time, deduplicated by UID, and returned as a single `.ics` file. Nothing is cached — only the collection metadata (name, source URLs) is stored.
+
+Collections can be edited later at `/manage/{guid}` using the management token.
 
 ## API
 
@@ -30,6 +33,8 @@ curl -X POST https://www.calendar-aggregator.online/api/collections \
 ```
 
 `customId` is optional — omit it to get an auto-generated UUID. `webcal://` URLs are converted to `https://` automatically.
+
+The response includes a `managementToken`. **It is returned only once** — save it. It is required to update or delete the collection and is never included in any later response.
 
 ### Feed visibility
 
@@ -79,6 +84,22 @@ Invalid values (e.g. `past=2x`, `start=2026-02-30`, or `start` after `end`) retu
 
 Filtering is approximate by design: recurring series are kept whole whenever they could still occur in the window (the client expands the rule), and timezone-qualified times are compared as UTC.
 
+Response behaviour:
+
+- Responses carry a strong `ETag`; conditional requests with `If-None-Match` get `304 Not Modified`
+- If some source calendars fail, the feed is still served from the working sources with status `206 Partial Content`
+
+### Update or delete a collection
+
+```bash
+curl -X PUT https://www.calendar-aggregator.online/api/collections/{guid} \
+  -H "Authorization: Bearer <managementToken>" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "New Name" }'
+```
+
+`PUT` and `DELETE` require the collection's management token as a bearer token. Collections created before tokens were introduced can still be modified without one. A web UI for editing lives at `/manage/{guid}`.
+
 ### Other endpoints
 
 | Method   | Path                      | Description                           |
@@ -110,7 +131,7 @@ Without Supabase configured, collections fall back to in-memory storage (lost on
 
 ## Tech stack
 
-- [Next.js 15](https://nextjs.org) — App Router, serverless API routes
+- [Next.js 16](https://nextjs.org) — App Router, serverless API routes
 - [Supabase](https://supabase.com) — Postgres (custom schema `calendar_aggregator`)
 - [Tailwind CSS](https://tailwindcss.com) — styling
 - [Vitest](https://vitest.dev) — tests
