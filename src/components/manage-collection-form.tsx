@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Plus,
   Trash2,
-  Link as LinkIcon,
   Loader2,
   Copy,
   Check,
@@ -55,6 +55,9 @@ function sourceToRow(source: CalendarSource): CalendarRow {
     enabled: source.enabled,
   }
 }
+
+const FIELD_CLASS =
+  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-none focus:ring-0'
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error'
 
@@ -127,7 +130,7 @@ export default function ManageCollectionForm({
         id: createRowId(),
         url: '',
         name: `Calendar ${calendars.length + 1}`,
-        color: '#8b5cf6',
+        color: '#3f7d58',
         enabled: true,
       },
     ])
@@ -192,7 +195,7 @@ export default function ManageCollectionForm({
       setName(data.name)
       setDescription(data.description || '')
       setCalendars(data.calendars.map(sourceToRow))
-      setSuccessMessage('Changes saved successfully.')
+      setSuccessMessage('Changes saved.')
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to save changes'
@@ -226,14 +229,14 @@ export default function ManageCollectionForm({
       }
 
       if (!response.ok) {
-        setError('Failed to delete collection. Please try again.')
+        setError('Could not delete the collection. Try again.')
         return
       }
 
       window.localStorage.removeItem(tokenStorageKey(guid))
       router.push('/')
     } catch {
-      setError('Failed to delete collection. Please try again.')
+      setError('Could not delete the collection. Try again.')
     } finally {
       setIsDeleting(false)
     }
@@ -253,282 +256,297 @@ export default function ManageCollectionForm({
 
   if (loadState === 'loading') {
     return (
-      <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl flex items-center justify-center gap-3 text-gray-300">
-        <Loader2 className="w-5 h-5 animate-spin" /> Loading collection...
+      <div className="flex items-center justify-center gap-3 border-2 border-ink bg-sheet p-8 text-sm text-graphite">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        Loading collection
       </div>
     )
   }
 
   if (loadState === 'not-found') {
     return (
-      <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl text-center space-y-3">
-        <h2 className="text-2xl font-bold text-white">Collection not found</h2>
-        <p className="text-gray-400">
-          No collection exists for this ID. It may have been deleted.
+      <div className="border-2 border-ink bg-sheet p-8">
+        <h2 className="font-display text-lg font-bold text-ink">
+          Collection not found
+        </h2>
+        <p className="mt-2 max-w-md text-sm text-graphite">
+          No collection exists for this ID. It may have been deleted, or the
+          link may have a typo.
         </p>
+        <Link
+          href="/"
+          className="mt-6 inline-block bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-85"
+        >
+          Create a collection
+        </Link>
       </div>
     )
   }
 
   if (loadState === 'error') {
     return (
-      <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl text-center space-y-3">
-        <h2 className="text-2xl font-bold text-white">Something went wrong</h2>
-        <p className="text-gray-400">
-          Failed to load this collection. Please try again later.
+      <div className="space-y-2 border-2 border-ink bg-sheet p-8 text-center">
+        <h2 className="font-display text-lg font-bold text-ink">
+          Something went wrong
+        </h2>
+        <p className="text-sm text-graphite">
+          Failed to load this collection. Try again later.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl space-y-8">
-      {/* Feed URL */}
-      <div className="bg-black/40 rounded-2xl p-6 border border-white/10 flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <LinkIcon className="w-4 h-4" />
-          <span>Subscription URL</span>
+    <div className="border-2 border-ink bg-sheet">
+      <div className="border-b border-rule px-6 py-3">
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-ink">
+          Edit collection
+        </h2>
+      </div>
+
+      <div className="space-y-8 p-6">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-graphite">
+            Subscription URL
+          </p>
+          <div className="mt-2 flex items-stretch border border-rule bg-paper">
+            <code className="flex-1 break-all px-3 py-3 font-mono text-sm text-stamp">
+              {feedUrl}
+            </code>
+            <button
+              type="button"
+              onClick={copyFeedUrl}
+              className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
+              aria-label="Copy subscription URL"
+            >
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <code className="flex-1 font-mono text-cyan-300 text-sm break-all text-left">
-            {feedUrl}
-          </code>
+
+        <div>
+          <label
+            htmlFor="management-token"
+            className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-graphite"
+          >
+            <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+            Management token
+          </label>
+          <input
+            id="management-token"
+            type="text"
+            value={token}
+            onChange={e => handleTokenChange(e.target.value)}
+            placeholder="Paste your management token"
+            className={`mt-2 font-mono ${FIELD_CLASS}`}
+          />
+          <p className="mt-1.5 text-xs text-graphite">
+            Required to save or delete this collection. It was shown once when
+            the collection was created.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="collection-name"
+              className="font-mono text-[11px] uppercase tracking-wider text-graphite"
+            >
+              Name
+            </label>
+            <input
+              id="collection-name"
+              type="text"
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className={`mt-2 ${FIELD_CLASS}`}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="collection-description"
+              className="font-mono text-[11px] uppercase tracking-wider text-graphite"
+            >
+              Description
+            </label>
+            <input
+              id="collection-description"
+              type="text"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Optional description"
+              className={`mt-2 ${FIELD_CLASS}`}
+            />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between border-b border-ink pb-2">
+            <h3 className="font-mono text-[11px] uppercase tracking-wider text-ink">
+              Source calendars
+            </h3>
+            <button
+              type="button"
+              onClick={addCalendar}
+              className="flex items-center gap-1.5 text-sm font-semibold text-ink transition-colors hover:text-today"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add source
+            </button>
+          </div>
+
+          <div className="divide-y divide-rule">
+            {calendars.map((cal, index) => {
+              const nameFieldId = `calendar-name-${cal.id}`
+              const urlFieldId = `calendar-url-${cal.id}`
+              const enabledFieldId = `calendar-enabled-${cal.id}`
+              return (
+                <div key={cal.id} className="flex items-start gap-3 py-4">
+                  <span
+                    className="mt-3 shrink-0 font-mono text-[11px] text-graphite"
+                    aria-hidden="true"
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative shrink-0">
+                        <div
+                          className="pointer-events-none h-full w-10 border border-rule"
+                          style={{ backgroundColor: cal.color }}
+                        />
+                        <input
+                          type="color"
+                          value={cal.color}
+                          onChange={e =>
+                            updateCalendar(index, 'color', e.target.value)
+                          }
+                          aria-label={`Colour for ${cal.name || 'calendar'}`}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <label htmlFor={nameFieldId} className="sr-only">
+                          Calendar name
+                        </label>
+                        <input
+                          id={nameFieldId}
+                          type="text"
+                          required
+                          value={cal.name}
+                          onChange={e =>
+                            updateCalendar(index, 'name', e.target.value)
+                          }
+                          placeholder="Calendar name"
+                          className={FIELD_CLASS}
+                        />
+                      </div>
+                      <label
+                        htmlFor={enabledFieldId}
+                        className="flex shrink-0 items-center gap-2 self-stretch border border-rule px-3 font-mono text-[11px] uppercase tracking-wider text-graphite"
+                      >
+                        <input
+                          id={enabledFieldId}
+                          type="checkbox"
+                          checked={cal.enabled}
+                          onChange={e =>
+                            updateCalendar(index, 'enabled', e.target.checked)
+                          }
+                          className="h-4 w-4 accent-ink"
+                        />
+                        Enabled
+                      </label>
+                    </div>
+
+                    <div>
+                      <label htmlFor={urlFieldId} className="sr-only">
+                        Calendar URL
+                      </label>
+                      <input
+                        id={urlFieldId}
+                        type="url"
+                        required
+                        value={cal.url}
+                        onChange={e =>
+                          updateCalendar(index, 'url', e.target.value)
+                        }
+                        placeholder="https://calendar.google.com/.../basic.ics"
+                        className={`${FIELD_CLASS} font-mono text-xs`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeCalendar(index)}
+                    disabled={calendars.length <= 1}
+                    className="mt-1 shrink-0 p-2 text-graphite transition-colors hover:text-today disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-graphite"
+                    aria-label={`Remove calendar ${index + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {error && (
+          <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
+            {error}
+          </p>
+        )}
+
+        {successMessage && (
+          <p className="flex items-center gap-2 border-l-2 border-ink py-1 pl-4 text-sm text-ink">
+            <Check className="h-4 w-4" aria-hidden="true" />
+            {successMessage}
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 border-t border-rule pt-6 sm:grid-cols-2">
           <button
             type="button"
-            onClick={copyFeedUrl}
-            className="p-3 hover:bg-white/10 rounded-xl transition-all text-gray-300 hover:text-white hover:scale-105 active:scale-95"
-            title="Copy to clipboard"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center justify-center gap-2 bg-ink py-3.5 font-display text-sm font-bold uppercase tracking-[0.12em] text-paper transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {copied ? (
-              <Check className="w-5 h-5 text-green-400" />
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Saving
+              </>
             ) : (
-              <Copy className="w-5 h-5" />
+              <>
+                <Save className="h-4 w-4" aria-hidden="true" />
+                Save changes
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center justify-center gap-2 border border-today py-3.5 text-sm font-semibold text-today transition-colors hover:bg-today hover:text-paper disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Deleting
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Delete collection
+              </>
             )}
           </button>
         </div>
-      </div>
-
-      {/* Management token */}
-      <div className="space-y-2">
-        <label
-          htmlFor="management-token"
-          className="text-sm font-medium text-gray-300 ml-1 flex items-center gap-2"
-        >
-          <KeyRound className="w-4 h-4 text-amber-400" />
-          Management token
-        </label>
-        <input
-          id="management-token"
-          type="text"
-          value={token}
-          onChange={e => handleTokenChange(e.target.value)}
-          placeholder="Paste your management token"
-          className="w-full px-4 py-3.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all font-mono text-sm"
-        />
-        <p className="text-xs text-gray-500 ml-1">
-          Required to save or delete this collection. It was shown once when the
-          collection was created.
-        </p>
-      </div>
-
-      {/* Name / description */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label
-            htmlFor="collection-name"
-            className="text-sm font-medium text-gray-300 ml-1"
-          >
-            Collection Name
-          </label>
-          <input
-            id="collection-name"
-            type="text"
-            required
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-          />
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="collection-description"
-            className="text-sm font-medium text-gray-300 ml-1"
-          >
-            Description
-          </label>
-          <input
-            id="collection-description"
-            type="text"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Optional description"
-            className="w-full px-4 py-3.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Source calendars */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-          <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
-            Source Calendars
-          </label>
-          <button
-            type="button"
-            onClick={addCalendar}
-            className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-purple-200 text-sm font-medium flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-          >
-            <Plus className="w-4 h-4" /> Add Source
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {calendars.map((cal, index) => {
-            const nameFieldId = `calendar-name-${cal.id}`
-            const urlFieldId = `calendar-url-${cal.id}`
-            const enabledFieldId = `calendar-enabled-${cal.id}`
-            return (
-              <div
-                key={cal.id}
-                className="group relative flex gap-3 items-start"
-              >
-                <div className="flex-1 space-y-3 p-4 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-all">
-                  <div className="flex gap-3 items-center">
-                    <div className="flex-1">
-                      <label htmlFor={nameFieldId} className="sr-only">
-                        Calendar Name
-                      </label>
-                      <input
-                        id={nameFieldId}
-                        type="text"
-                        required
-                        value={cal.name}
-                        onChange={e =>
-                          updateCalendar(index, 'name', e.target.value)
-                        }
-                        placeholder="Calendar Name"
-                        className="w-full px-3 py-2 rounded-lg bg-transparent border-b border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors placeholder-gray-600"
-                      />
-                    </div>
-                    <div className="relative">
-                      <div
-                        className="w-9 h-9 rounded-lg border-2 border-white/10 shadow-sm transition-transform pointer-events-none"
-                        style={{ backgroundColor: cal.color }}
-                      >
-                        {/* Color preview */}
-                      </div>
-                      <input
-                        type="color"
-                        value={cal.color}
-                        onChange={e =>
-                          updateCalendar(index, 'color', e.target.value)
-                        }
-                        aria-label={`Color for ${cal.name || 'calendar'}`}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      />
-                    </div>
-                    <label
-                      htmlFor={enabledFieldId}
-                      className="flex items-center gap-2 text-xs text-gray-400 select-none cursor-pointer"
-                    >
-                      <input
-                        id={enabledFieldId}
-                        type="checkbox"
-                        checked={cal.enabled}
-                        onChange={e =>
-                          updateCalendar(index, 'enabled', e.target.checked)
-                        }
-                        className="w-4 h-4 rounded accent-purple-500"
-                      />
-                      Enabled
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <label htmlFor={urlFieldId} className="sr-only">
-                      Calendar URL
-                    </label>
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-purple-400 transition-colors" />
-                    <input
-                      id={urlFieldId}
-                      type="url"
-                      required
-                      value={cal.url}
-                      onChange={e =>
-                        updateCalendar(index, 'url', e.target.value)
-                      }
-                      placeholder="https://calendar.google.com/..."
-                      className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:bg-black/40 focus:ring-1 focus:ring-purple-500/30 transition-all font-mono placeholder-gray-600"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => removeCalendar(index)}
-                  disabled={calendars.length <= 1}
-                  className={`p-3 mt-1 rounded-xl transition-all ${
-                    calendars.length > 1
-                      ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 cursor-pointer'
-                      : 'opacity-30 cursor-not-allowed text-gray-500'
-                  }`}
-                  title="Remove calendar"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm flex items-center gap-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></div>
-          {error}
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 text-sm flex items-center gap-3">
-          <Check className="w-4 h-4" />
-          {successMessage}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white font-bold shadow-lg shadow-purple-500/25 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-5 h-5" /> Save Changes
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="px-6 py-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-300 hover:text-red-200 font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-        >
-          {isDeleting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" /> Deleting...
-            </>
-          ) : (
-            <>
-              <Trash2 className="w-5 h-5" /> Delete Collection
-            </>
-          )}
-        </button>
       </div>
     </div>
   )

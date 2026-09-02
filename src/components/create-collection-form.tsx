@@ -1,17 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Plus,
-  Trash2,
-  Link as LinkIcon,
-  Loader2,
-  Copy,
-  Check,
-  Sparkles,
-  Settings,
-  KeyRound,
-} from 'lucide-react'
+import { Plus, Trash2, Loader2, Copy, Check, KeyRound } from 'lucide-react'
 import { trackEvent } from '../lib/gtag'
 
 function tokenStorageKey(guid: string): string {
@@ -32,16 +22,18 @@ function createCalendarRowId(): string {
   return `cal-${Date.now()}-${calendarRowIdCounter}`
 }
 
+function createEmptyRow(name: string, color: string): CalendarInput {
+  return { id: createCalendarRowId(), url: '', name, color }
+}
+
+const FIELD_CLASS =
+  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-none focus:ring-0'
+
 export default function CreateCollectionForm() {
   const [name, setName] = useState('')
   const [customId, setCustomId] = useState('')
   const [calendars, setCalendars] = useState<CalendarInput[]>([
-    {
-      id: createCalendarRowId(),
-      url: '',
-      name: 'Main Calendar',
-      color: '#3b82f6',
-    },
+    createEmptyRow('Main calendar', '#1b3a6b'),
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,12 +50,7 @@ export default function CreateCollectionForm() {
   const addCalendar = () => {
     setCalendars([
       ...calendars,
-      {
-        id: createCalendarRowId(),
-        url: '',
-        name: `Calendar ${calendars.length + 1}`,
-        color: '#8b5cf6',
-      },
+      createEmptyRow(`Calendar ${calendars.length + 1}`, '#3f7d58'),
     ])
   }
 
@@ -82,6 +69,16 @@ export default function CreateCollectionForm() {
       [field]: value,
     } as CalendarInput
     setCalendars(newCalendars)
+  }
+
+  const resetForm = () => {
+    setSuccessUrl(null)
+    setSuccessGuid(null)
+    setSuccessToken(null)
+    setName('')
+    setCustomId('')
+    setError(null)
+    setCalendars([createEmptyRow('Main calendar', '#1b3a6b')])
   }
 
   /**
@@ -136,7 +133,7 @@ export default function CreateCollectionForm() {
 
       if (!response.ok) {
         if (data.code === 'COLLECTION_EXISTS') {
-          setCustomIdError('That custom ID is taken — try another')
+          setCustomIdError('That ID is taken. Try another.')
           trackEvent('collection_creation_failed', {
             error: data.error || 'COLLECTION_EXISTS',
           })
@@ -192,31 +189,19 @@ export default function CreateCollectionForm() {
       })
 
       if (response.status === 401) {
-        setError('Invalid or missing management token')
+        setError('That management token is not valid for this collection.')
         return
       }
 
       if (!response.ok) {
-        setError('Failed to delete collection. Please try again.')
+        setError('Could not delete the collection. Try again.')
         return
       }
 
-      setSuccessUrl(null)
-      setSuccessGuid(null)
-      setSuccessToken(null)
-      setName('')
-      setCustomId('')
-      setCalendars([
-        {
-          id: createCalendarRowId(),
-          url: '',
-          name: 'Main Calendar',
-          color: '#3b82f6',
-        },
-      ])
+      resetForm()
       trackEvent('collection_deleted')
     } catch {
-      setError('Failed to delete collection. Please try again.')
+      setError('Could not delete the collection. Try again.')
     }
   }
 
@@ -239,150 +224,126 @@ export default function CreateCollectionForm() {
 
   if (successUrl) {
     return (
-      <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in duration-500">
-        <div className="text-center space-y-8">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30 animate-in zoom-in duration-500 delay-100">
-            <Check className="w-10 h-10 text-white" />
-          </div>
+      <div className="border-2 border-ink bg-sheet">
+        <div className="flex items-center gap-2 border-b border-rule px-6 py-3">
+          <Check className="h-4 w-4 text-ink" aria-hidden="true" />
+          <h2 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-ink">
+            Collection created
+          </h2>
+        </div>
 
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white">Collection Ready!</h2>
-            <p className="text-gray-300">
-              Your aggregated calendar feed has been created successfully.
+        <div className="space-y-8 p-6">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-graphite">
+              Subscription URL
             </p>
-          </div>
-
-          <div className="bg-black/40 rounded-2xl p-6 border border-white/10 flex flex-col gap-4 group transition-all hover:border-white/20 hover:bg-black/50">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <LinkIcon className="w-4 h-4" />
-              <span>Subscription URL</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <code className="flex-1 font-mono text-cyan-300 text-sm break-all text-left">
+            <div className="mt-2 flex items-stretch border border-rule bg-paper">
+              <code className="flex-1 break-all px-3 py-3 font-mono text-sm text-stamp">
                 {successUrl}
               </code>
               <button
                 onClick={copyToClipboard}
-                className="p-3 hover:bg-white/10 rounded-xl transition-all text-gray-300 hover:text-white hover:scale-105 active:scale-95"
-                title="Copy to clipboard"
+                className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
+                aria-label="Copy subscription URL"
               >
                 {copied ? (
-                  <Check className="w-5 h-5 text-green-400" />
+                  <Check className="h-4 w-4" />
                 ) : (
-                  <Copy className="w-5 h-5" />
+                  <Copy className="h-4 w-4" />
                 )}
               </button>
             </div>
+            <p className="mt-2 text-sm text-graphite">
+              Add this to any calendar app as a subscribed calendar.
+            </p>
           </div>
 
           {successToken && (
-            <div className="bg-amber-500/10 rounded-2xl p-6 border border-amber-500/20 flex flex-col gap-4 text-left">
-              <div className="flex items-center gap-2 text-sm text-amber-300">
-                <KeyRound className="w-4 h-4" />
-                <span>Management Token</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <code className="flex-1 font-mono text-amber-200 text-sm break-all">
+            <div className="border-l-2 border-today pl-4">
+              <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-today">
+                <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+                Management token
+              </p>
+              <div className="mt-2 flex items-stretch border border-rule bg-paper">
+                <code className="flex-1 break-all px-3 py-3 font-mono text-sm text-ink">
                   {successToken}
                 </code>
                 <button
                   onClick={copyTokenToClipboard}
-                  className="p-3 hover:bg-white/10 rounded-xl transition-all text-amber-300 hover:text-white hover:scale-105 active:scale-95"
-                  title="Copy to clipboard"
+                  className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
+                  aria-label="Copy management token"
                 >
                   {tokenCopied ? (
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="h-4 w-4" />
                   ) : (
-                    <Copy className="w-5 h-5" />
+                    <Copy className="h-4 w-4" />
                   )}
                 </button>
               </div>
-              <p className="text-xs text-amber-300/80">
-                Save this token — it&apos;s shown only once. You&apos;ll need it
-                to manage or delete this collection.
+              <p className="mt-2 text-sm text-graphite">
+                Copy this now — it is shown once. You need it to edit or delete
+                the collection.
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-            <button
-              onClick={() => {
-                setSuccessUrl(null)
-                setSuccessGuid(null)
-                setSuccessToken(null)
-                setName('')
-                setCustomId('')
-                setError(null)
-                setCalendars([
-                  {
-                    id: createCalendarRowId(),
-                    url: '',
-                    name: 'Main Calendar',
-                    color: '#3b82f6',
-                  },
-                ])
-              }}
-              className="px-6 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all hover:scale-[1.02]"
-            >
-              Create New
-            </button>
+          {error && (
+            <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-3 border-t border-rule pt-6">
             <a
               href={successUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold shadow-lg shadow-green-500/20 transition-all transform hover:scale-[1.02]"
+              className="bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-85"
             >
-              Test Feed
+              Open the feed
             </a>
+            {successGuid && (
+              <a
+                href={`/manage/${successGuid}`}
+                className="border border-ink px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
+              >
+                Manage collection
+              </a>
+            )}
+            <button
+              onClick={resetForm}
+              className="px-5 py-2.5 text-sm font-semibold text-graphite transition-colors hover:text-ink"
+            >
+              Create another
+            </button>
+            <button
+              onClick={handleDelete}
+              className="ml-auto px-2 py-2.5 text-sm text-graphite transition-colors hover:text-today"
+            >
+              Delete
+            </button>
           </div>
-
-          {successGuid && (
-            <a
-              href={`/manage/${successGuid}`}
-              className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all hover:scale-[1.02]"
-            >
-              <Settings className="w-5 h-5" />
-              Manage this collection
-            </a>
-          )}
-
-          {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm animate-in slide-in-from-top-2 fade-in duration-300 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></div>
-              {error}
-            </div>
-          )}
-
-          <button
-            onClick={handleDelete}
-            className="w-full py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-          >
-            Delete this collection
-          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl">
-      <div className="mb-8 space-y-2">
-        <h2 className="text-3xl font-display font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-          Create Collection
+    <div className="border-2 border-ink bg-sheet">
+      <div className="border-b border-rule px-6 py-3">
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-ink">
+          New collection
         </h2>
-        <p className="text-gray-400">
-          Combine multiple calendars into a single feed.
-        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-8 p-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
             <label
               htmlFor="collection-name"
-              className="text-sm font-medium text-gray-300 ml-1"
+              className="font-mono text-[11px] uppercase tracking-wider text-graphite"
             >
-              Collection Name
+              Name
             </label>
             <input
               id="collection-name"
@@ -390,19 +351,19 @@ export default function CreateCollectionForm() {
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Work & Personal"
-              className="w-full px-4 py-3.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+              placeholder="Work and personal"
+              className={`mt-2 ${FIELD_CLASS}`}
             />
           </div>
-          <div className="space-y-2">
+          <div>
             <label
               htmlFor="collection-custom-id"
-              className="text-sm font-medium text-gray-300 ml-1"
+              className="font-mono text-[11px] uppercase tracking-wider text-graphite"
             >
               Custom ID
             </label>
-            <div className="relative group">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono group-focus-within:text-purple-400 transition-colors">
+            <div className="mt-2 flex items-stretch border border-rule bg-paper focus-within:border-ink">
+              <span className="flex items-center border-r border-rule px-3 font-mono text-xs text-graphite">
                 /
               </span>
               <input
@@ -415,57 +376,69 @@ export default function CreateCollectionForm() {
                   )
                   setCustomIdError(null)
                 }}
-                placeholder="my-calendar-id"
+                placeholder="my-calendar"
                 aria-invalid={customIdError ? true : undefined}
                 aria-describedby="collection-custom-id-hint"
-                className={`w-full pl-8 pr-4 py-3.5 rounded-xl bg-black/20 border text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all font-mono text-sm ${
-                  customIdError
-                    ? 'border-red-500/50 focus:ring-red-500/50 focus:border-red-500/50'
-                    : 'border-white/10 focus:ring-purple-500/50 focus:border-purple-500/50'
-                }`}
+                className="w-full bg-transparent px-3 py-2.5 font-mono text-sm text-ink placeholder-graphite/60 focus:outline-none"
               />
             </div>
             <p
               id="collection-custom-id-hint"
-              className={`text-xs ml-1 ${customIdError ? 'text-red-400' : 'text-gray-500'}`}
+              className={`mt-1.5 text-xs ${customIdError ? 'text-today' : 'text-graphite'}`}
             >
-              {customIdError ||
-                'Custom URL identifier. Leave blank for random.'}
+              {customIdError || 'Leave blank for a generated ID.'}
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
-              Source Calendars
-            </label>
+        <div>
+          <div className="flex items-center justify-between border-b border-ink pb-2">
+            <h3 className="font-mono text-[11px] uppercase tracking-wider text-ink">
+              Source calendars
+            </h3>
             <button
               type="button"
               onClick={addCalendar}
-              className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-purple-200 text-sm font-medium flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+              className="flex items-center gap-1.5 text-sm font-semibold text-ink transition-colors hover:text-today"
             >
-              <Plus className="w-4 h-4" /> Add Source
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add source
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-rule">
             {calendars.map((cal, index) => {
               const nameFieldId = `calendar-name-${cal.id}`
               const urlFieldId = `calendar-url-${cal.id}`
               const rowError = calendarErrors[cal.id]
               return (
-                <div
-                  key={cal.id}
-                  className="group relative flex gap-3 items-start animate-in slide-in-from-left-4 duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="flex-1 space-y-3 p-4 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-all">
-                    <div className="flex gap-3">
-                      <div className="flex-1">
+                <div key={cal.id} className="flex items-start gap-3 py-4">
+                  <span
+                    className="mt-3.5 w-5 shrink-0 font-mono text-[11px] text-graphite"
+                    aria-hidden="true"
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative shrink-0">
+                        <div
+                          className="pointer-events-none h-full w-10 border border-rule"
+                          style={{ backgroundColor: cal.color }}
+                        />
+                        <input
+                          type="color"
+                          value={cal.color}
+                          onChange={e =>
+                            updateCalendar(index, 'color', e.target.value)
+                          }
+                          aria-label={`Colour for ${cal.name || 'calendar'}`}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
                         <label htmlFor={nameFieldId} className="sr-only">
-                          Calendar Name
+                          Calendar name
                         </label>
                         <input
                           id={nameFieldId}
@@ -475,33 +448,16 @@ export default function CreateCollectionForm() {
                           onChange={e =>
                             updateCalendar(index, 'name', e.target.value)
                           }
-                          placeholder="Calendar Name"
-                          className="w-full px-3 py-2 rounded-lg bg-transparent border-b border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors placeholder-gray-600"
-                        />
-                      </div>
-                      <div className="relative">
-                        <div
-                          className="w-9 h-9 rounded-lg border-2 border-white/10 shadow-sm transition-transform pointer-events-none"
-                          style={{ backgroundColor: cal.color }}
-                        >
-                          {/* Color preview */}
-                        </div>
-                        <input
-                          type="color"
-                          value={cal.color}
-                          onChange={e =>
-                            updateCalendar(index, 'color', e.target.value)
-                          }
-                          aria-label={`Color for ${cal.name || 'calendar'}`}
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          placeholder="Calendar name"
+                          className={FIELD_CLASS}
                         />
                       </div>
                     </div>
-                    <div className="relative">
+
+                    <div>
                       <label htmlFor={urlFieldId} className="sr-only">
                         Calendar URL
                       </label>
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-purple-400 transition-colors" />
                       <input
                         id={urlFieldId}
                         type="url"
@@ -510,40 +466,34 @@ export default function CreateCollectionForm() {
                         onChange={e =>
                           updateCalendar(index, 'url', e.target.value)
                         }
-                        placeholder="https://calendar.google.com/..."
+                        placeholder="https://calendar.google.com/.../basic.ics"
                         aria-invalid={rowError ? true : undefined}
                         aria-describedby={
                           rowError ? `${urlFieldId}-error` : undefined
                         }
-                        className={`w-full pl-10 pr-3 py-2.5 rounded-lg bg-black/20 border text-white text-sm focus:outline-none focus:bg-black/40 focus:ring-1 transition-all font-mono placeholder-gray-600 ${
-                          rowError
-                            ? 'border-red-500/50 focus:ring-red-500/50'
-                            : 'border-white/5 focus:ring-purple-500/30'
+                        className={`${FIELD_CLASS} font-mono text-xs ${
+                          rowError ? 'border-today' : ''
                         }`}
                       />
+                      {rowError && (
+                        <p
+                          id={`${urlFieldId}-error`}
+                          className="mt-1.5 text-xs text-today"
+                        >
+                          {rowError}
+                        </p>
+                      )}
                     </div>
-                    {rowError && (
-                      <p
-                        id={`${urlFieldId}-error`}
-                        className="text-xs text-red-400 pl-1"
-                      >
-                        {rowError}
-                      </p>
-                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => removeCalendar(index)}
                     disabled={calendars.length <= 1}
-                    className={`p-3 mt-1 rounded-xl transition-all ${
-                      calendars.length > 1
-                        ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 cursor-pointer'
-                        : 'opacity-30 cursor-not-allowed text-gray-500'
-                    }`}
-                    title="Remove calendar"
+                    className="mt-1 shrink-0 p-2 text-graphite transition-colors hover:text-today disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-graphite"
+                    aria-label={`Remove calendar ${index + 1}`}
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               )
@@ -552,26 +502,23 @@ export default function CreateCollectionForm() {
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm animate-in slide-in-from-top-2 fade-in duration-300 flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></div>
+          <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
             {error}
-          </div>
+          </p>
         )}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white font-bold text-lg shadow-lg shadow-purple-500/25 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 group"
+          className="flex w-full items-center justify-center gap-2 bg-ink py-3.5 font-display text-sm font-bold uppercase tracking-[0.12em] text-paper transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" /> Processing...
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Creating
             </>
           ) : (
-            <>
-              Create Collection
-              <Sparkles className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" />
-            </>
+            'Create collection'
           )}
         </button>
       </form>

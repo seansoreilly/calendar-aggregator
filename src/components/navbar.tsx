@@ -4,32 +4,31 @@ import { Github } from 'lucide-react'
 
 export function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden group-hover:shadow-lg group-hover:shadow-purple-500/20 transition-all duration-300 ring-1 ring-white/10">
-            <Image
-              src="/logo.png"
-              alt="Calendar Aggregator Logo"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <span className="font-display font-bold text-lg bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
-            Calendar Aggregator
+    <nav className="sticky top-0 z-50 w-full border-b border-rule bg-paper/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            className="border border-rule object-cover"
+          />
+          <span className="font-display text-[15px] font-extrabold tracking-tightest text-ink">
+            Calendar<span className="hidden sm:inline"> Aggregator</span>
           </span>
         </Link>
 
         <div className="flex items-center gap-6">
           <Link
             href="/privacy"
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            className="text-sm text-graphite transition-colors hover:text-ink"
           >
             Privacy
           </Link>
           <Link
             href="/#status"
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            className="text-sm text-graphite transition-colors hover:text-ink"
           >
             Status
           </Link>
@@ -37,9 +36,10 @@ export function Navbar() {
             href="https://github.com/seansoreilly/calendar-aggregator"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white"
+            className="text-graphite transition-colors hover:text-ink"
+            aria-label="View the source on GitHub"
           >
-            <Github className="w-5 h-5" />
+            <Github className="h-[18px] w-[18px]" />
           </a>
         </div>
       </div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Database, Activity } from 'lucide-react'
 
 interface HealthData {
   status: string
@@ -13,6 +12,44 @@ interface HealthData {
       response_time_ms: number
     }
   }
+}
+
+/** Status maps to a dot colour; red is reserved for a real fault. */
+function dotColor(status?: string): string {
+  switch (status) {
+    case 'healthy':
+      return '#3F7D58'
+    case 'degraded':
+      return '#B8860B'
+    default:
+      return 'var(--today)'
+  }
+}
+
+function Row({
+  label,
+  value,
+  status,
+}: {
+  label: string
+  value: string
+  status?: string
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-rule py-2.5">
+      <span className="text-sm text-graphite">{label}</span>
+      <span className="flex items-center gap-2 font-mono text-xs text-ink">
+        {status !== undefined && (
+          <span
+            className="h-2 w-2 shrink-0"
+            style={{ backgroundColor: dotColor(status) }}
+            aria-hidden="true"
+          />
+        )}
+        {value}
+      </span>
+    </div>
+  )
 }
 
 export default function LiveStatus() {
@@ -75,113 +112,46 @@ export default function LiveStatus() {
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        {[1, 2, 3, 4].map(i => (
-          <div
-            key={i}
-            className="h-14 rounded-2xl bg-white/5 border border-white/5"
-          />
+      <div className="space-y-px" aria-live="polite">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="border-b border-rule py-2.5">
+            <div className="h-4 w-2/3 animate-pulse bg-rule/60" />
+          </div>
         ))}
       </div>
     )
   }
 
-  const isHealthy = healthData?.status === 'healthy'
-
-  // Helper to get color classes based on status
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'healthy':
-        return {
-          bg: 'bg-green-500/20',
-          border: 'border-green-500/20',
-          text: 'text-green-300',
-          icon: 'text-green-400',
-        }
-      case 'degraded':
-        return {
-          bg: 'bg-yellow-500/20',
-          border: 'border-yellow-500/20',
-          text: 'text-yellow-300',
-          icon: 'text-yellow-400',
-        }
-      default:
-        return {
-          bg: 'bg-red-500/20',
-          border: 'border-red-500/20',
-          text: 'text-red-300',
-          icon: 'text-red-400',
-        }
-    }
+  if (!healthData) {
+    return (
+      <p className="border-l-2 border-today py-1 pl-4 text-sm text-graphite">
+        Status is unavailable right now. The feeds themselves may still be
+        working — try your subscription URL.
+      </p>
+    )
   }
 
-  const mainStatus = getStatusColor(healthData?.status)
-  const dbStatus = getStatusColor(healthData?.services.supabase.status)
+  const statusText =
+    healthData.status === 'healthy'
+      ? 'Operational'
+      : healthData.status === 'degraded'
+        ? 'Degraded'
+        : 'Error'
 
-  const statusText = isHealthy
-    ? 'Operational'
-    : healthData?.status === 'degraded'
-      ? 'Degraded'
-      : 'System Error'
+  const dbStatus = healthData.services.supabase.status
 
   return (
-    <div className="space-y-4">
-      {/* Overall Status */}
-      <div
-        className={`flex items-center gap-4 p-4 rounded-2xl border ${mainStatus.bg} ${mainStatus.border} transition-colors duration-300`}
-      >
-        <div className={`p-2 rounded-lg bg-black/20 ${mainStatus.text}`}>
-          <Activity className="w-5 h-5" />
-        </div>
-        <span className="text-white font-medium">System Status</span>
-        <span
-          className={`${mainStatus.text} font-bold ml-auto flex items-center gap-2`}
-        >
-          {isHealthy && (
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-          )}
-          {statusText}
-        </span>
-      </div>
-
-      {/* Database Status */}
-      <div
-        className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors duration-300 ${dbStatus.bg} ${dbStatus.border}`}
-      >
-        <div className="p-2 rounded-lg bg-black/20 text-blue-300">
-          <Database className="w-5 h-5" />
-        </div>
-        <span className="text-white font-medium">Database</span>
-        <span className={`${dbStatus.text} font-bold ml-auto`}>
-          {healthData?.services.supabase.status === 'healthy'
-            ? 'Connected'
-            : 'Error'}
-        </span>
-      </div>
-
-      {/* Version */}
-      <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-        <div className="flex items-center gap-2 text-cyan-300 mb-1">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-xs uppercase font-semibold tracking-wider">
-            Version
-          </span>
-        </div>
-        <span className="text-2xl font-bold text-white">
-          {healthData?.version ? `v${healthData.version}` : 'Unavailable'}
-        </span>
-      </div>
-
-      {/* Last Updated */}
-      <div className="text-xs text-gray-500 text-right pt-2 font-mono">
-        Updated:{' '}
-        {healthData?.timestamp
-          ? new Date(healthData.timestamp).toLocaleTimeString()
-          : '--:--:--'}
-      </div>
+    <div aria-live="polite">
+      <Row label="Service" value={statusText} status={healthData.status} />
+      <Row
+        label="Database"
+        value={dbStatus === 'healthy' ? 'Connected' : 'Unreachable'}
+        status={dbStatus}
+      />
+      <Row label="Version" value={`v${healthData.version}`} />
+      <p className="pt-3 font-mono text-[11px] text-graphite">
+        Checked {new Date(healthData.timestamp).toLocaleTimeString()}
+      </p>
     </div>
   )
 }

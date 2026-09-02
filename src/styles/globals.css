@@ -2,148 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Palette: a schedule printed on graph paper.
+ * Vermilion is reserved for what a calendar reserves red for — today,
+ * and destructive actions. Everything else is ink and graphite.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --paper: #f2f4f3;
+    --card: #fbfcfb;
+    --ink: #14161a;
+    --graphite: #63696b;
+    --rule: #d8ddda;
+    --today: #bd3d24;
+    --stamp: #1b3a6b;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* shadcn-compatible aliases, kept so existing primitives resolve. */
+    --background: 156 12% 95%;
+    --foreground: 220 13% 9%;
+    --card-hsl: 150 14% 98%;
+    --border: 156 11% 86%;
+    --input: 156 11% 86%;
+    --ring: 220 13% 9%;
+    --muted: 156 12% 92%;
+    --muted-foreground: 197 4% 40%;
+    --destructive: 9 65% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --radius: 0.25rem;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-feature-settings: 'cv05' 1;
+  }
+
+  /*
+   * Visible keyboard focus everywhere. outline-color is set explicitly
+   * because Tailwind's preflight sets it transparent on form controls,
+   * which would otherwise swallow the ring on exactly the elements that
+   * need it most.
+   */
+  :focus-visible {
+    outline: 2px solid var(--ink) !important;
+    outline-offset: 2px;
   }
 }
 
-/* Custom Animations */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+/*
+ * The ruled ground. Horizontal rules at the rhythm of an hour row,
+ * with a heavier vertical at the day boundary — graph paper for a
+ * schedule, not decoration.
+ */
+.bg-ruled {
+  background-image: linear-gradient(
+    to bottom,
+    var(--rule) 1px,
+    transparent 1px
+  );
+  background-size: 100% 32px;
+  opacity: 0.5;
+  mask-image: linear-gradient(to bottom, black, transparent 45%);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 45%);
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-@keyframes spin-slow {
+/*
+ * Hero signature: source feed lines converge into the merged column.
+ * Each line slides in from its source lane and settles into place.
+ */
+@keyframes converge {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateX(var(--from-x, -12px)) translateY(var(--from-y, 6px));
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateX(0) translateY(0);
   }
 }
 
-.animate-spin-slow {
-  animation: spin-slow 12s linear infinite;
+.animate-converge {
+  animation: converge 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
   }
-  100% {
-    transform: translateX(100%);
+  to {
+    transform: scaleX(1);
   }
 }
 
-.animate-shimmer {
-  position: relative;
-  overflow: hidden;
+.animate-rule-draw {
+  transform-origin: left center;
+  animation: rule-draw 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
 }
 
-.animate-shimmer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  animation: shimmer 2s infinite;
-}
+@media (prefers-reduced-motion: reduce) {
+  .animate-converge,
+  .animate-rule-draw {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-.animation-delay-1000 {
-  animation-delay: 1s;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

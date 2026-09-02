@@ -13,14 +13,14 @@ export default async function ManageCollectionPage({
   const { guid } = await params
 
   return (
-    <div className="relative z-10 max-w-5xl mx-auto px-4 py-12 space-y-8">
-      <div className="text-center space-y-4 pt-8">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-          Manage Collection
-        </h1>
-        <p className="text-lg text-slate-400 max-w-xl mx-auto">
-          Update your source calendars or delete this collection.
+    <div className="mx-auto max-w-3xl space-y-8 px-5 py-14 sm:px-8">
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-graphite">
+          Manage collection
         </p>
+        <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tightest text-ink sm:text-4xl">
+          Edit sources or delete this collection.
+        </h1>
       </div>
 
       <ManageCollectionForm guid={guid} />
