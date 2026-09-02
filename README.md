@@ -31,6 +31,15 @@ curl -X POST https://www.calendar-aggregator.online/api/collections \
 
 `customId` is optional — omit it to get an auto-generated UUID. `webcal://` URLs are converted to `https://` automatically.
 
+### Feed visibility
+
+Feed URLs are not authenticated: anyone who has the URL can read the combined feed. This is by design, because calendar apps subscribe to a plain URL and cannot send credentials.
+
+- An auto-generated UUID is effectively unguessable, so treat the feed URL like a password and share it only with people who should see your events.
+- A custom ID is **public by nature**. Slugs like `my-cals` are short and guessable, and a feed at `/api/calendar/my-cals` should be assumed readable by anyone. Use a custom ID only for calendars you are happy to make public; leave it blank for anything private.
+
+Editing or deleting a collection is a separate matter and does require the management token returned once at creation.
+
 ### Get the combined feed
 
 ```

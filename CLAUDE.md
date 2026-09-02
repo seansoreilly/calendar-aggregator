@@ -25,7 +25,7 @@ Pre-commit hooks run `eslint --fix` + `prettier --write` automatically via Husky
 Only four routes exist:
 
 ```
-GET/POST  /api/collections          # List all / create collection
+POST      /api/collections          # Create collection (no public list — GET returns 405)
 GET/PUT/DELETE /api/collections/[guid]  # Individual collection management
 GET/HEAD  /api/calendar/[guid]      # iCal feed for calendar apps (main endpoint)
 GET       /api/health               # Health check

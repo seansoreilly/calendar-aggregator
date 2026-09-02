@@ -430,7 +430,7 @@ export default function CreateCollectionForm() {
               className={`text-xs ml-1 ${customIdError ? 'text-red-400' : 'text-gray-500'}`}
             >
               {customIdError ||
-                'Custom URL identifier. Leave blank for random.'}
+                'Custom URL identifier — easy to guess, so treat the feed as public. Leave blank for a private random ID.'}
             </p>
           </div>
         </div>

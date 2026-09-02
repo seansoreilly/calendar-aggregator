@@ -9,9 +9,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
     steps:
       - uses: actions/checkout@v4
 
@@ -24,4 +21,9 @@ jobs:
       - run: npm run type-check
       - run: npm run lint
       - run: npm test
+      # Integration tests must run WITHOUT Supabase env vars so they exercise
+      # the in-memory path; dummy values are only needed for the build step.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
