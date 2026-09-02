@@ -58,8 +58,6 @@ temp/
 .gemini/
 nanobanana-output/
 
-# Task management
-.taskmaster/
 
 # Docs & repo metadata (not needed at build time)
 README.md

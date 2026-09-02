@@ -210,11 +210,6 @@ test-screenshots/
 skills/
 
 # ===============================================
-# TASK MANAGEMENT (Taskmaster)
-# ===============================================
-# Keep .taskmaster/ tracked for project development workflow
-
-# ===============================================
 # PROJECT SPECIFIC GENERATED FILES
 # ===============================================
 memories.json
