@@ -46,6 +46,16 @@ export interface CombineResult {
   warnings: string[]
 }
 
+/**
+ * Optional half-open window [lower, upper) applied to the combined feed.
+ * Either bound may be absent. Built by `parseCalendarDateRange` from the
+ * feed URL's start/end/past/future query params.
+ */
+export interface CalendarDateRange {
+  lower?: Date
+  upper?: Date
+}
+
 // API request types for collections
 export interface CreateCollectionRequest {
   name: string

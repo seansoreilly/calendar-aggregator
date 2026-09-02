@@ -1,8 +1,14 @@
-import { CalendarSource, CombineResult } from '../types/calendar'
+import {
+  CalendarDateRange,
+  CalendarSource,
+  CombineResult,
+} from '../types/calendar'
 import { fetchCalendarBody } from './calendar-fetch'
 
 /** Maximum total events across all sources before truncation. */
 const MAX_TOTAL_EVENTS = 50_000
+
+const MS_PER_DAY = 86_400_000
 
 /**
  * Generate standard iCal header
@@ -125,6 +131,193 @@ function deduplicateEvents(events: string[]): string[] {
 }
 
 /**
+ * Strict property lookup: matches only `NAME:` or `NAME;PARAMS:` lines, so
+ * DTSTART never matches DTSTAMP. Returns the raw parameter string and value.
+ */
+function extractProperty(
+  blockContent: string,
+  propertyName: string
+): { params: string; value: string } | null {
+  for (const line of blockContent.split(/\r?\n/)) {
+    if (!line.startsWith(propertyName)) continue
+    const next = line.charAt(propertyName.length)
+    if (next !== ':' && next !== ';') continue
+    const colonIdx = line.indexOf(':')
+    if (colonIdx === -1) continue
+    return {
+      params: line.substring(propertyName.length, colonIdx),
+      value: line.substring(colonIdx + 1).trim(),
+    }
+  }
+  return null
+}
+
+interface ICalInstant {
+  date: Date
+  isDateOnly: boolean
+}
+
+/**
+ * Parse an iCal DATE (`20240601`) or DATE-TIME (`20240601T090000[Z]`) value.
+ * Floating and TZID-qualified times are treated as UTC — an accepted
+ * approximation for day-granularity filtering. Null when malformed.
+ */
+function parseICalDate(value: string): ICalInstant | null {
+  const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?$/.exec(
+    value
+  )
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const isDateOnly = match[4] === undefined
+  const date = new Date(
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+      Number(match[4] ?? 0),
+      Number(match[5] ?? 0),
+      Number(match[6] ?? 0)
+    )
+  )
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return { date, isDateOnly }
+}
+
+/** Parse an iCal DURATION (`P1D`, `PT1H30M`, `P2W`) to milliseconds; null if malformed. */
+function parseICalDuration(value: string): number | null {
+  const match =
+    /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(
+      value
+    )
+  if (!match || value.length < 3) return null
+  const sign = match[1] === '-' ? -1 : 1
+  const ms =
+    Number(match[2] ?? 0) * 7 * MS_PER_DAY +
+    Number(match[3] ?? 0) * MS_PER_DAY +
+    Number(match[4] ?? 0) * 3_600_000 +
+    Number(match[5] ?? 0) * 60_000 +
+    Number(match[6] ?? 0) * 1000
+  return sign * ms
+}
+
+interface EventBounds {
+  start: Date
+  end: Date
+}
+
+/**
+ * Resolve an event's [start, end) window from DTSTART and DTEND / DURATION.
+ * With neither DTEND nor DURATION, RFC 5545 defaults apply: one day for DATE
+ * values, zero length otherwise. Null when DTSTART is absent or unparseable.
+ */
+function eventBounds(event: string): EventBounds | null {
+  const dtstart = extractProperty(event, 'DTSTART')
+  const start = dtstart ? parseICalDate(dtstart.value) : null
+  if (!start) return null
+
+  const dtend = extractProperty(event, 'DTEND')
+  const end = dtend ? parseICalDate(dtend.value)?.date : undefined
+  if (end) return { start: start.date, end }
+
+  const duration = extractProperty(event, 'DURATION')
+  const durationMs = duration ? parseICalDuration(duration.value) : null
+  if (durationMs !== null) {
+    return {
+      start: start.date,
+      end: new Date(start.date.getTime() + durationMs),
+    }
+  }
+
+  const defaultMs = start.isDateOnly ? MS_PER_DAY : 0
+  return { start: start.date, end: new Date(start.date.getTime() + defaultMs) }
+}
+
+/** Half-open overlap test; a zero-length event exactly at `lower` counts. */
+function overlapsRange(bounds: EventBounds, range: CalendarDateRange): boolean {
+  if (range.upper && bounds.start >= range.upper) return false
+  if (range.lower && bounds.end <= range.lower && bounds.start < range.lower) {
+    return false
+  }
+  return true
+}
+
+/**
+ * A recurring master is kept unless it clearly cannot produce an occurrence in
+ * the window: it starts after `upper`, or its RRULE UNTIL (plus one
+ * occurrence's duration) falls before `lower`. Series are selected, not
+ * trimmed — the client still expands the RRULE. COUNT and RDATE are not
+ * evaluated (fail open).
+ */
+function recurringSeriesMayOverlap(
+  event: string,
+  bounds: EventBounds,
+  range: CalendarDateRange
+): boolean {
+  if (range.upper && bounds.start >= range.upper) return false
+  if (!range.lower) return true
+
+  const rrule = extractProperty(event, 'RRULE')
+  const untilValue = rrule
+    ? /(?:^|;)UNTIL=([^;]+)/.exec(rrule.value)?.[1]
+    : undefined
+  const until = untilValue ? parseICalDate(untilValue) : null
+  if (!until) return true
+
+  const occurrenceMs = Math.max(
+    bounds.end.getTime() - bounds.start.getTime(),
+    until.isDateOnly ? MS_PER_DAY : 0
+  )
+  return until.date.getTime() + occurrenceMs > range.lower.getTime()
+}
+
+/**
+ * Drop VEVENT blocks that cannot fall inside `range`. Two passes: plain events
+ * and recurring masters first, then overrides (RECURRENCE-ID), which follow
+ * their master when it was kept — so a moved occurrence never resurfaces at
+ * its original slot — and are otherwise judged on their own dates. Events
+ * without a parseable DTSTART are always kept.
+ */
+function filterEventsByDateRange(
+  events: string[],
+  range: CalendarDateRange
+): string[] {
+  if (!range.lower && !range.upper) return events
+
+  const keptMasterUids = new Set<string>()
+  const decisions: (boolean | 'override')[] = events.map(event => {
+    if (extractProperty(event, 'RECURRENCE-ID')) return 'override'
+    const bounds = eventBounds(event)
+    if (!bounds) return true
+    const isRecurring = extractProperty(event, 'RRULE') !== null
+    const keep = isRecurring
+      ? recurringSeriesMayOverlap(event, bounds, range)
+      : overlapsRange(bounds, range)
+    if (keep && isRecurring) {
+      const uid = extractPropertyValue(event, 'UID')
+      if (uid !== null) keptMasterUids.add(uid)
+    }
+    return keep
+  })
+
+  return events.filter((event, index) => {
+    const decision = decisions[index]
+    if (decision !== 'override') return decision
+    const uid = extractPropertyValue(event, 'UID')
+    if (uid !== null && keptMasterUids.has(uid)) return true
+    const bounds = eventBounds(event)
+    return bounds === null || overlapsRange(bounds, range)
+  })
+}
+
+/**
  * Deduplicate timezones by TZID (keeps the first occurrence)
  */
 function deduplicateTimezones(timezones: string[]): string[] {
@@ -179,10 +372,14 @@ async function fetchRawICalContent(
  *  - `status === 'failed'`  ⟺  `calendarsProcessed === 0` (no source could be
  *    fetched) → route serves HTTP 503.
  * `success` is retained for compatibility and equals `status === 'ok'`.
+ *
+ * `dateRange`, when given, drops events outside the window after dedup and
+ * before the size cap (see `filterEventsByDateRange`).
  */
 export async function combineICalFeeds(
   calendars: CalendarSource[],
-  timeoutMs: number = 15000
+  timeoutMs: number = 15000,
+  dateRange?: CalendarDateRange
 ): Promise<CombineResult> {
   const result: CombineResult = {
     success: false,
@@ -282,12 +479,17 @@ export async function combineICalFeeds(
     result.warnings.push(`Removed ${duplicateEvents} duplicate events`)
   }
 
+  // Optional date-range filter (query params on the feed URL).
+  const filteredEvents = dateRange
+    ? filterEventsByDateRange(uniqueEvents, dateRange)
+    : uniqueEvents
+
   // Total event cap: drop excess events and warn rather than ballooning memory.
-  let cappedEvents = uniqueEvents
-  if (uniqueEvents.length > MAX_TOTAL_EVENTS) {
-    cappedEvents = uniqueEvents.slice(0, MAX_TOTAL_EVENTS)
+  let cappedEvents = filteredEvents
+  if (filteredEvents.length > MAX_TOTAL_EVENTS) {
+    cappedEvents = filteredEvents.slice(0, MAX_TOTAL_EVENTS)
     result.warnings.push(
-      `Event cap reached: truncated to ${MAX_TOTAL_EVENTS} events (${uniqueEvents.length} total)`
+      `Event cap reached: truncated to ${MAX_TOTAL_EVENTS} events (${filteredEvents.length} total)`
     )
   }
 

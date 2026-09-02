@@ -510,6 +510,243 @@ describe('combineICalFeeds', () => {
     })
   })
 
+  describe('date range filtering', () => {
+    // Window: June 2024 (lower inclusive, upper exclusive)
+    const LOWER = new Date('2024-06-01T00:00:00.000Z')
+    const UPPER = new Date('2024-07-01T00:00:00.000Z')
+    const JUNE = { lower: LOWER, upper: UPPER }
+
+    /** VEVENT with explicit date lines; always carries a DTSTAMP so the
+     *  DTSTAMP-vs-DTSTART prefix distinction is exercised. */
+    function makeDatedEvent(uid: string, lines: string[]): string {
+      return [
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        'DTSTAMP:20240101T000000Z',
+        `SUMMARY:${uid}`,
+        ...lines,
+        'END:VEVENT',
+      ].join('\r\n')
+    }
+
+    function uidsIn(ical: string): string[] {
+      return [...ical.matchAll(/^UID:(.*)$/gm)].map(m => m[1] ?? '')
+    }
+
+    async function keptUids(
+      events: string[],
+      range: { lower?: Date; upper?: Date } | undefined = JUNE
+    ): Promise<string[]> {
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar(events)))
+      const result = await combineICalFeeds(
+        [makeSource('https://example.com/cal.ics')],
+        15000,
+        range
+      )
+      return uidsIn(result.icalContent)
+    }
+
+    it('is a no-op when no range is supplied', async () => {
+      const events = [
+        makeDatedEvent('old', ['DTSTART:20200101T090000Z']),
+        makeDatedEvent('new', ['DTSTART:20300101T090000Z']),
+      ]
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar(events)))
+      const unfiltered = await combineICalFeeds(
+        [makeSource('https://example.com/cal.ics')],
+        15000
+      )
+      expect(uidsIn(unfiltered.icalContent)).toEqual(['old', 'new'])
+      expect(await keptUids(events, {})).toEqual(['old', 'new'])
+    })
+
+    it('keeps events inside the window and drops those before/after', async () => {
+      const events = [
+        makeDatedEvent('before', [
+          'DTSTART:20240501T090000Z',
+          'DTEND:20240501T100000Z',
+        ]),
+        makeDatedEvent('inside', [
+          'DTSTART:20240615T090000Z',
+          'DTEND:20240615T100000Z',
+        ]),
+        makeDatedEvent('after', [
+          'DTSTART:20240715T090000Z',
+          'DTEND:20240715T100000Z',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual(['inside'])
+    })
+
+    it('keeps a multi-day event that straddles the lower bound', async () => {
+      const events = [
+        makeDatedEvent('straddle', [
+          'DTSTART:20240530T090000Z',
+          'DTEND:20240602T090000Z',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual(['straddle'])
+    })
+
+    it('treats bounds as half-open: ends-at-lower dropped, starts-at-upper dropped, starts-at-lower kept', async () => {
+      const events = [
+        makeDatedEvent('ends-at-lower', [
+          'DTSTART:20240531T230000Z',
+          'DTEND:20240601T000000Z',
+        ]),
+        makeDatedEvent('starts-at-upper', [
+          'DTSTART:20240701T000000Z',
+          'DTEND:20240701T010000Z',
+        ]),
+        makeDatedEvent('starts-at-lower', ['DTSTART:20240601T000000Z']),
+      ]
+      expect(await keptUids(events)).toEqual(['starts-at-lower'])
+    })
+
+    it('gives all-day events a one-day default duration', async () => {
+      const events = [
+        makeDatedEvent('allday-before', ['DTSTART;VALUE=DATE:20240531']),
+        makeDatedEvent('allday-inside', ['DTSTART;VALUE=DATE:20240610']),
+        makeDatedEvent('allday-last', ['DTSTART;VALUE=DATE:20240630']),
+        makeDatedEvent('allday-after', ['DTSTART;VALUE=DATE:20240701']),
+      ]
+      expect(await keptUids(events)).toEqual(['allday-inside', 'allday-last'])
+    })
+
+    it('honours DURATION when DTEND is absent', async () => {
+      const events = [
+        makeDatedEvent('dur-in', ['DTSTART:20240530T000000Z', 'DURATION:P3D']),
+        makeDatedEvent('dur-out', [
+          'DTSTART:20240530T000000Z',
+          'DURATION:PT1H',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual(['dur-in'])
+    })
+
+    it('treats TZID-qualified and floating times as UTC (approximation)', async () => {
+      const events = [
+        makeDatedEvent('tzid', [
+          'DTSTART;TZID=Australia/Melbourne:20240615T090000',
+          'DTEND;TZID=Australia/Melbourne:20240615T100000',
+        ]),
+        makeDatedEvent('floating', ['DTSTART:20240515T090000']),
+      ]
+      expect(await keptUids(events)).toEqual(['tzid'])
+    })
+
+    it('keeps events with missing or unparseable DTSTART (fail open)', async () => {
+      const events = [
+        makeDatedEvent('no-dtstart', []),
+        makeDatedEvent('garbage', ['DTSTART:not-a-date']),
+      ]
+      expect(await keptUids(events)).toEqual(['no-dtstart', 'garbage'])
+    })
+
+    it('keeps an open-ended recurring series that started long ago', async () => {
+      const events = [
+        makeDatedEvent('weekly', [
+          'DTSTART:20200106T090000Z',
+          'DTEND:20200106T100000Z',
+          'RRULE:FREQ=WEEKLY',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual(['weekly'])
+    })
+
+    it('drops a recurring series whose UNTIL is before the window', async () => {
+      const events = [
+        makeDatedEvent('ended', [
+          'DTSTART:20200106T090000Z',
+          'RRULE:FREQ=WEEKLY;UNTIL=20240101T000000Z',
+        ]),
+        makeDatedEvent('still-running', [
+          'DTSTART:20200106T090000Z',
+          'RRULE:FREQ=WEEKLY;UNTIL=20240615T000000Z',
+        ]),
+        makeDatedEvent('allday-until-lower', [
+          'DTSTART;VALUE=DATE:20200106',
+          'RRULE:FREQ=WEEKLY;UNTIL=20240601',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual([
+        'still-running',
+        'allday-until-lower',
+      ])
+    })
+
+    it('drops a recurring series that starts after the window', async () => {
+      const events = [
+        makeDatedEvent('future-series', [
+          'DTSTART:20240801T090000Z',
+          'RRULE:FREQ=WEEKLY',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual([])
+    })
+
+    it('keeps overrides of a kept series even when moved outside the window', async () => {
+      const events = [
+        makeDatedEvent('moved', [
+          'RECURRENCE-ID:20240610T090000Z',
+          'DTSTART:20240810T090000Z',
+        ]),
+        makeDatedEvent('series', [
+          'DTSTART:20200106T090000Z',
+          'RRULE:FREQ=WEEKLY',
+        ]),
+      ]
+      // UID is the dedupe key, so both blocks must share it.
+      const shared = events.map(e => e.replace(/^UID:.*$/m, 'UID:series'))
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar(shared)))
+      const result = await combineICalFeeds(
+        [makeSource('https://example.com/cal.ics')],
+        15000,
+        JUNE
+      )
+      expect(result.eventsCount).toBe(2)
+    })
+
+    it('filters orphan overrides (no master in feed) on their own dates', async () => {
+      const events = [
+        makeDatedEvent('orphan-in', [
+          'RECURRENCE-ID:20240110T090000Z',
+          'DTSTART:20240610T090000Z',
+        ]),
+        makeDatedEvent('orphan-out', [
+          'RECURRENCE-ID:20240110T090000Z',
+          'DTSTART:20240110T090000Z',
+        ]),
+      ]
+      expect(await keptUids(events)).toEqual(['orphan-in'])
+    })
+
+    it('supports one-sided ranges', async () => {
+      const events = [
+        makeDatedEvent('past', ['DTSTART:20240101T090000Z']),
+        makeDatedEvent('future', ['DTSTART:20241201T090000Z']),
+      ]
+      expect(await keptUids(events, { lower: LOWER })).toEqual(['future'])
+      expect(await keptUids(events, { upper: UPPER })).toEqual(['past'])
+    })
+
+    it('reports the filtered count in eventsCount', async () => {
+      const events = [
+        makeDatedEvent('a', ['DTSTART:20240615T090000Z']),
+        makeDatedEvent('b', ['DTSTART:20240101T090000Z']),
+        makeDatedEvent('c', ['DTSTART:20240620T090000Z']),
+      ]
+      vi.mocked(fetch).mockResolvedValue(makeOkResponse(makeCalendar(events)))
+      const result = await combineICalFeeds(
+        [makeSource('https://example.com/cal.ics')],
+        15000,
+        JUNE
+      )
+      expect(result.eventsCount).toBe(2)
+      expect(result.status).toBe('ok')
+    })
+  })
+
   describe('result structure', () => {
     it('initialises counts to zero on empty-calendar failure', async () => {
       const result = await combineICalFeeds([])

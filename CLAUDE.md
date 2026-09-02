@@ -31,6 +31,8 @@ GET/HEAD  /api/calendar/[guid]      # iCal feed for calendar apps (main endpoint
 GET       /api/health               # Health check
 ```
 
+The feed accepts optional `start`/`end` (`YYYY-MM-DD`) and `past`/`future` (`<n>d|w|m|y`) query params. `parseCalendarDateRange` in `calendar-response.ts` turns them into a `CalendarDateRange`; `combineICalFeeds` applies it text-level after dedup (recurring series are kept whole, TZID times compared as UTC).
+
 ### Library Modules (`src/lib/`)
 
 | File                    | Purpose                                                                                                                                                               |

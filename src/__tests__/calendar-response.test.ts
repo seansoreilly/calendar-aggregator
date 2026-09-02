@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createHash } from 'node:crypto'
 import {
   parseCalendarTimeout,
+  parseCalendarDateRange,
   createCalendarHeadResponse,
   createCalendarNotModifiedResponse,
   computeICalETag,
@@ -70,6 +71,113 @@ describe('parseCalendarTimeout', () => {
     expect(parseCalendarTimeout(makeUrl(String(MAX_TIMEOUT_MS)))).toBe(
       MAX_TIMEOUT_MS
     )
+  })
+})
+
+describe('parseCalendarDateRange', () => {
+  // Sunday 31 March 2024, midday UTC — month-end so clamping is exercised.
+  const NOW = new Date('2024-03-31T12:00:00.000Z')
+
+  function rangeUrl(params: Record<string, string>): string {
+    const url = new URL('https://example.com/api/calendar/test')
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+    return url.toString()
+  }
+
+  function parse(params: Record<string, string>) {
+    return parseCalendarDateRange(rangeUrl(params), NOW)
+  }
+
+  it('returns undefined when no filter params are present', () => {
+    expect(parse({})).toBeUndefined()
+    expect(parseCalendarDateRange(makeUrl('5000'), NOW)).toBeUndefined()
+  })
+
+  it('parses start as an inclusive UTC lower bound', () => {
+    expect(parse({ start: '2024-06-01' })).toEqual({
+      lower: new Date('2024-06-01T00:00:00.000Z'),
+      upper: undefined,
+    })
+  })
+
+  it('parses end as an inclusive day (exclusive upper bound is next midnight)', () => {
+    expect(parse({ end: '2024-06-30' })).toEqual({
+      lower: undefined,
+      upper: new Date('2024-07-01T00:00:00.000Z'),
+    })
+  })
+
+  it('accepts start === end as a single-day window', () => {
+    expect(parse({ start: '2024-06-10', end: '2024-06-10' })).toEqual({
+      lower: new Date('2024-06-10T00:00:00.000Z'),
+      upper: new Date('2024-06-11T00:00:00.000Z'),
+    })
+  })
+
+  it('parses past in days and weeks relative to now', () => {
+    expect(parse({ past: '10d' })?.lower).toEqual(
+      new Date('2024-03-21T12:00:00.000Z')
+    )
+    expect(parse({ past: '2w' })?.lower).toEqual(
+      new Date('2024-03-17T12:00:00.000Z')
+    )
+  })
+
+  it('parses future in months and years, clamping to month end', () => {
+    // 31 March + 3 months → "31 June" does not exist → 30 June
+    expect(parse({ future: '3m' })?.upper).toEqual(
+      new Date('2024-06-30T12:00:00.000Z')
+    )
+    expect(parse({ future: '1y' })?.upper).toEqual(
+      new Date('2025-03-31T12:00:00.000Z')
+    )
+  })
+
+  it('clamps past months to month end (31 March − 1 month → 29 Feb 2024)', () => {
+    expect(parse({ past: '1m' })?.lower).toEqual(
+      new Date('2024-02-29T12:00:00.000Z')
+    )
+  })
+
+  it('combines past and future into a window around now', () => {
+    expect(parse({ past: '1w', future: '1w' })).toEqual({
+      lower: new Date('2024-03-24T12:00:00.000Z'),
+      upper: new Date('2024-04-07T12:00:00.000Z'),
+    })
+  })
+
+  it('lets explicit start/end win over past/future for the same bound', () => {
+    expect(parse({ start: '2024-01-01', past: '1w' })?.lower).toEqual(
+      new Date('2024-01-01T00:00:00.000Z')
+    )
+    expect(parse({ end: '2024-12-31', future: '1w' })?.upper).toEqual(
+      new Date('2025-01-01T00:00:00.000Z')
+    )
+  })
+
+  it.each([
+    ['start', '2024-13-01'],
+    ['start', '2024-02-30'],
+    ['start', '20240601'],
+    ['start', '2024-6-1'],
+    ['end', 'tomorrow'],
+    ['past', '2x'],
+    ['past', '0d'],
+    ['past', 'w'],
+    ['past', '2 w'],
+    ['future', '-1d'],
+    ['future', '1.5m'],
+    ['future', '1000d'],
+  ])('returns null for invalid %s=%s', (key, value) => {
+    expect(parse({ [key]: value })).toBeNull()
+  })
+
+  it('returns null when start is after end', () => {
+    expect(parse({ start: '2024-06-10', end: '2024-06-01' })).toBeNull()
+  })
+
+  it('returns null when an explicit start is after the computed future bound', () => {
+    expect(parse({ start: '2030-01-01', future: '1w' })).toBeNull()
   })
 })
 

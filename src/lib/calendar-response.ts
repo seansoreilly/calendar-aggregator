@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { CalendarCollection, CombineResult } from '../types/calendar'
+import {
+  CalendarCollection,
+  CalendarDateRange,
+  CombineResult,
+} from '../types/calendar'
 
 const CALENDAR_CONTENT_TYPE = 'text/calendar; charset=utf-8'
 const CALENDAR_CACHE_CONTROL = 'public, max-age=300'
@@ -76,6 +80,128 @@ export function parseCalendarTimeout(requestUrl: string): number | null {
   }
 
   return timeoutMs
+}
+
+const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+const RELATIVE_SPEC_RE = /^(\d{1,3})([dwmy])$/
+const MS_PER_DAY = 86_400_000
+
+/** Parse `YYYY-MM-DD` to UTC midnight; null for malformed or impossible dates. */
+function parseIsoDate(value: string): Date | null {
+  const match = ISO_DATE_RE.exec(value)
+  if (!match) {
+    return null
+  }
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return date
+}
+
+/** Add calendar months in UTC, clamping to the last day of the target month. */
+function addUtcMonths(date: Date, months: number): Date {
+  const result = new Date(date.getTime())
+  const dayOfMonth = result.getUTCDate()
+  result.setUTCDate(1)
+  result.setUTCMonth(result.getUTCMonth() + months)
+  const daysInTargetMonth = new Date(
+    Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)
+  ).getUTCDate()
+  result.setUTCDate(Math.min(dayOfMonth, daysInTargetMonth))
+  return result
+}
+
+/**
+ * Shift `now` by a relative spec such as `2w` or `3m`.
+ * `direction` is -1 for `past`, +1 for `future`. Null when malformed or zero.
+ */
+function shiftByRelativeSpec(
+  now: Date,
+  spec: string,
+  direction: 1 | -1
+): Date | null {
+  const match = RELATIVE_SPEC_RE.exec(spec)
+  if (!match) {
+    return null
+  }
+  const amount = Number(match[1]) * direction
+  if (amount === 0) {
+    return null
+  }
+  switch (match[2]) {
+    case 'd':
+      return new Date(now.getTime() + amount * MS_PER_DAY)
+    case 'w':
+      return new Date(now.getTime() + amount * 7 * MS_PER_DAY)
+    case 'm':
+      return addUtcMonths(now, amount)
+    case 'y':
+      return addUtcMonths(now, amount * 12)
+    default:
+      return null
+  }
+}
+
+/**
+ * Parse the optional date-filter query params on a feed URL:
+ *   start / end   — `YYYY-MM-DD`, inclusive UTC calendar days
+ *   past / future — `<n><d|w|m|y>` relative to `now` (e.g. past=2w, future=3m)
+ * Each bound is resolved independently; an explicit start/end wins over
+ * past/future for the same bound, so any combination is allowed.
+ *
+ * Returns `undefined` when no filter params are present (no filtering),
+ * `null` when any supplied param is invalid or the window is empty.
+ */
+export function parseCalendarDateRange(
+  requestUrl: string,
+  now: Date = new Date()
+): CalendarDateRange | null | undefined {
+  const params = new URL(requestUrl).searchParams
+  const start = params.get('start')
+  const end = params.get('end')
+  const past = params.get('past')
+  const future = params.get('future')
+
+  if (start === null && end === null && past === null && future === null) {
+    return undefined
+  }
+
+  const startDate = start !== null ? parseIsoDate(start) : undefined
+  const endDate = end !== null ? parseIsoDate(end) : undefined
+  const pastDate =
+    past !== null ? shiftByRelativeSpec(now, past, -1) : undefined
+  const futureDate =
+    future !== null ? shiftByRelativeSpec(now, future, 1) : undefined
+
+  if (
+    startDate === null ||
+    endDate === null ||
+    pastDate === null ||
+    futureDate === null
+  ) {
+    return null
+  }
+
+  const lower = startDate ?? pastDate
+  // `end` is an inclusive day, so the exclusive upper bound is the next midnight.
+  const upper = endDate ? new Date(endDate.getTime() + MS_PER_DAY) : futureDate
+
+  if (lower && upper && lower.getTime() >= upper.getTime()) {
+    return null
+  }
+
+  const range: CalendarDateRange = {}
+  if (lower) range.lower = lower
+  if (upper) range.upper = upper
+  return range
 }
 
 export function createCalendarSuccessResponse(

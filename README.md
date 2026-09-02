@@ -39,7 +39,15 @@ GET /api/calendar/{guid}
 
 Returns `text/calendar`. Subscribe to this URL in any calendar app.
 
-Optional: `?timeout=5000` (milliseconds, 1000–30000, default 15000)
+Optional query parameters:
+
+- `timeout=5000` — per-source fetch timeout in milliseconds (1000–30000, default 15000)
+- `start=YYYY-MM-DD` / `end=YYYY-MM-DD` — only include events overlapping this inclusive date range (UTC days)
+- `past=<n><d|w|m|y>` / `future=<n><d|w|m|y>` — rolling window relative to the request time, e.g. `past=2w` drops events that ended more than two weeks ago, `future=3m` drops events starting more than three months ahead
+
+Any combination works (`start`/`end` win over `past`/`future` for the same bound). Example: `?past=2w&future=3m`.
+
+Filtering is approximate by design: recurring series are kept whole whenever they could still occur in the window (the client expands the rule), and timezone-qualified times are compared as UTC.
 
 ### Other endpoints
 

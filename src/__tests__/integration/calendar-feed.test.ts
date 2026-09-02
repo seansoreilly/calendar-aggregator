@@ -128,6 +128,33 @@ describe('GET /api/calendar/[guid]', () => {
       const response = await GET(request, { params })
       expect(response.status).toBe(400)
     })
+
+    it.each([
+      { start: '2024-13-01' },
+      { start: '2024-02-30' },
+      { end: 'next-week' },
+      { past: '2x' },
+      { past: '0d' },
+      { future: '' },
+      { start: '2024-06-10', end: '2024-06-01' },
+    ])('returns 400 for invalid date filter %o', async query => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      const { request, params } = makeRequest('test-collection', query)
+      const response = await GET(request, { params })
+      expect(response.status).toBe(400)
+      const body = await response.json()
+      expect(body.error).toContain('date filter')
+      expect(mockCombine).not.toHaveBeenCalled()
+    })
+
+    it('rejects invalid date filters before looking up the collection', async () => {
+      const { request, params } = makeRequest('test-collection', {
+        past: 'bogus',
+      })
+      const response = await GET(request, { params })
+      expect(response.status).toBe(400)
+      expect(mockFind).not.toHaveBeenCalled()
+    })
   })
 
   describe('collection lookup', () => {
@@ -227,7 +254,49 @@ describe('GET /api/calendar/[guid]', () => {
       })
       await GET(request, { params })
 
-      expect(mockCombine).toHaveBeenCalledWith(BASE_COLLECTION.calendars, 5000)
+      expect(mockCombine).toHaveBeenCalledWith(
+        BASE_COLLECTION.calendars,
+        5000,
+        undefined
+      )
+    })
+
+    it('passes a parsed date range to combineICalFeeds', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(makeCombineResult())
+
+      const { request, params } = makeRequest('test-collection', {
+        start: '2024-06-01',
+        end: '2024-06-30',
+      })
+      const response = await GET(request, { params })
+
+      expect(response.status).toBe(200)
+      expect(mockCombine).toHaveBeenCalledWith(
+        BASE_COLLECTION.calendars,
+        15000,
+        {
+          lower: new Date('2024-06-01T00:00:00.000Z'),
+          upper: new Date('2024-07-01T00:00:00.000Z'),
+        }
+      )
+    })
+
+    it('passes a relative window to combineICalFeeds', async () => {
+      mockFind.mockResolvedValue(BASE_COLLECTION)
+      mockCombine.mockResolvedValue(makeCombineResult())
+
+      const { request, params } = makeRequest('test-collection', {
+        past: '2w',
+        future: '3m',
+      })
+      await GET(request, { params })
+
+      const range = mockCombine.mock.calls[0]?.[2]
+      expect(range?.lower).toBeInstanceOf(Date)
+      expect(range?.upper).toBeInstanceOf(Date)
+      expect(range?.lower?.getTime()).toBeLessThan(Date.now())
+      expect(range?.upper?.getTime()).toBeGreaterThan(Date.now())
     })
 
     it('accepts UUID as guid', async () => {

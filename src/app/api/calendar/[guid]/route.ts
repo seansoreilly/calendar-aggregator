@@ -12,6 +12,7 @@ import {
   createCalendarNotModifiedResponse,
   createCalendarPartialResponse,
   createCalendarSuccessResponse,
+  parseCalendarDateRange,
   parseCalendarTimeout,
 } from '../../../../lib/calendar-response'
 import { trackEvent } from '../../../../lib/analytics'
@@ -55,6 +56,27 @@ export async function GET(
       return rateLimitResponse(rate)
     }
 
+    // Validate query params before touching storage so malformed requests
+    // stay cheap.
+    const timeoutMs = parseCalendarTimeout(request.url)
+    if (timeoutMs === null) {
+      return NextResponse.json(
+        { error: 'Timeout must be between 1000ms and 30000ms' },
+        { status: 400 }
+      )
+    }
+
+    const dateRange = parseCalendarDateRange(request.url)
+    if (dateRange === null) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid date filter: use start/end as YYYY-MM-DD and past/future as <n>d|w|m|y (e.g. past=2w&future=3m)',
+        },
+        { status: 400 }
+      )
+    }
+
     try {
       const collection = await findValidatedCollection(guid)
       if (!collection) {
@@ -80,24 +102,22 @@ export async function GET(
         )
       }
 
-      const timeoutMs = parseCalendarTimeout(request.url)
-      if (timeoutMs === null) {
-        return NextResponse.json(
-          { error: 'Timeout must be between 1000ms and 30000ms' },
-          { status: 400 }
-        )
-      }
-
       console.log(`[Calendar API] Processing request for GUID: ${guid}`)
       console.log(`[Calendar API] Collection: ${collection.name}`)
       console.log(
         `[Calendar API] Enabled calendars: ${enabledCalendars.length}`
       )
       console.log(`[Calendar API] Timeout: ${timeoutMs}ms`)
+      if (dateRange) {
+        console.log(
+          `[Calendar API] Date range: ${dateRange.lower?.toISOString() ?? '-inf'} to ${dateRange.upper?.toISOString() ?? '+inf'}`
+        )
+      }
 
       const combineResult = await combineICalFeeds(
         collection.calendars,
-        timeoutMs
+        timeoutMs,
+        dateRange
       )
 
       console.log(`[Calendar API] Combine result:`, {
