@@ -17,23 +17,23 @@ vi.mock('@/components/create-collection-form', () => ({
 describe('HomePage', () => {
   it('renders hero title', () => {
     render(<HomePage />)
-    expect(screen.getByText('Calendar Aggregator')).toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveTextContent(/Many calendars/i)
+    expect(heading).toHaveTextContent(/One URL/i)
   })
 
   it('renders tagline', () => {
     render(<HomePage />)
     expect(
-      screen.getByText(/Combine multiple iCal feeds into one URL/i)
+      screen.getByText(/Point this at every .ics feed you care about/i)
     ).toBeInTheDocument()
   })
 
   it('renders how it works steps', () => {
     render(<HomePage />)
-    expect(screen.getByText('Paste your iCal URLs')).toBeInTheDocument()
-    expect(screen.getByText('Name your collection')).toBeInTheDocument()
-    expect(
-      screen.getByText('Subscribe in your calendar app')
-    ).toBeInTheDocument()
+    expect(screen.getByText('Paste your .ics links')).toBeInTheDocument()
+    expect(screen.getByText('Name the collection')).toBeInTheDocument()
+    expect(screen.getByText('Subscribe once')).toBeInTheDocument()
   })
 
   it('renders the form and status components', () => {
