@@ -20,7 +20,7 @@ Pre-commit hooks run `eslint --fix` + `prettier --write` via Husky/lint-staged a
 
 ## Orientation
 
-Next.js 15 app on Vercel. Users create a **collection** of iCal source URLs and get one combined feed at `/api/calendar/[guid]`. Supabase (custom schema `calendar_aggregator`, anon key, RLS on) is the store; in-memory storage is used only when Supabase env vars are absent. Terms are defined in `UBIQUITOUS_LANGUAGE.md`; the public API is documented in `README.md`.
+Next.js 16 app on Vercel. Users create a **collection** of iCal source URLs and get one combined feed at `/api/calendar/[guid]`. Supabase (custom schema `calendar_aggregator`, anon key, RLS on) is the store; in-memory storage is used only when Supabase env vars are absent. Terms are defined in `UBIQUITOUS_LANGUAGE.md`; the public API is documented in `README.md`.
 
 ## Agent docs
 
