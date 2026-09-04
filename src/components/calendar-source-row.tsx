@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Trash2 } from 'lucide-react'
 import { CalendarRow, FIELD_CLASS } from '../lib/collection-form'
 
@@ -24,9 +25,12 @@ export function CalendarSourceRow({
   error,
   showEnabled = false,
 }: CalendarSourceRowProps) {
-  const nameFieldId = `calendar-name-${row.id}`
-  const urlFieldId = `calendar-url-${row.id}`
-  const enabledFieldId = `calendar-enabled-${row.id}`
+  // Field ids come from useId rather than row.id: row ids are time-based and
+  // differ between server and client render, which would break hydration.
+  const fieldId = useId()
+  const nameFieldId = `${fieldId}-name`
+  const urlFieldId = `${fieldId}-url`
+  const enabledFieldId = `${fieldId}-enabled`
 
   return (
     <div className="flex items-start gap-3 py-4">
