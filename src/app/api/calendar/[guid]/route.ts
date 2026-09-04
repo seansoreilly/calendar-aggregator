@@ -102,31 +102,11 @@ export async function GET(
         )
       }
 
-      console.log(`[Calendar API] Processing request for GUID: ${guid}`)
-      console.log(`[Calendar API] Collection: ${collection.name}`)
-      console.log(
-        `[Calendar API] Enabled calendars: ${enabledCalendars.length}`
-      )
-      console.log(`[Calendar API] Timeout: ${timeoutMs}ms`)
-      if (dateRange) {
-        console.log(
-          `[Calendar API] Date range: ${dateRange.lower?.toISOString() ?? '-inf'} to ${dateRange.upper?.toISOString() ?? '+inf'}`
-        )
-      }
-
       const combineResult = await combineICalFeeds(
         collection.calendars,
         timeoutMs,
         dateRange
       )
-
-      console.log(`[Calendar API] Combine result:`, {
-        status: combineResult.status,
-        calendarsProcessed: combineResult.calendarsProcessed,
-        eventsCount: combineResult.eventsCount,
-        errorsCount: combineResult.errors.length,
-        warningsCount: combineResult.warnings.length,
-      })
 
       // Total failure: no source could be fetched → 503.
       if (combineResult.status === 'failed') {

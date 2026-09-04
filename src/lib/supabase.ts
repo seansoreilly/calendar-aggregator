@@ -236,7 +236,6 @@ export async function saveCollectionToDatabase(
 
     if (error) throw error
 
-    console.log('[db] saved collection:', collection.guid)
     return collection
   } catch (error) {
     if (isNotConfiguredError(error)) {

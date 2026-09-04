@@ -5,59 +5,38 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Plus,
-  Trash2,
   Loader2,
   Copy,
   Check,
   KeyRound,
   Save,
+  Trash2,
 } from 'lucide-react'
-import { CalendarSource } from '../types/calendar'
+import { PublicCollectionResponse } from '../types/calendar'
+import {
+  CalendarRow,
+  FIELD_CLASS,
+  createRowId,
+  tokenStorageKey,
+} from '../lib/collection-form'
+import { useCopyToClipboard } from '../lib/use-copy-to-clipboard'
+import { CalendarSourceRow } from './calendar-source-row'
 
 interface ManageCollectionFormProps {
   guid: string
 }
 
-interface CollectionResponse {
-  guid: string
-  name: string
-  description?: string
-  calendars: CalendarSource[]
-  createdAt: string
-  updatedAt?: string
-}
-
-interface CalendarRow {
-  id: string
-  url: string
-  name: string
-  color: string
-  enabled: boolean
-}
-
-let rowIdCounter = 0
-
-function createRowId(): string {
-  rowIdCounter += 1
-  return `row-${Date.now()}-${rowIdCounter}`
-}
-
-function tokenStorageKey(guid: string): string {
-  return `calendar-aggregator:token:${guid}`
-}
-
-function sourceToRow(source: CalendarSource): CalendarRow {
+function sourceToRow(
+  source: PublicCollectionResponse['calendars'][number]
+): CalendarRow {
   return {
-    id: createRowId(),
+    id: createRowId('row'),
     url: source.url,
     name: source.name,
     color: source.color,
     enabled: source.enabled,
   }
 }
-
-const FIELD_CLASS =
-  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-none focus:ring-0'
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error'
 
@@ -66,6 +45,7 @@ export default function ManageCollectionForm({
 }: ManageCollectionFormProps): React.JSX.Element {
   const router = useRouter()
   const [loadState, setLoadState] = useState<LoadState>('loading')
+  const [reloadKey, setReloadKey] = useState(0)
   const [token, setToken] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -74,7 +54,7 @@ export default function ManageCollectionForm({
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, copyFeedUrl] = useCopyToClipboard()
 
   useEffect(() => {
     const stored = window.localStorage.getItem(tokenStorageKey(guid))
@@ -88,6 +68,7 @@ export default function ManageCollectionForm({
     let cancelled = false
 
     const load = async (): Promise<void> => {
+      setLoadState('loading')
       try {
         const response = await fetch(`/api/collections/${guid}`)
         if (cancelled) return
@@ -102,7 +83,7 @@ export default function ManageCollectionForm({
           return
         }
 
-        const data: CollectionResponse = await response.json()
+        const data: PublicCollectionResponse = await response.json()
         if (cancelled) return
 
         setName(data.name)
@@ -119,7 +100,7 @@ export default function ManageCollectionForm({
     return () => {
       cancelled = true
     }
-  }, [guid])
+  }, [guid, reloadKey])
 
   const handleTokenChange = (value: string): void => {
     setToken(value)
@@ -130,7 +111,7 @@ export default function ManageCollectionForm({
     setCalendars([
       ...calendars,
       {
-        id: createRowId(),
+        id: createRowId('row'),
         url: '',
         name: `Calendar ${calendars.length + 1}`,
         color: '#3f7d58',
@@ -153,7 +134,8 @@ export default function ManageCollectionForm({
     setCalendars(next)
   }
 
-  const handleSave = async (): Promise<void> => {
+  const handleSave = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
     setIsSaving(true)
     setError(null)
     setSuccessMessage(null)
@@ -180,7 +162,7 @@ export default function ManageCollectionForm({
       })
 
       if (response.status === 401) {
-        setError('Invalid or missing management token')
+        setError('That management token is not valid for this collection.')
         return
       }
 
@@ -194,7 +176,7 @@ export default function ManageCollectionForm({
         throw new Error(data?.error || 'Failed to save changes')
       }
 
-      const data: CollectionResponse = await response.json()
+      const data: PublicCollectionResponse = await response.json()
       setName(data.name)
       setDescription(data.description || '')
       setCalendars(data.calendars.map(sourceToRow))
@@ -222,7 +204,7 @@ export default function ManageCollectionForm({
       })
 
       if (response.status === 401) {
-        setError('Invalid or missing management token')
+        setError('That management token is not valid for this collection.')
         return
       }
 
@@ -249,13 +231,6 @@ export default function ManageCollectionForm({
     typeof window !== 'undefined'
       ? `${window.location.origin}/api/calendar/${guid}`
       : ''
-
-  const copyFeedUrl = (): void => {
-    if (!feedUrl) return
-    navigator.clipboard.writeText(feedUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   if (loadState === 'loading') {
     return (
@@ -288,19 +263,26 @@ export default function ManageCollectionForm({
 
   if (loadState === 'error') {
     return (
-      <div className="space-y-2 border-2 border-ink bg-sheet p-8 text-center">
+      <div className="space-y-4 border-2 border-ink bg-sheet p-8 text-center">
         <h2 className="font-display text-lg font-bold text-ink">
           Something went wrong
         </h2>
         <p className="text-sm text-graphite">
           Failed to load this collection. Try again later.
         </p>
+        <button
+          type="button"
+          onClick={() => setReloadKey(k => k + 1)}
+          className="inline-block border border-ink px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
+        >
+          Retry
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="border-2 border-ink bg-sheet">
+    <form onSubmit={handleSave} className="border-2 border-ink bg-sheet">
       <div className="border-b border-rule px-6 py-3">
         <h2 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-ink">
           Edit collection
@@ -318,7 +300,7 @@ export default function ManageCollectionForm({
             </code>
             <button
               type="button"
-              onClick={copyFeedUrl}
+              onClick={() => copyFeedUrl(feedUrl)}
               className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
               aria-label="Copy subscription URL"
             >
@@ -403,110 +385,34 @@ export default function ManageCollectionForm({
           </div>
 
           <div className="divide-y divide-rule">
-            {calendars.map((cal, index) => {
-              const nameFieldId = `calendar-name-${cal.id}`
-              const urlFieldId = `calendar-url-${cal.id}`
-              const enabledFieldId = `calendar-enabled-${cal.id}`
-              return (
-                <div key={cal.id} className="flex items-start gap-3 py-4">
-                  <span
-                    className="mt-3 shrink-0 font-mono text-[11px] text-graphite"
-                    aria-hidden="true"
-                  >
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex gap-2">
-                      <div className="relative shrink-0">
-                        <div
-                          className="pointer-events-none h-full w-10 border border-rule"
-                          style={{ backgroundColor: cal.color }}
-                        />
-                        <input
-                          type="color"
-                          value={cal.color}
-                          onChange={e =>
-                            updateCalendar(index, 'color', e.target.value)
-                          }
-                          aria-label={`Colour for ${cal.name || 'calendar'}`}
-                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <label htmlFor={nameFieldId} className="sr-only">
-                          Calendar name
-                        </label>
-                        <input
-                          id={nameFieldId}
-                          type="text"
-                          required
-                          value={cal.name}
-                          onChange={e =>
-                            updateCalendar(index, 'name', e.target.value)
-                          }
-                          placeholder="Calendar name"
-                          className={FIELD_CLASS}
-                        />
-                      </div>
-                      <label
-                        htmlFor={enabledFieldId}
-                        className="flex shrink-0 items-center gap-2 self-stretch border border-rule px-3 font-mono text-[11px] uppercase tracking-wider text-graphite"
-                      >
-                        <input
-                          id={enabledFieldId}
-                          type="checkbox"
-                          checked={cal.enabled}
-                          onChange={e =>
-                            updateCalendar(index, 'enabled', e.target.checked)
-                          }
-                          className="h-4 w-4 accent-ink"
-                        />
-                        Enabled
-                      </label>
-                    </div>
-
-                    <div>
-                      <label htmlFor={urlFieldId} className="sr-only">
-                        Calendar URL
-                      </label>
-                      <input
-                        id={urlFieldId}
-                        type="url"
-                        required
-                        value={cal.url}
-                        onChange={e =>
-                          updateCalendar(index, 'url', e.target.value)
-                        }
-                        placeholder="https://calendar.google.com/.../basic.ics"
-                        className={`${FIELD_CLASS} font-mono text-xs`}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeCalendar(index)}
-                    disabled={calendars.length <= 1}
-                    className="mt-1 shrink-0 p-2 text-graphite transition-colors hover:text-today disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-graphite"
-                    aria-label={`Remove calendar ${index + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              )
-            })}
+            {calendars.map((cal, index) => (
+              <CalendarSourceRow
+                key={cal.id}
+                row={cal}
+                index={index}
+                onChange={updateCalendar}
+                onRemove={removeCalendar}
+                canRemove={calendars.length > 1}
+                showEnabled
+              />
+            ))}
           </div>
         </div>
 
         {error && (
-          <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
+          <p
+            role="alert"
+            className="border-l-2 border-today py-1 pl-4 text-sm text-today"
+          >
             {error}
           </p>
         )}
 
         {successMessage && (
-          <p className="flex items-center gap-2 border-l-2 border-ink py-1 pl-4 text-sm text-ink">
+          <p
+            role="status"
+            className="flex items-center gap-2 border-l-2 border-ink py-1 pl-4 text-sm text-ink"
+          >
             <Check className="h-4 w-4" aria-hidden="true" />
             {successMessage}
           </p>
@@ -514,8 +420,7 @@ export default function ManageCollectionForm({
 
         <div className="grid grid-cols-1 gap-3 border-t border-rule pt-6 sm:grid-cols-2">
           <button
-            type="button"
-            onClick={handleSave}
+            type="submit"
             disabled={isSaving}
             className="flex items-center justify-center gap-2 bg-ink py-3.5 font-display text-sm font-bold uppercase tracking-[0.12em] text-paper transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -551,6 +456,6 @@ export default function ManageCollectionForm({
           </button>
         </div>
       </div>
-    </div>
+    </form>
   )
 }

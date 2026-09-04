@@ -79,3 +79,18 @@ export interface UpdateCollectionRequest {
     enabled?: boolean
   }>
 }
+
+// Public (GET-facing) collection shape returned by the collections API —
+// the management token is never included. Mirrors collection-service.ts's
+// PublicCollection but is declared here for use by client components.
+export type PublicCollectionResponse = Omit<
+  CalendarCollection,
+  'managementToken'
+>
+
+// Error body shape returned by the collections API on non-2xx responses.
+export interface ApiErrorBody {
+  error?: string
+  code?: string
+  details?: unknown
+}

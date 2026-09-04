@@ -4,12 +4,8 @@ import { version } from '../../../../package.json'
 
 export async function GET() {
   try {
-    console.log('[Health API] Starting health check')
-
     // Get Supabase health status
     const supabaseHealth = await getSupabaseHealth()
-
-    console.log('[Health API] Supabase health result:', supabaseHealth)
 
     // Determine overall health status
     const isHealthy = supabaseHealth.status === 'healthy'

@@ -1,39 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Loader2, Copy, Check, KeyRound } from 'lucide-react'
+import { Plus, Loader2, Copy, Check, KeyRound } from 'lucide-react'
 import { trackEvent } from '../lib/gtag'
+import {
+  CalendarRow,
+  FIELD_CLASS,
+  createEmptyCalendarRow,
+  tokenStorageKey,
+} from '../lib/collection-form'
+import { useCopyToClipboard } from '../lib/use-copy-to-clipboard'
+import { CalendarSourceRow } from './calendar-source-row'
+import { ApiErrorBody } from '../types/calendar'
 
-function tokenStorageKey(guid: string): string {
-  return `calendar-aggregator:token:${guid}`
+interface CreateCollectionResponse {
+  guid: string
+  managementToken?: string
 }
-
-interface CalendarInput {
-  id: string
-  url: string
-  name: string
-  color: string
-}
-
-let calendarRowIdCounter = 0
-
-function createCalendarRowId(): string {
-  calendarRowIdCounter += 1
-  return `cal-${Date.now()}-${calendarRowIdCounter}`
-}
-
-function createEmptyRow(name: string, color: string): CalendarInput {
-  return { id: createCalendarRowId(), url: '', name, color }
-}
-
-const FIELD_CLASS =
-  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-none focus:ring-0'
 
 export default function CreateCollectionForm() {
   const [name, setName] = useState('')
   const [customId, setCustomId] = useState('')
-  const [calendars, setCalendars] = useState<CalendarInput[]>([
-    createEmptyRow('Main calendar', '#1b3a6b'),
+  const [calendars, setCalendars] = useState<CalendarRow[]>([
+    createEmptyCalendarRow('Main calendar', '#1b3a6b'),
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,13 +33,13 @@ export default function CreateCollectionForm() {
   const [successUrl, setSuccessUrl] = useState<string | null>(null)
   const [successGuid, setSuccessGuid] = useState<string | null>(null)
   const [successToken, setSuccessToken] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [tokenCopied, setTokenCopied] = useState(false)
+  const [copied, copyToClipboard] = useCopyToClipboard()
+  const [tokenCopied, copyTokenToClipboard] = useCopyToClipboard()
 
   const addCalendar = () => {
     setCalendars([
       ...calendars,
-      createEmptyRow(`Calendar ${calendars.length + 1}`, '#3f7d58'),
+      createEmptyCalendarRow(`Calendar ${calendars.length + 1}`, '#3f7d58'),
     ])
   }
 
@@ -60,14 +49,14 @@ export default function CreateCollectionForm() {
 
   const updateCalendar = (
     index: number,
-    field: keyof CalendarInput,
-    value: string
+    field: keyof CalendarRow,
+    value: string | boolean
   ) => {
     const newCalendars = [...calendars]
     newCalendars[index] = {
       ...newCalendars[index],
       [field]: value,
-    } as CalendarInput
+    } as CalendarRow
     setCalendars(newCalendars)
   }
 
@@ -78,7 +67,7 @@ export default function CreateCollectionForm() {
     setName('')
     setCustomId('')
     setError(null)
-    setCalendars([createEmptyRow('Main calendar', '#1b3a6b')])
+    setCalendars([createEmptyCalendarRow('Main calendar', '#1b3a6b')])
   }
 
   /**
@@ -129,10 +118,12 @@ export default function CreateCollectionForm() {
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        if (data.code === 'COLLECTION_EXISTS') {
+        const data: ApiErrorBody | null = await response
+          .json()
+          .catch(() => null)
+
+        if (data?.code === 'COLLECTION_EXISTS') {
           setCustomIdError('That ID is taken. Try another.')
           trackEvent('collection_creation_failed', {
             error: data.error || 'COLLECTION_EXISTS',
@@ -141,18 +132,20 @@ export default function CreateCollectionForm() {
         }
 
         if (
-          Array.isArray(data.details) &&
+          Array.isArray(data?.details) &&
           data.details.every((d: unknown) => typeof d === 'string')
         ) {
           applyCalendarValidationErrors(data.details)
           trackEvent('collection_creation_failed', {
-            error: data.error || 'Calendar validation failed',
+            error: data?.error || 'Calendar validation failed',
           })
           return
         }
 
-        throw new Error(data.error || 'Failed to create collection')
+        throw new Error(data?.error || 'Failed to create collection')
       }
+
+      const data: CreateCollectionResponse = await response.json()
 
       const url = `${window.location.origin}/api/calendar/${data.guid}`
       setSuccessUrl(url)
@@ -205,23 +198,6 @@ export default function CreateCollectionForm() {
     }
   }
 
-  const copyToClipboard = () => {
-    if (successUrl) {
-      navigator.clipboard.writeText(successUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      trackEvent('feed_url_copied')
-    }
-  }
-
-  const copyTokenToClipboard = () => {
-    if (successToken) {
-      navigator.clipboard.writeText(successToken)
-      setTokenCopied(true)
-      setTimeout(() => setTokenCopied(false), 2000)
-    }
-  }
-
   if (successUrl) {
     return (
       <div className="border-2 border-ink bg-sheet">
@@ -242,7 +218,10 @@ export default function CreateCollectionForm() {
                 {successUrl}
               </code>
               <button
-                onClick={copyToClipboard}
+                onClick={() => {
+                  copyToClipboard(successUrl)
+                  trackEvent('feed_url_copied')
+                }}
                 className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
                 aria-label="Copy subscription URL"
               >
@@ -269,7 +248,7 @@ export default function CreateCollectionForm() {
                   {successToken}
                 </code>
                 <button
-                  onClick={copyTokenToClipboard}
+                  onClick={() => copyTokenToClipboard(successToken)}
                   className="shrink-0 border-l border-rule px-4 text-graphite transition-colors hover:bg-ink hover:text-paper"
                   aria-label="Copy management token"
                 >
@@ -288,7 +267,10 @@ export default function CreateCollectionForm() {
           )}
 
           {error && (
-            <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
+            <p
+              role="alert"
+              className="border-l-2 border-today py-1 pl-4 text-sm text-today"
+            >
               {error}
             </p>
           )}
@@ -407,103 +389,25 @@ export default function CreateCollectionForm() {
           </div>
 
           <div className="divide-y divide-rule">
-            {calendars.map((cal, index) => {
-              const nameFieldId = `calendar-name-${cal.id}`
-              const urlFieldId = `calendar-url-${cal.id}`
-              const rowError = calendarErrors[cal.id]
-              return (
-                <div key={cal.id} className="flex items-start gap-3 py-4">
-                  <span
-                    className="mt-3.5 w-5 shrink-0 font-mono text-[11px] text-graphite"
-                    aria-hidden="true"
-                  >
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex gap-2">
-                      <div className="relative shrink-0">
-                        <div
-                          className="pointer-events-none h-full w-10 border border-rule"
-                          style={{ backgroundColor: cal.color }}
-                        />
-                        <input
-                          type="color"
-                          value={cal.color}
-                          onChange={e =>
-                            updateCalendar(index, 'color', e.target.value)
-                          }
-                          aria-label={`Colour for ${cal.name || 'calendar'}`}
-                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <label htmlFor={nameFieldId} className="sr-only">
-                          Calendar name
-                        </label>
-                        <input
-                          id={nameFieldId}
-                          type="text"
-                          required
-                          value={cal.name}
-                          onChange={e =>
-                            updateCalendar(index, 'name', e.target.value)
-                          }
-                          placeholder="Calendar name"
-                          className={FIELD_CLASS}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor={urlFieldId} className="sr-only">
-                        Calendar URL
-                      </label>
-                      <input
-                        id={urlFieldId}
-                        type="url"
-                        required
-                        value={cal.url}
-                        onChange={e =>
-                          updateCalendar(index, 'url', e.target.value)
-                        }
-                        placeholder="https://calendar.google.com/.../basic.ics"
-                        aria-invalid={rowError ? true : undefined}
-                        aria-describedby={
-                          rowError ? `${urlFieldId}-error` : undefined
-                        }
-                        className={`${FIELD_CLASS} font-mono text-xs ${
-                          rowError ? 'border-today' : ''
-                        }`}
-                      />
-                      {rowError && (
-                        <p
-                          id={`${urlFieldId}-error`}
-                          className="mt-1.5 text-xs text-today"
-                        >
-                          {rowError}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeCalendar(index)}
-                    disabled={calendars.length <= 1}
-                    className="mt-1 shrink-0 p-2 text-graphite transition-colors hover:text-today disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-graphite"
-                    aria-label={`Remove calendar ${index + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              )
-            })}
+            {calendars.map((cal, index) => (
+              <CalendarSourceRow
+                key={cal.id}
+                row={cal}
+                index={index}
+                onChange={updateCalendar}
+                onRemove={removeCalendar}
+                canRemove={calendars.length > 1}
+                error={calendarErrors[cal.id]}
+              />
+            ))}
           </div>
         </div>
 
         {error && (
-          <p className="border-l-2 border-today py-1 pl-4 text-sm text-today">
+          <p
+            role="alert"
+            className="border-l-2 border-today py-1 pl-4 text-sm text-today"
+          >
             {error}
           </p>
         )}
