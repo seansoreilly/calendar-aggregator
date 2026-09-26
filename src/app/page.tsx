@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import LiveStatus from '../components/live-status'
 import CreateCollectionForm from '../components/create-collection-form'
 import { MergeDiagram } from '../components/merge-diagram'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 /** The steps genuinely run in order, so they carry numbers. */
 const STEPS = [

@@ -3,6 +3,10 @@ import ManageCollectionForm from '../../../components/manage-collection-form'
 
 export const metadata: Metadata = {
   title: 'Manage Collection | Calendar Aggregator',
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default async function ManageCollectionPage({
