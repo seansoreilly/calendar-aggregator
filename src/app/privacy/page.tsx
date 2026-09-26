@@ -14,7 +14,8 @@ import Link from 'next/link'
 export const metadata = {
   title: 'Privacy & Security Policy | Calendar Aggregator',
   description:
-    'Learn how Calendar Aggregator handles your data with privacy-first architecture.',
+    'How Calendar Aggregator handles your data: no accounts, no event storage, no tracking. Calendar URLs and collection metadata only, secured with HTTPS.',
+  alternates: { canonical: '/privacy' },
 }
 
 export default function PrivacyPage() {

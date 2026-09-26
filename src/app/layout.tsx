@@ -8,27 +8,37 @@ import { Footer } from '../components/footer'
 const archivo = Archivo({
   subsets: ['latin'],
   variable: '--font-display',
+  display: 'swap',
 })
-const interTight = Inter_Tight({ subsets: ['latin'], variable: '--font-body' })
+const interTight = Inter_Tight({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+})
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
+  display: 'swap',
 })
 
 const title = 'Calendar Aggregator | One URL for all your calendars'
 const description =
   'Combine several iCal feeds into a single subscription URL. Paste your .ics links, get one address any calendar app can subscribe to.'
+const siteUrl = 'https://www.calendar-aggregator.online'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.calendar-aggregator.online'),
+  metadataBase: new URL(siteUrl),
   title,
   description,
   openGraph: {
     title,
     description,
     type: 'website',
+    url: siteUrl,
+    siteName: 'Calendar Aggregator',
   },
   twitter: {
+    card: 'summary_large_image',
     title,
     description,
   },
@@ -38,6 +48,21 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: '#F2F4F3',
+}
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Calendar Aggregator',
+  url: siteUrl,
+  description,
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Any',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
 }
 
 export default function RootLayout({
@@ -53,6 +78,10 @@ export default function RootLayout({
         {/* Ruled ground: the schedule grid the page is set on. */}
         <div className="fixed inset-0 -z-10 pointer-events-none bg-ruled" />
 
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <GoogleAnalytics />
         <Navbar />
         <main className="flex-grow">{children}</main>
