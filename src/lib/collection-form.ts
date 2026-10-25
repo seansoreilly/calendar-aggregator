@@ -6,7 +6,7 @@ export function tokenStorageKey(guid: string): string {
 }
 
 export const FIELD_CLASS =
-  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-none focus:ring-0'
+  'w-full border border-rule bg-paper px-3 py-2.5 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-ink focus:outline-hidden focus:ring-0'
 
 let rowIdCounter = 0
 

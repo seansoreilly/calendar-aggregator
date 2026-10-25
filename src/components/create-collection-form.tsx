@@ -361,7 +361,7 @@ export default function CreateCollectionForm() {
                 placeholder="my-calendar"
                 aria-invalid={customIdError ? true : undefined}
                 aria-describedby="collection-custom-id-hint"
-                className="w-full bg-transparent px-3 py-2.5 font-mono text-sm text-ink placeholder-graphite/60 focus:outline-none"
+                className="w-full bg-transparent px-3 py-2.5 font-mono text-sm text-ink placeholder-graphite/60 focus:outline-hidden"
               />
             </div>
             <p

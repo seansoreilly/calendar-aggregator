@@ -4,7 +4,7 @@ import { GithubIcon } from '@/components/github-icon'
 
 export function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-rule bg-paper/90 backdrop-blur">
+    <nav className="sticky top-0 z-50 w-full border-b border-rule bg-paper/90 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
