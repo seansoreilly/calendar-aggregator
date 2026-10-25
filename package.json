@@ -1,6 +1,6 @@
 {
   "name": "calendar-aggregator",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "A modern web application created with kens-webapps",
   "type": "module",
   "private": true,
@@ -57,6 +57,6 @@
     ]
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   }
 }
