@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Github } from 'lucide-react'
+import { GithubIcon } from '@/components/github-icon'
 
 export function Navbar() {
   return (
@@ -39,7 +39,7 @@ export function Navbar() {
             className="text-graphite transition-colors hover:text-ink"
             aria-label="View the source on GitHub"
           >
-            <Github className="h-[18px] w-[18px]" />
+            <GithubIcon className="h-[18px] w-[18px]" />
           </a>
         </div>
       </div>
