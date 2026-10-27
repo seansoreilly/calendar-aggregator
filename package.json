@@ -1,13 +1,12 @@
 {
   "name": "calendar-aggregator",
-  "version": "0.1.34",
-  "description": "A modern web application created with kens-webapps",
+  "version": "0.1.35",
+  "description": "Combine multiple iCal feeds into one subscribable calendar URL",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
-    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
