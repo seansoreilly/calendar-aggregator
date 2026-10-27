@@ -16,7 +16,7 @@ npm test -- src/__tests__/utils.test.ts        # Single test file
 npm test -- src/__tests__/integration/        # Integration tests only
 ```
 
-Pre-commit hooks run `eslint --fix` + `prettier --write` via Husky/lint-staged and bump the patch version in `package.json`. npm is the only package manager.
+Pre-commit hooks run `eslint --fix` + `prettier --write` via Husky/lint-staged. The version in `package.json` is bumped by hand on release; `/api/health` reports it with the deployed commit SHA appended. npm (v11, pinned via `packageManager`) is the only package manager.
 
 ## Orientation
 
@@ -30,4 +30,4 @@ Next.js 16 app on Vercel. Users create a **collection** of iCal source URLs and 
 | [agent_docs/storage-supabase.md](agent_docs/storage-supabase.md)   | Changing DB code, migrations, RLS, env vars, or debugging a missing collection (503 vs 404)        |
 | [agent_docs/management-tokens.md](agent_docs/management-tokens.md) | Working on PUT/DELETE auth, the manage UI, or rate limiting                                        |
 | [agent_docs/ical-processing.md](agent_docs/ical-processing.md)     | Changing source fetching (SSRF, size caps), combining, date windows, or ETag handling              |
-| [agent_docs/testing.md](agent_docs/testing.md)                     | Adding or fixing tests: file map, mocking conventions, pre-commit version-bump conflicts           |
+| [agent_docs/testing.md](agent_docs/testing.md)                     | Adding or fixing tests: file map, mocking conventions, pre-commit hooks                            |

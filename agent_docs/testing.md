@@ -31,4 +31,4 @@ src/__tests__/
 - Integration tests run **without** Supabase env vars, so the DB layer takes the in-memory path described in [storage-supabase.md](storage-supabase.md). Only `calendar-feed.test.ts` mocks `../../lib/supabase` directly.
 - Route tests mock `../../lib/calendar-utils` to replace `validateCalendarUrl`, so no network calls happen. Copy the `vi.mock` block from `integration/collections.test.ts:8` when adding a new route test.
 - `safe-fetch.ts` skips its DNS guard under `NODE_ENV=test`; fetch mocks on `globalThis.fetch` are honoured because it always calls the global.
-- The Husky pre-commit hook (`.husky/pre-commit`) bumps the patch version in `package.json` on every commit, so parallel branches conflict on that line. Resolve by taking either side and re-running `npm install --package-lock-only` if the lockfile disagrees.
+- The Husky pre-commit hook (`.husky/pre-commit`) runs lint-staged only. It no longer bumps the version (that caused merge conflicts between parallel branches); `/api/health` appends `VERCEL_GIT_COMMIT_SHA` to the version instead.
