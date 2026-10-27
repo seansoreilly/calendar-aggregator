@@ -33,10 +33,7 @@ describe('assertNotSsrfTarget', () => {
       ['IPv6 unique local fd12', 'http://[fd12::1]/'],
       ['IPv6 link-local fe80', 'http://[fe80::1]/'],
       ['IPv6 unspecified', 'http://[::]/'],
-      [
-        'IPv4-mapped IMDS',
-        'http://[::ffff:169.254.169.254]/',
-      ],
+      ['IPv4-mapped IMDS', 'http://[::ffff:169.254.169.254]/'],
       ['IPv4-mapped loopback', 'http://[::ffff:127.0.0.1]/'],
     ])('%s (%s)', (_, url) => {
       expect(() => assertNotSsrfTarget(url)).toThrow(ValidationError)

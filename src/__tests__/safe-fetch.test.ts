@@ -40,16 +40,16 @@ describe('safeFetch', () => {
   }
 
   it('throws (without calling fetch) when the initial URL is a private target', async () => {
-    await expect(safeFetch('http://169.254.169.254/latest/meta-data/')).rejects.toThrow(
-      ValidationError
-    )
+    await expect(
+      safeFetch('http://169.254.169.254/latest/meta-data/')
+    ).rejects.toThrow(ValidationError)
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('throws for an IPv4-mapped IPv6 metadata target', async () => {
-    await expect(
-      safeFetch('http://[::ffff:169.254.169.254]/')
-    ).rejects.toThrow(ValidationError)
+    await expect(safeFetch('http://[::ffff:169.254.169.254]/')).rejects.toThrow(
+      ValidationError
+    )
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -69,7 +69,9 @@ describe('safeFetch', () => {
 
   it('follows a redirect to a public target and returns the final response', async () => {
     vi.mocked(fetch)
-      .mockResolvedValueOnce(redirectResponse('https://cdn.example.org/cal.ics'))
+      .mockResolvedValueOnce(
+        redirectResponse('https://cdn.example.org/cal.ics')
+      )
       .mockResolvedValueOnce(okResponse('final'))
 
     const res = await safeFetch('https://example.com/cal.ics')
