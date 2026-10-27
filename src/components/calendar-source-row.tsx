@@ -43,7 +43,7 @@ export function CalendarSourceRow({
 
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex gap-2">
-          <div className="relative shrink-0 focus-within:outline focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ink">
+          <div className="relative shrink-0 focus-within:outline-solid focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ink">
             <div
               className="pointer-events-none h-full w-10 border border-rule"
               style={{ backgroundColor: row.color }}

@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Github } from 'lucide-react'
+import { GithubIcon } from '@/components/github-icon'
 
 export function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-rule bg-paper/90 backdrop-blur">
+    <nav className="sticky top-0 z-50 w-full border-b border-rule bg-paper/90 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
@@ -39,7 +39,7 @@ export function Navbar() {
             className="text-graphite transition-colors hover:text-ink"
             aria-label="View the source on GitHub"
           >
-            <Github className="h-[18px] w-[18px]" />
+            <GithubIcon className="h-[18px] w-[18px]" />
           </a>
         </div>
       </div>

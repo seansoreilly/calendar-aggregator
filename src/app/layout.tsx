@@ -7,17 +7,17 @@ import { Footer } from '../components/footer'
 
 const archivo = Archivo({
   subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-archivo',
   display: 'swap',
 })
 const interTight = Inter_Tight({
   subsets: ['latin'],
-  variable: '--font-body',
+  variable: '--font-inter-tight',
   display: 'swap',
 })
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-mono',
+  variable: '--font-jetbrains-mono',
   display: 'swap',
 })
 
@@ -84,7 +84,7 @@ export default function RootLayout({
         />
         <GoogleAnalytics />
         <Navbar />
-        <main className="flex-grow">{children}</main>
+        <main className="grow">{children}</main>
         <Footer />
       </body>
     </html>

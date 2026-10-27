@@ -34,7 +34,7 @@ export default function HomePage() {
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-graphite">
             iCal feed aggregator
           </p>
-          <h1 className="mt-5 font-display text-[2.75rem] font-extrabold leading-[0.95] tracking-tightest text-ink sm:text-6xl">
+          <h1 className="mt-5 font-display text-[2.75rem] font-extrabold leading-[0.95] tracking-tightest text-ink sm:text-6xl sm:leading-none">
             Many calendars.
             <br />
             <span className="text-today">One URL.</span>
