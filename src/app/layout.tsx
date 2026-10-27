@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import { Archivo, Inter_Tight, JetBrains_Mono } from 'next/font/google'
 import '../styles/globals.css'
 import GoogleAnalytics from '../components/google-analytics'
@@ -65,11 +66,14 @@ const jsonLd = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
-}) {
+}): Promise<React.ReactElement> {
+  // Set per request by src/proxy.ts; reading it opts the tree into dynamic rendering.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   return (
     <html lang="en">
       <body
@@ -80,9 +84,10 @@ export default function RootLayout({
 
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <GoogleAnalytics />
+        <GoogleAnalytics nonce={nonce} />
         <Navbar />
         <main className="grow">{children}</main>
         <Footer />

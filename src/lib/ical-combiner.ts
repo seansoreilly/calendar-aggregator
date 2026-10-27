@@ -339,8 +339,7 @@ function deduplicateTimezones(timezones: string[]): string[] {
 }
 
 type FetchResult =
-  | { success: true; content: string }
-  | { success: false; error: string }
+  { success: true; content: string } | { success: false; error: string }
 
 /**
  * Fetch calendar data as raw iCal content via the shared, size-capped fetch

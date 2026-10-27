@@ -41,7 +41,10 @@ async function assertResolvedAddressesArePublic(url: string): Promise<void> {
     }
   } catch (error) {
     // Re-throw our own private-address rejection; only swallow resolution errors.
-    if (error instanceof Error && error.message.startsWith('Refusing to fetch')) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith('Refusing to fetch')
+    ) {
       throw error
     }
     console.warn(

@@ -18,8 +18,7 @@ export interface ProcessCalendarsResult {
 }
 
 type CalendarCheck =
-  | { kind: 'ok'; source: CalendarSource }
-  | { kind: 'error'; message: string }
+  { kind: 'ok'; source: CalendarSource } | { kind: 'error'; message: string }
 
 /**
  * Validate a single calendar input by index. Kept per-index so the concurrent

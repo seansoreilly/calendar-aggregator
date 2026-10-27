@@ -9,60 +9,58 @@ export const contentType = 'image/png'
 
 export default function Image() {
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '80px',
+        backgroundColor: '#F2F4F3',
+        color: '#14161A',
+        fontFamily: 'sans-serif',
+      }}
+    >
       <div
         style={{
-          width: '100%',
-          height: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '80px',
-          backgroundColor: '#F2F4F3',
-          color: '#14161A',
-          fontFamily: 'sans-serif',
+          alignItems: 'center',
+          gap: '16px',
+          fontSize: 28,
+          letterSpacing: 4,
+          textTransform: 'uppercase',
+          color: '#63696B',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            fontSize: 28,
-            letterSpacing: 4,
-            textTransform: 'uppercase',
-            color: '#63696B',
-          }}
-        >
-          iCal feed aggregator
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            fontSize: 84,
-            fontWeight: 800,
-            lineHeight: 1.05,
-            marginTop: 28,
-            letterSpacing: -2,
-          }}
-        >
-          <span>Many calendars.</span>
-          <span style={{ color: '#BD3D24' }}>One URL.</span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            fontSize: 30,
-            color: '#63696B',
-            marginTop: 40,
-            maxWidth: 820,
-          }}
-        >
-          Combine several iCal feeds into a single subscription URL.
-        </div>
+        iCal feed aggregator
       </div>
-    ),
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          fontSize: 84,
+          fontWeight: 800,
+          lineHeight: 1.05,
+          marginTop: 28,
+          letterSpacing: -2,
+        }}
+      >
+        <span>Many calendars.</span>
+        <span style={{ color: '#BD3D24' }}>One URL.</span>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          fontSize: 30,
+          color: '#63696B',
+          marginTop: 40,
+          maxWidth: 820,
+        }}
+      >
+        Combine several iCal feeds into a single subscription URL.
+      </div>
+    </div>,
     {
       ...size,
     }
