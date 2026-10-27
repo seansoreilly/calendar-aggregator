@@ -58,28 +58,8 @@ describe('next.config.ts headers()', () => {
     expect(permissionsPolicy).toContain('geolocation=()')
   })
 
-  describe('Content-Security-Policy', () => {
-    it('is defined', () => {
-      expect(getHeader('Content-Security-Policy')).toBeDefined()
-    })
-
-    it('allows Google Tag Manager for scripts', () => {
-      expect(getHeader('Content-Security-Policy')).toContain(
-        'https://www.googletagmanager.com'
-      )
-    })
-
-    it('allows Google Analytics for connections', () => {
-      expect(getHeader('Content-Security-Policy')).toContain(
-        'https://www.google-analytics.com'
-      )
-    })
-
-    it('restricts frame-ancestors to none', () => {
-      expect(getHeader('Content-Security-Policy')).toContain(
-        "frame-ancestors 'none'"
-      )
-    })
+  it('does not set a static CSP (it is set per request by src/proxy.ts)', () => {
+    expect(getHeader('Content-Security-Policy')).toBeUndefined()
   })
 
   it('applies to the catch-all source, covering API routes too', () => {

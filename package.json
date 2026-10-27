@@ -1,6 +1,6 @@
 {
   "name": "calendar-aggregator",
-  "version": "0.1.41",
+  "version": "0.1.42",
   "description": "Combine multiple iCal feeds into one subscribable calendar URL",
   "type": "module",
   "private": true,
