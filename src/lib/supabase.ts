@@ -6,7 +6,6 @@ import {
   removeCollectionFromStorage,
   updateCollectionInStorage,
   findCollectionInStorage,
-  initializeStorage,
 } from './utils'
 import { UUID_REGEX } from './validation'
 import { toCalendarCollectionError } from './errors'
@@ -244,28 +243,6 @@ export async function saveCollectionToDatabase(
     }
     console.error('[db] save failed:', describeDbError(error))
     throw toCalendarCollectionError(error, 'save')
-  }
-}
-
-export async function getAllCollectionsFromDatabase(): Promise<
-  CalendarCollection[]
-> {
-  try {
-    const { data, error } = await collectionsTable()
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-
-    return data.map(mapRow)
-  } catch (error) {
-    if (isNotConfiguredError(error)) {
-      // Not configured (local dev / tests): use in-memory storage.
-      initializeStorage()
-      return globalThis.calendarCollections || []
-    }
-    console.error('[db] getAll failed:', describeDbError(error))
-    throw toCalendarCollectionError(error, 'getAll')
   }
 }
 
