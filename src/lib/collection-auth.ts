@@ -5,14 +5,14 @@
  * Mutating it requires the caller to present that token as
  * `Authorization: Bearer <token>`.
  *
- * BACKWARD COMPATIBILITY: collections created before this feature (or via the
- * in-memory path without a token) have no stored token. Those remain mutable
- * without any Authorization header, exactly as before — see `authorizeMutation`.
+ * Collections with no stored token (legacy rows created before migration 004)
+ * are immutable via the API: mutation is denied with 403. They can only be
+ * changed directly in the database.
  */
 
 import { timingSafeEqual } from 'node:crypto'
 import { CalendarCollection } from '../types/calendar'
-import { UnauthorizedError } from './errors'
+import { ForbiddenError, UnauthorizedError } from './errors'
 
 /**
  * Extract the bearer token from an `Authorization: Bearer <token>` header.
@@ -43,8 +43,9 @@ function tokensMatch(provided: string, expected: string): boolean {
 /**
  * Authorize a mutation against a stored collection.
  *
- * - If the collection has NO stored token (legacy/null): allow unconditionally
- *   (backward compatibility). No Authorization header is required.
+ * - If the collection has NO stored token (legacy/null): deny with
+ *   `ForbiddenError` (HTTP 403). There is no owner to authenticate, so nobody
+ *   may mutate it through the API.
  * - If the collection HAS a stored token: require a matching bearer token,
  *   otherwise throw `UnauthorizedError` (mapped to HTTP 401 by errorResponse).
  */
@@ -54,8 +55,7 @@ export function authorizeMutation(
 ): void {
   const expected = collection.managementToken
   if (!expected) {
-    // Legacy collection with no ownership token — mutable as before.
-    return
+    throw new ForbiddenError()
   }
 
   const provided = extractBearerToken(authorizationHeader)

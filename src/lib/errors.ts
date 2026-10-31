@@ -53,6 +53,15 @@ export class UnauthorizedError extends CalendarCollectionError {
   }
 }
 
+export class ForbiddenError extends CalendarCollectionError {
+  constructor(
+    message = 'This collection has no management token and cannot be modified or deleted'
+  ) {
+    super(message, 'FORBIDDEN', 403)
+    this.name = 'ForbiddenError'
+  }
+}
+
 export class DatabaseOperationError extends CalendarCollectionError {
   constructor(operation: string, originalError: unknown) {
     super(

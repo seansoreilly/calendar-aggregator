@@ -17,6 +17,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      // `server-only` throws outside the Next.js server bundle; stub it in tests.
+      'server-only': path.resolve(
+        import.meta.dirname,
+        './src/__tests__/server-only-stub.ts'
+      ),
     },
   },
 })

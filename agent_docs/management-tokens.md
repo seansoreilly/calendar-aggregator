@@ -8,7 +8,7 @@ Read this before touching PUT/DELETE on collections, the manage UI, or the limit
 - Generated at create time by `generateManagementToken` (`src/lib/collection-service.ts:89`) and stored via `buildCollectionRecord`.
 - Returned **once**, in the `POST /api/collections` response. GET responses strip it with `stripManagementToken` (`src/lib/collection-service.ts:126`).
 - PUT and DELETE on `/api/collections/[guid]` call `authorizeMutation` (`src/lib/collection-auth.ts:51`) with the `Authorization: Bearer <token>` header. Comparison is constant-time.
-- **Legacy rows** with a null token (created before migration 004, or via the in-memory path) stay mutable without a header. `authorizeMutation` lets them through deliberately; the `seansoreilly` collection is one of these until a token is backfilled.
+- **Legacy rows** with a null token (created before migration 004) are immutable via the API: `authorizeMutation` throws `ForbiddenError` (403). Backfill a token in the DB to make one editable again; the `seansoreilly` collection is one of these.
 - Failures raise `UnauthorizedError` (`src/lib/errors.ts:49`), which becomes HTTP 401.
 
 ## Manage UI
