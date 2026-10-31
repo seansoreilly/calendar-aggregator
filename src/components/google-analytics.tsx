@@ -1,6 +1,7 @@
 'use client'
 
 import Script from 'next/script'
+import { PRODUCTION_HOSTNAMES } from '../lib/gtag'
 
 declare global {
   interface Window {
@@ -25,11 +26,14 @@ const GoogleAnalytics = () => {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}', {
-            page_title: document.title,
-            page_location: window.location.href,
-          });
+          // Only report production traffic; localhost and previews stay out of GA.
+          if (${JSON.stringify(PRODUCTION_HOSTNAMES)}.indexOf(location.hostname) !== -1) {
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              page_title: document.title,
+              page_location: window.location.href,
+            });
+          }
         `}
       </Script>
     </>

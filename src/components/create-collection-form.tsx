@@ -126,7 +126,7 @@ export default function CreateCollectionForm() {
         if (data?.code === 'COLLECTION_EXISTS') {
           setCustomIdError('That ID is taken. Try another.')
           trackEvent('collection_creation_failed', {
-            error: data.error || 'COLLECTION_EXISTS',
+            error_type: 'collection_exists',
           })
           return
         }
@@ -137,7 +137,7 @@ export default function CreateCollectionForm() {
         ) {
           applyCalendarValidationErrors(data.details)
           trackEvent('collection_creation_failed', {
-            error: data?.error || 'Calendar validation failed',
+            error_type: 'calendar_validation',
           })
           return
         }
@@ -165,7 +165,7 @@ export default function CreateCollectionForm() {
       const message =
         err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(message)
-      trackEvent('collection_creation_failed', { error: message })
+      trackEvent('collection_creation_failed', { error_type: 'request_failed' })
     } finally {
       setIsSubmitting(false)
     }
