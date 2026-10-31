@@ -153,12 +153,17 @@ export async function GET(
       return createCalendarSuccessResponse(collection, combineResult)
     } catch (error) {
       if (isCalendarCollectionError(error)) {
+        trackEvent('calendar_feed_error', {
+          collection_id: guid,
+          error_type: 'collection_error',
+        })
         return errorResponse(error, false)
       }
       throw error
     }
   } catch (error) {
     console.error('Error in calendar GUID endpoint:', error)
+    trackEvent('calendar_feed_error', { error_type: 'internal_error' })
 
     return NextResponse.json(
       {
