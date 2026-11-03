@@ -44,7 +44,7 @@ Feed query params: `timeout` (`parseCalendarTimeout`, `src/lib/calendar-response
 
 ## Security headers
 
-All headers live in `next.config.ts:9` under the source pattern `/(.*)`, which covers `/api/*` too. There is no `src/middleware.ts`; it was removed because it duplicated these headers with a looser CSP. The CSP at `next.config.ts:39` allows Google Tag Manager in `script-src` and the Google Analytics collectors in `connect-src`. `src/__tests__/security-headers.test.ts` pins the values.
+The static headers (X-Frame-Options, HSTS, Permissions-Policy, etc.) live in `next.config.ts` under the source pattern `/(.*)`, which covers `/api/*` too. The Content-Security-Policy is the exception: it carries a per-request nonce, so `src/proxy.ts` (Next 16's renamed middleware) generates the nonce, builds the policy with `buildCsp` in `src/lib/csp.ts`, sets it as the response header and forwards `x-nonce` plus the CSP as request headers. `script-src` is `'self' 'nonce-…' 'strict-dynamic' https://www.googletagmanager.com`, with `'unsafe-eval'` added only when `NODE_ENV === 'development'`; there is no `'unsafe-inline'` for scripts. The proxy matcher skips `_next/static`, `_next/image`, favicon/icon/opengraph-image and prefetch requests; API routes still get the CSP. Because `src/app/layout.tsx` reads `x-nonce` via `headers()`, every page renders dynamically (no static prerender). `src/__tests__/security-headers.test.ts` pins the static headers and `src/__tests__/csp-proxy.test.ts` pins the CSP.
 
 ## Google Analytics
 
