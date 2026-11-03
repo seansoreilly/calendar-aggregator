@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseHealth } from '../../../lib/supabase'
-import { version } from '../../../../package.json'
+import { version as packageVersion } from '../../../../package.json'
 
-export async function GET() {
+// package.json is no longer bumped per commit, so append the deployed commit
+// (semver build metadata) to tell deployments apart.
+const commitSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
+const version = commitSha ? `${packageVersion}+${commitSha}` : packageVersion
+
+export async function GET(): Promise<NextResponse> {
   try {
     // Get Supabase health status
     const supabaseHealth = await getSupabaseHealth()
