@@ -88,7 +88,7 @@ export async function PUT(
 
     // Ownership check: fetch the collection to read its stored token. A 404 here
     // (no such collection) is returned before any auth error so we don't leak
-    // existence. authorizeMutation() allows legacy tokenless collections through
+    // existence. authorizeMutation() denies (403) legacy tokenless collections
     // and otherwise requires a matching Authorization: Bearer <token> header.
     const existing = await findCollectionByGuidInDatabase(guid)
     if (!existing) {
@@ -157,8 +157,8 @@ export async function DELETE(
 
     // Ownership check: fetch to read the stored token before deleting. 404 is
     // returned ahead of any auth error so existence isn't leaked.
-    // authorizeMutation() allows legacy tokenless collections and otherwise
-    // requires a matching Authorization: Bearer <token> header.
+    // authorizeMutation() denies (403) legacy tokenless collections and
+    // otherwise requires a matching Authorization: Bearer <token> header.
     const existing = await findCollectionByGuidInDatabase(guid)
     if (!existing) {
       return errorResponse(new CollectionNotFoundError(guid), false)

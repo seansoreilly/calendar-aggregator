@@ -16,7 +16,7 @@ npm test -- src/__tests__/utils.test.ts        # Single test file
 npm test -- src/__tests__/integration/        # Integration tests only
 ```
 
-Pre-commit hooks run `eslint --fix` + `prettier --write` via Husky/lint-staged. The version in `package.json` is bumped by hand on release; `/api/health` reports it with the deployed commit SHA appended. npm (v11, pinned via `packageManager`) is the only package manager.
+Pre-commit hooks run `eslint --fix` + `prettier --write` via Husky/lint-staged. The version in `package.json` is bumped by hand on release; `/api/health` reports it with the deployed commit SHA appended. npm (v11, pinned via `devEngines`) is the only package manager.
 
 ## Orientation
 

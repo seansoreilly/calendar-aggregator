@@ -1,3 +1,4 @@
+import 'server-only'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { CalendarCollection } from '../types/calendar'
 import { Database } from '../types/database'
@@ -89,26 +90,39 @@ let supabaseClient: SupabaseClient<Database> | null = null
 
 function getSupabaseEnv(): {
   url: string | undefined
-  anonKey: string | undefined
+  serviceRoleKey: string | undefined
 } {
   return {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url: process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL,
+    // Server-only secret. Never read a NEXT_PUBLIC_* key here: the anon key is
+    // public by design and the database no longer grants it any table access.
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   }
 }
 
-// Get Supabase client with lazy initialization
+// Get Supabase client with lazy initialization (service-role, server-only)
 export function getSupabase(): SupabaseClient<Database> {
   if (!supabaseClient) {
-    const { url, anonKey } = getSupabaseEnv()
+    const { url, serviceRoleKey } = getSupabaseEnv()
 
-    if (!url || !anonKey) {
+    if (!url || !serviceRoleKey) {
+      // In production a missing key must fail closed with an error that does
+      // NOT trigger the in-memory fallback (which would silently lose data).
+      // Outside production the "Missing Supabase environment variables"
+      // message keeps the local-dev / test in-memory fallback working.
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'Supabase is misconfigured: SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL must be set.'
+        )
+      }
       throw new Error(
-        'Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.'
+        'Missing Supabase environment variables. Please check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.'
       )
     }
 
-    supabaseClient = createClient<Database>(url, anonKey)
+    supabaseClient = createClient<Database>(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
   }
 
   return supabaseClient
@@ -149,16 +163,16 @@ export async function testSupabaseConnection() {
 // Health check function for API endpoint
 export async function getSupabaseHealth() {
   try {
-    const { url, anonKey } = getSupabaseEnv()
+    const { url, serviceRoleKey } = getSupabaseEnv()
 
     // Check if environment variables are configured
-    if (!url || !anonKey) {
+    if (!url || !serviceRoleKey) {
       return {
         status: 'not-configured',
         supabase: {
           connected: false,
           url: url ? 'configured' : 'missing',
-          key: anonKey ? 'configured' : 'missing',
+          key: serviceRoleKey ? 'configured' : 'missing',
         },
         timestamp: new Date().toISOString(),
         message: 'Supabase environment variables not configured',
@@ -178,14 +192,14 @@ export async function getSupabaseHealth() {
       details: connectionTest.success ? undefined : connectionTest.error,
     }
   } catch (error) {
-    const { url, anonKey } = getSupabaseEnv()
+    const { url, serviceRoleKey } = getSupabaseEnv()
 
     return {
       status: 'error',
       supabase: {
         connected: false,
         url: url ? 'configured' : 'missing',
-        key: anonKey ? 'configured' : 'missing',
+        key: serviceRoleKey ? 'configured' : 'missing',
       },
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',

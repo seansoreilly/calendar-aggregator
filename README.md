@@ -123,8 +123,8 @@ npm run lint       # lint
 ### Environment variables
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_URL=...                # falls back to NEXT_PUBLIC_SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY=...   # server-only secret; never expose to the browser
 ```
 
 Without Supabase configured, collections fall back to in-memory storage (lost on restart).

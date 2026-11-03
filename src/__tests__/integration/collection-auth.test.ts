@@ -181,24 +181,44 @@ describe('Collection management token authorization', () => {
       })
     }
 
-    it('PUT with no Authorization header succeeds (backward compat)', async () => {
+    it('PUT is rejected with 403', async () => {
       seedLegacyCollection()
 
       const params = Promise.resolve({ guid: 'legacy-cal' })
       const updateRequest = createMockRequest({ name: 'Legacy Updated' }, 'PUT')
       const updateResponse = await PUT(updateRequest, { params })
+      const body = await updateResponse.json()
 
-      expect(updateResponse.status).toBe(200)
+      expect(updateResponse.status).toBe(403)
+      expect(body.code).toBe('FORBIDDEN')
+      expect(globalThis.calendarCollections[0]?.name).toBe('Legacy')
     })
 
-    it('DELETE with no Authorization header succeeds (backward compat)', async () => {
+    it('PUT is rejected with 403 even when a bearer token is supplied', async () => {
+      seedLegacyCollection()
+
+      const params = Promise.resolve({ guid: 'legacy-cal' })
+      const updateRequest = createMockRequest(
+        { name: 'Legacy Updated' },
+        'PUT',
+        'anything'
+      )
+      const updateResponse = await PUT(updateRequest, { params })
+
+      expect(updateResponse.status).toBe(403)
+    })
+
+    it('DELETE is rejected with 403', async () => {
       seedLegacyCollection()
 
       const params = Promise.resolve({ guid: 'legacy-cal' })
       const deleteRequest = createMockRequest(undefined, 'DELETE')
       const deleteResponse = await DELETE(deleteRequest, { params })
+      const body = await deleteResponse.json()
 
-      expect(deleteResponse.status).toBe(200)
+      expect(deleteResponse.status).toBe(403)
+      expect(body.code).toBe('FORBIDDEN')
+      expect(globalThis.calendarCollections).toHaveLength(1)
     })
   })
 })

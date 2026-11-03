@@ -6,7 +6,7 @@ Read this before changing anything in `src/lib/supabase.ts`, adding a migration,
 
 - Primary store: Supabase table `calendar_aggregator.collections`. The schema is custom, not `public`.
 - Every query chains `.schema('calendar_aggregator')`; the table accessor in `supabase.ts` does this once, so use it rather than building new clients.
-- The app uses the **anon key**. RLS is on, so any new table needs an explicit anon policy or writes fail silently (see `migrations/003_fix_rls_anon_policy.sql`).
+- The app uses the **service-role key** (server-only, `import 'server-only'`). The anon role has no access (migration `005_revoke_anon_access.sql`; supersedes `003_fix_rls_anon_policy.sql`), so never reintroduce an anon policy or a `NEXT_PUBLIC_*` key for DB access.
 - Migrations are plain SQL under `migrations/`, applied by hand. `004_add_management_token.sql` is the latest.
 
 ## Error contract
@@ -39,12 +39,12 @@ The management key is in `.env.local` as `NEXT_PUBLIC_SUPABASE_MANAGEMENT_KEY`. 
 
 ## Environment variables
 
-| Variable                        | Used by                                    |
-| ------------------------------- | ------------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`      | `getSupabaseEnv`, `src/lib/supabase.ts:91` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | same                                       |
-| `RATE_LIMIT_CREATE_PER_MIN`     | `src/lib/rate-limit.ts:140` (default 10)   |
-| `RATE_LIMIT_FEED_PER_MIN`       | `src/lib/rate-limit.ts:146` (default 60)   |
-| `GA_API_SECRET`                 | `src/lib/analytics.ts:16` (optional)       |
+| Variable                                                  | Used by                                  |
+| --------------------------------------------------------- | ---------------------------------------- |
+| `SUPABASE_URL` (falls back to `NEXT_PUBLIC_SUPABASE_URL`) | `getSupabaseEnv`, `src/lib/supabase.ts`  |
+| `SUPABASE_SERVICE_ROLE_KEY` (secret)                      | same                                     |
+| `RATE_LIMIT_CREATE_PER_MIN`                               | `src/lib/rate-limit.ts:140` (default 10) |
+| `RATE_LIMIT_FEED_PER_MIN`                                 | `src/lib/rate-limit.ts:146` (default 60) |
+| `GA_API_SECRET`                                           | `src/lib/analytics.ts:16` (optional)     |
 
 Worktrees under `.claude/worktrees/` do not carry `.env.local`, so a dev server started there runs in-memory.
