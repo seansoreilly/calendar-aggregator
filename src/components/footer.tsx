@@ -7,13 +7,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex flex-col gap-1">
           <p className="font-mono text-xs text-graphite">
-            © {new Date().getFullYear()} Calendar Aggregator · built by{' '}
-            <a
-              href="https://balddata.xyz"
-              className="text-ink underline underline-offset-2 hover:text-today"
-            >
-              balddata.xyz
-            </a>
+            © {new Date().getFullYear()} Calendar Aggregator
           </p>
           <p className="font-mono text-xs text-graphite">
             Built by{' '}
