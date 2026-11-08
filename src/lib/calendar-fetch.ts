@@ -190,6 +190,16 @@ export async function fetchCalendarBody(
       }
     }
 
+    // The pinned DNS lookup rejects hosts that resolve to private space. Do not
+    // echo the resolved address back to the caller (internal-network oracle).
+    if ((error as NodeJS.ErrnoException | null)?.code === 'ESSRF') {
+      return {
+        ok: false,
+        error: 'Calendar URL must not point to a private network address',
+        responseTimeMs,
+      }
+    }
+
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Unknown error',

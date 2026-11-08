@@ -14,6 +14,8 @@ src/__tests__/
 ├── collection-service.test.ts    # processCalendarInputs / buildCollectionRecord (mocks calendar-utils)
 ├── ical-combiner.test.ts         # combineICalFeeds (stubs globalThis.fetch)
 ├── safe-fetch.test.ts            # SSRF guard and redirect handling
+├── ip-ranges.test.ts             # private/reserved IP classification (v4, v6 forms)
+├── concurrency.test.ts           # mapSettledWithConcurrency
 ├── rate-limit.test.ts            # RateLimiter windows
 ├── security-headers.test.ts      # next.config.ts headers()
 ├── supabase-helpers.test.ts      # escapeLikePattern / applyGuidFilter
@@ -30,5 +32,5 @@ src/__tests__/
 
 - Integration tests run **without** Supabase env vars, so the DB layer takes the in-memory path described in [storage-supabase.md](storage-supabase.md). Only `calendar-feed.test.ts` mocks `../../lib/supabase` directly.
 - Route tests mock `../../lib/calendar-utils` to replace `validateCalendarUrl`, so no network calls happen. Copy the `vi.mock` block from `integration/collections.test.ts:8` when adding a new route test.
-- `safe-fetch.ts` skips its DNS guard under `NODE_ENV=test`; fetch mocks on `globalThis.fetch` are honoured because it always calls the global.
+- Under `NODE_ENV=test` `safeFetch` uses `globalThis.fetch` (mocks are honoured) and skips the pinned transport; `createPinnedLookup` and `pinnedRequest` are exported and tested directly.
 - The Husky pre-commit hook (`.husky/pre-commit`) runs lint-staged only. It no longer bumps the version (that caused merge conflicts between parallel branches); `/api/health` appends `VERCEL_GIT_COMMIT_SHA` to the version instead.

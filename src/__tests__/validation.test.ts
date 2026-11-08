@@ -4,6 +4,9 @@ import {
   validateCalendarSourceUrl,
   validateCollectionName,
   validateCollectionDescription,
+  validateCreateCollectionRequest,
+  validateCollectionUpdateRequest,
+  MAX_SOURCES_PER_COLLECTION,
 } from '@/lib/validation'
 import { ValidationError } from '@/lib/errors'
 
@@ -149,5 +152,44 @@ describe('validateCollectionDescription control-character rejection', () => {
       validateCollectionDescription('A normal description.')
     ).not.toThrow()
     expect(() => validateCollectionDescription(undefined)).not.toThrow()
+  })
+})
+
+describe('source count cap', () => {
+  const make = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      url: `https://example.com/${i}.ics`,
+      name: `Cal ${i}`,
+    }))
+
+  it('accepts exactly the maximum on create and update', () => {
+    expect(() =>
+      validateCreateCollectionRequest({
+        name: 'x',
+        calendars: make(MAX_SOURCES_PER_COLLECTION),
+      })
+    ).not.toThrow()
+    expect(() =>
+      validateCollectionUpdateRequest({
+        calendars: make(MAX_SOURCES_PER_COLLECTION),
+      })
+    ).not.toThrow()
+  })
+
+  it('rejects more than the maximum on create', () => {
+    expect(() =>
+      validateCreateCollectionRequest({
+        name: 'x',
+        calendars: make(MAX_SOURCES_PER_COLLECTION + 1),
+      })
+    ).toThrow(/at most 25/)
+  })
+
+  it('rejects more than the maximum on update', () => {
+    expect(() =>
+      validateCollectionUpdateRequest({
+        calendars: make(MAX_SOURCES_PER_COLLECTION + 1),
+      })
+    ).toThrow(ValidationError)
   })
 })

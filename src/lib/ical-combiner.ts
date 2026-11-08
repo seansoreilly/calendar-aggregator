@@ -4,6 +4,10 @@ import {
   CombineResult,
 } from '../types/calendar'
 import { fetchCalendarBody } from './calendar-fetch'
+import {
+  SOURCE_FETCH_CONCURRENCY,
+  mapSettledWithConcurrency,
+} from './concurrency'
 
 /** Maximum total events across all sources before truncation. */
 const MAX_TOTAL_EVENTS = 50_000
@@ -404,7 +408,10 @@ export async function combineICalFeeds(
 
   // Fetch raw iCal content from all calendars, each with its own AbortController
   // so the timeout actually cancels the underlying network request.
-  const fetchPromises = enabledCalendars.map(
+  // Concurrency is capped so one collection cannot open dozens of sockets.
+  const fetchResults = await mapSettledWithConcurrency(
+    enabledCalendars,
+    SOURCE_FETCH_CONCURRENCY,
     async (calendar): Promise<FetchResult> => {
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -421,8 +428,6 @@ export async function combineICalFeeds(
       }
     }
   )
-
-  const fetchResults = await Promise.allSettled(fetchPromises)
 
   // Collect all events and timezones
   const allEvents: string[] = []

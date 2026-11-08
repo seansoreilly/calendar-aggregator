@@ -88,6 +88,7 @@ Response behaviour:
 
 - Responses carry a strong `ETag`; conditional requests with `If-None-Match` get `304 Not Modified`
 - If some source calendars fail, the feed is still served from the working sources with status `206 Partial Content`
+- A collection may contain at most 25 source calendars (create/update return `400` beyond that); sources are fetched at most 5 at a time
 
 ### Update or delete a collection
 
