@@ -138,6 +138,7 @@ describe('validateCalendarUrl', () => {
     expect(result.isValid).toBe(false)
     expect(result.statusCode).toBe(404)
     expect(result.error).toContain('Access denied')
+    expect(result.error).not.toMatch(/404|Not Found/)
   })
 
   it('reports a 5xx as a server error', async () => {
@@ -150,6 +151,7 @@ describe('validateCalendarUrl', () => {
     expect(result.isValid).toBe(false)
     expect(result.statusCode).toBe(503)
     expect(result.error).toContain('Server error')
+    expect(result.error).not.toContain('503')
   })
 
   it('rejects a non-iCal response', async () => {
@@ -175,6 +177,27 @@ describe('validateCalendarUrl', () => {
 
     expect(result.isValid).toBe(false)
     expect(result.error).toContain('timeout')
+  })
+})
+
+describe('fetchCalendarBody error redaction', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('does not echo raw network error detail to the caller', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.mocked(fetch).mockRejectedValue(
+      new Error('connect ECONNREFUSED 10.1.2.3:5432')
+    )
+    const result = await fetchCalendarBody('https://example.com/cal.ics')
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('Unable to fetch calendar')
   })
 })
 

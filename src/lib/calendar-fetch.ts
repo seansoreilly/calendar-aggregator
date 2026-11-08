@@ -127,7 +127,7 @@ export async function fetchCalendarBody(
     if (response.status >= 500) {
       return {
         ok: false,
-        error: `Server error (${response.status}): Calendar server is temporarily unavailable`,
+        error: 'Server error: Calendar server is temporarily unavailable',
         status: response.status,
         contentType,
         responseTimeMs,
@@ -137,7 +137,7 @@ export async function fetchCalendarBody(
     if (response.status >= 400) {
       return {
         ok: false,
-        error: `Access denied (${response.status}): ${response.statusText}`,
+        error: 'Access denied: Calendar server rejected the request',
         status: response.status,
         contentType,
         responseTimeMs,
@@ -190,9 +190,25 @@ export async function fetchCalendarBody(
       }
     }
 
+    // The pinned DNS lookup rejects hosts that resolve to private space. Do not
+    // echo the resolved address back to the caller (internal-network oracle).
+    if ((error as NodeJS.ErrnoException | null)?.code === 'ESSRF') {
+      return {
+        ok: false,
+        error: 'Calendar URL must not point to a private network address',
+        responseTimeMs,
+      }
+    }
+
+    // Raw errors (DNS, socket, TLS) can name resolved addresses, ports and
+    // internal hostnames. Log them server-side; give the client a fixed string.
+    console.error(
+      '[calendar-fetch] upstream fetch failed:',
+      error instanceof Error ? error.message : String(error)
+    )
     return {
       ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Unable to fetch calendar',
       responseTimeMs,
     }
   }

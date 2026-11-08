@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { safeFetch } from '@/lib/safe-fetch'
+import http from 'node:http'
+import zlib from 'node:zlib'
+import {
+  safeFetch,
+  pinnedRequest,
+  createPinnedLookup,
+  type PinnedLookup,
+} from '@/lib/safe-fetch'
 import { ValidationError } from '@/lib/errors'
 
 // NODE_ENV is 'test' under vitest, so safeFetch skips the DNS-rebinding guard;
@@ -134,5 +141,157 @@ describe('safeFetch', () => {
       headers: { 'X-Test': 'abc' },
       redirect: 'manual',
     })
+  })
+})
+
+describe('createPinnedLookup', () => {
+  const run = (
+    resolver: Parameters<typeof createPinnedLookup>[0],
+    options: Parameters<PinnedLookup>[1] = { all: true }
+  ) =>
+    new Promise<{
+      err: NodeJS.ErrnoException | null
+      address?: unknown
+      family?: number | undefined
+    }>(resolve => {
+      createPinnedLookup(resolver)(
+        'cal.example.com',
+        options,
+        (err, address, family) => resolve({ err, address, family })
+      )
+    })
+
+  it('returns the validated addresses (all)', async () => {
+    const records = [{ address: '93.184.216.34', family: 4 }]
+    const r = await run(async () => records)
+    expect(r.err).toBeNull()
+    expect(r.address).toEqual(records)
+  })
+
+  it('returns a single address when all is not requested', async () => {
+    const r = await run(
+      async () => [{ address: '93.184.216.34', family: 4 }],
+      {}
+    )
+    expect(r.address).toBe('93.184.216.34')
+    expect(r.family).toBe(4)
+  })
+
+  it('rejects when ANY record is private (mixed answers)', async () => {
+    const r = await run(async () => [
+      { address: '93.184.216.34', family: 4 },
+      { address: '10.0.0.5', family: 4 },
+    ])
+    expect(r.err?.code).toBe('ESSRF')
+  })
+
+  it.each(['::1', '::ffff:7f00:1', '64:ff9b::a00:1', 'fd00::1'])(
+    'rejects IPv6 answer %s',
+    async address => {
+      const r = await run(async () => [{ address, family: 6 }])
+      expect(r.err?.code).toBe('ESSRF')
+    }
+  )
+
+  it('fails closed when resolution fails', async () => {
+    const r = await run(async () => {
+      throw Object.assign(new Error('getaddrinfo ENOTFOUND'), {
+        code: 'ENOTFOUND',
+      })
+    })
+    expect(r.err).not.toBeNull()
+  })
+
+  it('fails closed on an empty answer', async () => {
+    const r = await run(async () => [])
+    expect(r.err?.code).toBe('ENOTFOUND')
+  })
+})
+
+describe('pinnedRequest transport', () => {
+  let server: http.Server
+  let port: number
+  // Test-only lookup that skips the private-address filter so we can talk to
+  // 127.0.0.1; the filter itself is covered by createPinnedLookup tests above.
+  const anyLookup: PinnedLookup = (_h, options, cb) => {
+    if (typeof options === 'object' && options?.all) {
+      cb(null, [{ address: '127.0.0.1', family: 4 }])
+    } else {
+      cb(null, '127.0.0.1', 4)
+    }
+  }
+
+  beforeEach(async () => {
+    server = http.createServer((req, res) => {
+      if (req.url === '/gz') {
+        res.setHeader('content-encoding', 'gzip')
+        res.end(zlib.gzipSync('BEGIN:VCALENDAR gz'))
+      } else if (req.url === '/redir') {
+        res.statusCode = 302
+        res.setHeader('location', '/final')
+        res.end()
+      } else if (req.url === '/ua') {
+        res.end(String(req.headers['user-agent']))
+      } else {
+        res.end('plain')
+      }
+    })
+    await new Promise<void>(r => server.listen(0, '127.0.0.1', r))
+    port = (server.address() as { port: number }).port
+  })
+
+  afterEach(async () => {
+    await new Promise<void>(r => server.close(() => r()))
+  })
+
+  it('fetches plain bodies and forwards headers', async () => {
+    const res = await pinnedRequest(
+      `http://pinned.test:${port}/ua`,
+      { headers: { 'User-Agent': 'UA/1' } },
+      anyLookup
+    )
+    expect(await res.text()).toBe('UA/1')
+  })
+
+  it('decodes gzip bodies', async () => {
+    const res = await pinnedRequest(
+      `http://pinned.test:${port}/gz`,
+      {},
+      anyLookup
+    )
+    expect(await res.text()).toBe('BEGIN:VCALENDAR gz')
+  })
+
+  it('does not follow redirects itself', async () => {
+    const res = await pinnedRequest(
+      `http://pinned.test:${port}/redir`,
+      {},
+      anyLookup
+    )
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('/final')
+  })
+
+  it('refuses to connect to a hostname resolving to loopback (real filter)', async () => {
+    const lookup = createPinnedLookup(async () => [
+      { address: '127.0.0.1', family: 4 },
+    ])
+    await expect(
+      pinnedRequest(`http://rebind.test:${port}/`, {}, lookup)
+    ).rejects.toMatchObject({ code: 'ESSRF' })
+  })
+
+  it('connects only to the validated address even if DNS would change', async () => {
+    // Resolver is consulted once per connection; the socket uses its answer.
+    let calls = 0
+    const lookup = createPinnedLookup(async () => {
+      calls++
+      return [{ address: '127.0.0.1', family: 4 }]
+    })
+    // Loopback is rejected, so no socket is ever opened against it.
+    await expect(
+      pinnedRequest(`http://rebind.test:${port}/`, {}, lookup)
+    ).rejects.toBeDefined()
+    expect(calls).toBe(1)
   })
 })

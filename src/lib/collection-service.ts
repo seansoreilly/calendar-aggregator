@@ -4,6 +4,10 @@ import {
   CalendarSource,
   CreateCollectionRequest,
 } from '../types/calendar'
+import {
+  SOURCE_FETCH_CONCURRENCY,
+  mapSettledWithConcurrency,
+} from './concurrency'
 import { buildCalendarSource, validateCalendarUrl } from './calendar-utils'
 import {
   sanitizeCollectionDescription,
@@ -58,11 +62,17 @@ export async function processCalendarInputs(
 ): Promise<ProcessCalendarsResult> {
   // Validate all sources concurrently; results stay index-ordered so error
   // attribution and the processed-calendar order match the input order.
-  const checks = await Promise.all(
-    calendars.map((calendarData, index) =>
-      checkCalendarInput(calendarData, index)
-    )
+  const settled = await mapSettledWithConcurrency(
+    calendars,
+    SOURCE_FETCH_CONCURRENCY,
+    (calendarData, index) => checkCalendarInput(calendarData, index)
   )
+  // checkCalendarInput never rejects for per-source failures; rethrow anything
+  // unexpected exactly as Promise.all did.
+  const checks = settled.map(r => {
+    if (r.status === 'rejected') throw r.reason
+    return r.value
+  })
 
   const processedCalendars: CalendarSource[] = []
   const validationErrors: string[] = []
