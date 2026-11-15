@@ -191,6 +191,17 @@ export async function HEAD(
       return new NextResponse(null, { status: 400 })
     }
 
+    // HEAD hits the database like GET, so it shares the feed limiter.
+    const rate = calendarFeedLimiter.check(
+      clientKeyFromHeaders(request.headers)
+    )
+    if (!rate.allowed) {
+      return new NextResponse(null, {
+        status: 429,
+        headers: { 'Retry-After': rate.retryAfterSeconds.toString() },
+      })
+    }
+
     try {
       const collection = await findValidatedCollection(guid)
       if (!collection) {

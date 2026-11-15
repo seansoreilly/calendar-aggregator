@@ -10,7 +10,7 @@
  * changed directly in the database.
  */
 
-import { timingSafeEqual } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { CalendarCollection } from '../types/calendar'
 import { ForbiddenError, UnauthorizedError } from './errors'
 
@@ -40,6 +40,17 @@ function tokensMatch(provided: string, expected: string): boolean {
   return timingSafeEqual(a, b)
 }
 
+const HASH_PREFIX = 'sha256:'
+
+/**
+ * One-way digest stored in the database instead of the raw token, so a DB dump,
+ * backup or log line never yields a usable credential. Tokens are 192-bit
+ * random values, so an unsalted SHA-256 is sufficient (nothing to brute-force).
+ */
+export function hashManagementToken(token: string): string {
+  return HASH_PREFIX + createHash('sha256').update(token, 'utf8').digest('hex')
+}
+
 /**
  * Authorize a mutation against a stored collection.
  *
@@ -59,7 +70,15 @@ export function authorizeMutation(
   }
 
   const provided = extractBearerToken(authorizationHeader)
-  if (!provided || !tokensMatch(provided, expected)) {
+  if (!provided) {
+    throw new UnauthorizedError()
+  }
+  // Rows written after hashing was introduced hold `sha256:<hex>`; older rows
+  // (and the in-memory dev store) still hold the raw token.
+  const candidate = expected.startsWith(HASH_PREFIX)
+    ? hashManagementToken(provided)
+    : provided
+  if (!tokensMatch(candidate, expected)) {
     throw new UnauthorizedError()
   }
 }
