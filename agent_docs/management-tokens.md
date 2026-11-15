@@ -6,6 +6,7 @@ Read this before touching PUT/DELETE on collections, the manage UI, or the limit
 
 - Column `management_token` (text, nullable) on `collections`, added by `migrations/004_add_management_token.sql`.
 - Generated at create time by `generateManagementToken` (`src/lib/collection-service.ts:89`) and stored via `buildCollectionRecord`.
+- Stored as `sha256:<hex>` (`hashManagementToken`, `collection-auth.ts`, applied in `saveCollectionToDatabase`); older rows still hold the raw token and are accepted by `authorizeMutation`. Never log or return the stored value.
 - Returned **once**, in the `POST /api/collections` response. GET responses strip it with `stripManagementToken` (`src/lib/collection-service.ts:126`).
 - PUT and DELETE on `/api/collections/[guid]` call `authorizeMutation` (`src/lib/collection-auth.ts:51`) with the `Authorization: Bearer <token>` header. Comparison is constant-time.
 - **Legacy rows** with a null token (created before migration 004) are immutable via the API: `authorizeMutation` throws `ForbiddenError` (403). Backfill a token in the DB to make one editable again; the `seansoreilly` collection is one of these.
@@ -19,9 +20,10 @@ Read this before touching PUT/DELETE on collections, the manage UI, or the limit
 
 `src/lib/rate-limit.ts` is a best-effort in-memory sliding window keyed by client IP (`clientKeyFromHeaders`, `:94`). It only counts requests that hit the same warm instance, so treat it as abuse damping, not a guarantee. Two shared limiters:
 
-| Limiter                   | Route                      | Default       | Env override                |
-| ------------------------- | -------------------------- | ------------- | --------------------------- |
-| `collectionCreateLimiter` | `POST /api/collections`    | 10 per minute | `RATE_LIMIT_CREATE_PER_MIN` |
-| `calendarFeedLimiter`     | `GET /api/calendar/[guid]` | 60 per minute | `RATE_LIMIT_FEED_PER_MIN`   |
+| Limiter                   | Route                                  | Default       | Env override                |
+| ------------------------- | -------------------------------------- | ------------- | --------------------------- |
+| `collectionCreateLimiter` | `POST /api/collections`                | 10 per minute | `RATE_LIMIT_CREATE_PER_MIN` |
+| `calendarFeedLimiter`     | `GET`/`HEAD /api/calendar/[guid]`      | 60 per minute | `RATE_LIMIT_FEED_PER_MIN`   |
+| `collectionMutateLimiter` | `PUT`/`DELETE /api/collections/[guid]` | 30 per minute | `RATE_LIMIT_MUTATE_PER_MIN` |
 
 `rateLimitResponse` (`:111`) returns 429 with `Retry-After`. Tests: `src/__tests__/rate-limit.test.ts` and `src/__tests__/integration/collection-auth.test.ts`.

@@ -36,7 +36,6 @@ export async function GET(): Promise<NextResponse> {
         status: 'error',
         error: 'Health check failed',
         timestamp: new Date().toISOString(),
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
