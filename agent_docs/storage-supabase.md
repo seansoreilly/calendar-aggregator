@@ -7,7 +7,7 @@ Read this before changing anything in `src/lib/supabase.ts`, adding a migration,
 - Primary store: Supabase table `calendar_aggregator.collections`. The schema is custom, not `public`.
 - Every query chains `.schema('calendar_aggregator')`; the table accessor in `supabase.ts` does this once, so use it rather than building new clients.
 - The app uses the **service-role key** (server-only, `import 'server-only'`). The anon role has no access (migration `005_revoke_anon_access.sql`; supersedes `003_fix_rls_anon_policy.sql`), so never reintroduce an anon policy or a `NEXT_PUBLIC_*` key for DB access.
-- Migrations are plain SQL under `migrations/`, applied by hand. `004_add_management_token.sql` is the latest.
+- Migrations are plain SQL under `migrations/`, applied by hand. `007_rls_and_function_grants.sql` is the latest (006 and 007 are owner-applied, not yet confirmed live).
 
 ## Error contract
 
