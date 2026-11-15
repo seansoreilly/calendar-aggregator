@@ -39,15 +39,19 @@ export function trackEvent(name: string, params: EventParams): void {
   const secret = encodeURIComponent(apiSecret)
   const url = `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${secret}`
 
-  const sendEvent = (): void => {
-    fetch(url, { method: 'POST', body }).catch(err => {
-      console.error('[Analytics] Failed to send event:', err)
-    })
-  }
+  // Must return the promise: after() only keeps the function alive until a
+  // returned promise settles, so a void callback gets frozen mid-request.
+  const sendEvent = (): Promise<void> =>
+    fetch(url, { method: 'POST', body }).then(
+      () => undefined,
+      err => {
+        console.error('[Analytics] Failed to send event:', err)
+      }
+    )
 
   try {
     after(sendEvent)
   } catch {
-    sendEvent()
+    void sendEvent()
   }
 }
