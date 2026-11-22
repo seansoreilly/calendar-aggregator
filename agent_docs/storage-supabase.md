@@ -45,6 +45,6 @@ The management key is in `.env.local` as `NEXT_PUBLIC_SUPABASE_MANAGEMENT_KEY`. 
 | `SUPABASE_SERVICE_ROLE_KEY` (secret)                      | same                                     |
 | `RATE_LIMIT_CREATE_PER_MIN`                               | `src/lib/rate-limit.ts:140` (default 10) |
 | `RATE_LIMIT_FEED_PER_MIN`                                 | `src/lib/rate-limit.ts:146` (default 60) |
-| `GA_API_SECRET`                                           | `src/lib/analytics.ts:16` (optional)     |
+| `GA_API_SECRET`                                           | `src/lib/analytics.ts:28` (optional)     |
 
 Worktrees under `.claude/worktrees/` do not carry `.env.local`, so a dev server started there runs in-memory.

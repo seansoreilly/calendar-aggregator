@@ -28,7 +28,7 @@ Feed query params: `timeout` (`parseCalendarTimeout`, `src/lib/calendar-response
 | `validation.ts`         | `UUID_REGEX` (`:12`), id/name/description validators, SSRF checks (`:219`, `:239`), request validators (`:291`, `:345`)     |
 | `rate-limit.ts`         | `RateLimiter` (`:40`) plus the two shared limiters (`:140` create, `:146` feed)                                             |
 | `errors.ts`             | Error hierarchy (`:8` base, `:27` not-found, `:39` validation, `:49` unauthorized, `:56` database), `errorResponse` (`:94`) |
-| `analytics.ts`          | Server-side GA Measurement Protocol `trackEvent` (`:16`); needs `GA_API_SECRET`                                             |
+| `analytics.ts`          | Server-side GA Measurement Protocol `trackEvent` (`:28`); needs `GA_API_SECRET`                                             |
 | `gtag.ts`               | Client-side GA `trackEvent` wrapper around `window.gtag`                                                                    |
 | `utils.ts`              | `cn()` (`:6`) and the in-memory store helpers on `globalThis.calendarCollections` (`:26` onward)                            |
 
@@ -48,4 +48,4 @@ The static headers (X-Frame-Options, HSTS, Permissions-Policy, etc.) live in `ne
 
 ## Google Analytics
 
-The measurement id is hardcoded at `src/components/google-analytics.tsx:16` and injected from `src/app/layout.tsx`. The `window.gtag` type lives in the same component. Client events fire from `src/components/create-collection-form.tsx` through `src/lib/gtag.ts`: `collection_created`, `collection_creation_failed`, `collection_deleted`, `feed_url_copied`. Server-side events go through `src/lib/analytics.ts` and are skipped when `GA_API_SECRET` is unset.
+The measurement id is hardcoded at `src/components/google-analytics.tsx:16` and injected from `src/app/layout.tsx`. The `window.gtag` type lives in the same component. Client events fire from `src/components/create-collection-form.tsx` through `src/lib/gtag.ts`: `collection_created`, `collection_creation_failed`, `collection_deleted`, `feed_url_copied`. Server-side events go through `src/lib/analytics.ts`: they are sent only when `VERCEL_ENV=production` and `GA_API_SECRET` is set, run inside `after()` so they never delay the response, are aborted after 2s, and a failed send logs `[Analytics] event dropped:` as a warning.
