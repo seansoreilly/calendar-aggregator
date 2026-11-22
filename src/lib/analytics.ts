@@ -1,6 +1,7 @@
 import { after } from 'next/server'
 
 const GA_MEASUREMENT_ID = 'G-ESZWBFZV7F'
+const ANALYTICS_TIMEOUT_MS = 2000
 
 interface EventParams {
   [key: string]: string | number
@@ -39,15 +40,25 @@ export function trackEvent(name: string, params: EventParams): void {
   const secret = encodeURIComponent(apiSecret)
   const url = `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${secret}`
 
-  const sendEvent = (): void => {
-    fetch(url, { method: 'POST', body }).catch(err => {
-      console.error('[Analytics] Failed to send event:', err)
-    })
-  }
+  // Returning the promise lets `after` keep the function alive until the
+  // send settles; the timeout bounds that, and a dropped event is only a
+  // warning because analytics is best-effort.
+  const sendEvent = (): Promise<void> =>
+    fetch(url, {
+      method: 'POST',
+      body,
+      signal: AbortSignal.timeout(ANALYTICS_TIMEOUT_MS),
+    }).then(
+      () => undefined,
+      (err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        console.warn('[Analytics] event dropped:', message)
+      }
+    )
 
   try {
     after(sendEvent)
   } catch {
-    sendEvent()
+    void sendEvent()
   }
 }
