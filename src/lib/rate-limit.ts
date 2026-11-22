@@ -41,6 +41,7 @@ export class RateLimiter {
   private readonly limit: number
   private readonly windowMs: number
   private readonly hits = new Map<string, number[]>()
+  private lastSweep = 0
 
   constructor(config: RateLimitConfig) {
     this.limit = Math.max(1, config.limit)
@@ -54,6 +55,7 @@ export class RateLimiter {
    */
   check(key: string, now: number = Date.now()): RateLimitResult {
     const windowStart = now - this.windowMs
+    this.sweep(now)
     const timestamps = (this.hits.get(key) ?? []).filter(t => t > windowStart)
 
     if (timestamps.length >= this.limit) {
@@ -79,9 +81,25 @@ export class RateLimiter {
     }
   }
 
+  /**
+   * Evict keys whose hits have all aged out. Without this the map grows by one
+   * entry per distinct client key forever (memory exhaustion on a warm
+   * instance). Runs at most once per window.
+   */
+  private sweep(now: number): void {
+    if (now - this.lastSweep < this.windowMs) return
+    this.lastSweep = now
+    const windowStart = now - this.windowMs
+    for (const [key, stamps] of this.hits) {
+      const last = stamps[stamps.length - 1]
+      if (last === undefined || last <= windowStart) this.hits.delete(key)
+    }
+  }
+
   /** Test/maintenance helper: drop all recorded state. */
   reset(): void {
     this.hits.clear()
+    this.lastSweep = 0
   }
 }
 
@@ -145,5 +163,13 @@ export const collectionCreateLimiter = new RateLimiter({
 // Calendar feed reads (GET /api/calendar/[guid]): default 60 requests / minute.
 export const calendarFeedLimiter = new RateLimiter({
   limit: readEnvInt('RATE_LIMIT_FEED_PER_MIN', 60),
+  windowMs: 60_000,
+})
+
+// Collection mutations (PUT/DELETE /api/collections/[guid]): default 30 per
+// minute per IP. Caps token-guessing attempts and DB load from unauthenticated
+// callers (each attempt costs a database read before the token is checked).
+export const collectionMutateLimiter = new RateLimiter({
+  limit: readEnvInt('RATE_LIMIT_MUTATE_PER_MIN', 30),
   windowMs: 60_000,
 })

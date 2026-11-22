@@ -10,6 +10,7 @@ import {
 } from './utils'
 import { UUID_REGEX } from './validation'
 import { toCalendarCollectionError } from './errors'
+import { hashManagementToken } from './collection-auth'
 
 const COLLECTIONS_SCHEMA = 'calendar_aggregator'
 
@@ -189,9 +190,9 @@ export async function getSupabaseHealth() {
         key: 'configured',
       },
       timestamp: new Date().toISOString(),
-      details: connectionTest.success ? undefined : connectionTest.error,
     }
   } catch (error) {
+    console.error('[db] health check failed:', describeDbError(error))
     const { url, serviceRoleKey } = getSupabaseEnv()
 
     return {
@@ -202,7 +203,6 @@ export async function getSupabaseHealth() {
         key: serviceRoleKey ? 'configured' : 'missing',
       },
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 }
@@ -239,7 +239,10 @@ export async function saveCollectionToDatabase(
         sources: collection.calendars,
         created_at: collection.createdAt,
         updated_at: collection.updatedAt || collection.createdAt,
-        management_token: collection.managementToken ?? null,
+        // Store only a digest; the raw token is returned to the creator once.
+        management_token: collection.managementToken
+          ? hashManagementToken(collection.managementToken)
+          : null,
       }
 
     const { error } = await collectionsTable()

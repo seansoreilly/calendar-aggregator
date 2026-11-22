@@ -194,6 +194,67 @@ export function validateCollectionDescription(description?: string): void {
 /** Maximum number of source calendars allowed in one collection. */
 export const MAX_SOURCES_PER_COLLECTION = 25
 
+const MAX_SOURCE_URL_LENGTH = 2048
+const MAX_SOURCE_NAME_LENGTH = 255
+const HEX_COLOR_REGEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+
+/**
+ * Shape checks for one calendar source entry: bounded string lengths, no
+ * control characters in the name (it is echoed into logs and the
+ * X-Calendar-Warnings header) and a plain hex colour (it is rendered into a
+ * style attribute). Non-string values are rejected here instead of crashing
+ * later with a TypeError (HTTP 500).
+ */
+function validateSourceFields(cal: unknown, index: number): void {
+  const field = `calendars[${index}]`
+  const entry = cal as {
+    url?: unknown
+    name?: unknown
+    color?: unknown
+    enabled?: unknown
+  } | null
+  if (
+    !entry ||
+    typeof entry.url !== 'string' ||
+    typeof entry.name !== 'string'
+  ) {
+    throw new ValidationError(
+      `Calendar ${index + 1}: URL and name are required`,
+      field
+    )
+  }
+  if (entry.url.length > MAX_SOURCE_URL_LENGTH) {
+    throw new ValidationError(
+      `Calendar ${index + 1}: URL cannot exceed ${MAX_SOURCE_URL_LENGTH} characters`,
+      `${field}.url`
+    )
+  }
+  if (
+    entry.name.length > MAX_SOURCE_NAME_LENGTH ||
+    CONTROL_CHAR_REGEX.test(entry.name)
+  ) {
+    throw new ValidationError(
+      `Calendar ${index + 1}: name must be at most ${MAX_SOURCE_NAME_LENGTH} characters with no control characters`,
+      `${field}.name`
+    )
+  }
+  if (
+    entry.color !== undefined &&
+    (typeof entry.color !== 'string' || !HEX_COLOR_REGEX.test(entry.color))
+  ) {
+    throw new ValidationError(
+      `Calendar ${index + 1}: color must be a hex value like #3b82f6`,
+      `${field}.color`
+    )
+  }
+  if (entry.enabled !== undefined && typeof entry.enabled !== 'boolean') {
+    throw new ValidationError(
+      `Calendar ${index + 1}: enabled must be a boolean`,
+      `${field}.enabled`
+    )
+  }
+}
+
 function validateSourceCount(calendars: unknown[]): void {
   if (calendars.length > MAX_SOURCES_PER_COLLECTION) {
     throw new ValidationError(
@@ -291,6 +352,7 @@ export function validateCreateCollectionRequest(
 
   // Transform and validate calendar sources
   request.calendars.forEach((cal, index) => {
+    validateSourceFields(cal, index)
     if (!cal.url || !cal.name) {
       throw new ValidationError(
         `Calendar ${index + 1}: URL and name are required`,
@@ -347,6 +409,7 @@ export function validateCollectionUpdateRequest(
     validateSourceCount(request.calendars)
 
     request.calendars.forEach((cal, index) => {
+      validateSourceFields(cal, index)
       if (!cal?.url || !cal?.name) {
         throw new ValidationError(
           `Calendar ${index + 1}: URL and name are required`,

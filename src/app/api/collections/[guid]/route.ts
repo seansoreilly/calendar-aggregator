@@ -22,6 +22,11 @@ import {
 } from '../../../../lib/errors'
 import { authorizeMutation } from '../../../../lib/collection-auth'
 import { stripManagementToken } from '../../../../lib/collection-service'
+import {
+  clientKeyFromHeaders,
+  collectionMutateLimiter,
+  rateLimitResponse,
+} from '../../../../lib/rate-limit'
 
 /**
  * GET /api/collections/[guid] - Get specific collection
@@ -67,6 +72,13 @@ export async function PUT(
 ) {
   try {
     const { guid } = await params
+    const rate = collectionMutateLimiter.check(
+      clientKeyFromHeaders(request.headers)
+    )
+    if (!rate.allowed) {
+      return rateLimitResponse(rate)
+    }
+
     const body: UpdateCollectionRequest = await request.json()
 
     if (!guid) {
@@ -140,6 +152,12 @@ export async function DELETE(
 ) {
   try {
     const { guid } = await params
+    const rate = collectionMutateLimiter.check(
+      clientKeyFromHeaders(request.headers)
+    )
+    if (!rate.allowed) {
+      return rateLimitResponse(rate)
+    }
 
     if (!guid) {
       return NextResponse.json({ error: 'GUID is required' }, { status: 400 })
